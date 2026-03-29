@@ -1,7 +1,13 @@
-import { signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth"
+import { 
+signInWithPopup, 
+RecaptchaVerifier, 
+signInWithPhoneNumber,
+onAuthStateChanged 
+} from "firebase/auth"
+
 import { auth, provider } from "../services/firebase"
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FcGoogle } from "react-icons/fc"
 import { FaPhone } from "react-icons/fa"
 
@@ -14,14 +20,45 @@ const [code, setCode] = useState("")
 const [confirmation, setConfirmation] = useState(null)
 const [showPhoneLogin, setShowPhoneLogin] = useState(false)
 
-const loginGoogle = async () => {
-  try{
-    await signInWithPopup(auth, provider)
-    navigate("/home")
-  }catch(error){
-    console.log(error)
-  }
+
+// detectar si ya hay usuario logueado
+useEffect(()=>{
+
+const unsubscribe = onAuthStateChanged(auth,(user)=>{
+
+if(user){
+navigate("/home")
 }
+
+})
+
+return ()=> unsubscribe()
+
+},[])
+
+
+
+const loginGoogle = async () => {
+
+try{
+
+const result = await signInWithPopup(auth, provider)
+
+const user = result.user
+
+console.log("Usuario:", user)
+
+navigate("/home")
+
+}catch(error){
+
+console.log(error)
+
+}
+
+}
+
+
 
 const setupRecaptcha = () => {
 
@@ -41,6 +78,8 @@ console.log("reCAPTCHA resuelto")
 }
 
 }
+
+
 
 const sendCode = async () => {
 
@@ -69,11 +108,17 @@ alert(error.message)
 
 }
 
+
+
 const verifyCode = async () => {
 
 try{
 
-await confirmation.confirm(code)
+const result = await confirmation.confirm(code)
+
+const user = result.user
+
+console.log("Usuario:", user)
 
 navigate("/home")
 
@@ -84,6 +129,8 @@ alert("Código incorrecto")
 }
 
 }
+
+
 
 return(
 

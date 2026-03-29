@@ -5,6 +5,7 @@ import Home from "../pages/Home"
 import Proyectos from "../pages/Proyectos"
 import Ventas from "../pages/Ventas"
 
+
 export default function Router(){
 
 return(

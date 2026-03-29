@@ -1,11 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"
+import { getStorage } from "firebase/storage"
 
 const firebaseConfig = {
   apiKey: "AIzaSyAS8g-gvBwo06ytYZuEKTsY8IjmWhzJBRA",
   authDomain: "macro-77196.firebaseapp.com",
   projectId: "macro-77196",
-  storageBucket: "macro-77196.firebasestorage.app",
+storageBucket: "macro-77196.appspot.com",
   messagingSenderId: "288255491086",
   appId: "1:288255491086:web:b277749334ec50d03b505f"
 };
@@ -15,6 +17,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 export const provider = new GoogleAuthProvider();
+export const db = getFirestore(app)
+export const storage = getStorage(app)
 
 /* 👇 ESTA ES LA LÍNEA IMPORTANTE */
 provider.setCustomParameters({
