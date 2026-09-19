@@ -1,87 +1,287 @@
-import { useEffect, useMemo, useState } from "react";
-import { db } from "../firebase.config";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-  collection,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
+
+import {
   addDoc,
-  serverTimestamp,
-  onSnapshot,
+  collection,
   deleteDoc,
   doc,
+  onSnapshot,
+  serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
 
 import {
-  FaCloudUploadAlt,
-  FaFolderOpen,
-  FaTrash,
-  FaEdit,
-  FaSearch,
-  FaTimes,
-  FaStar,
-  FaRegStar,
-  FaImages,
-  FaBuilding,
-  FaMapMarkerAlt,
-  FaHome,
-  FaTag,
-  FaLayerGroup,
-  FaCheckCircle,
-  FaExclamationTriangle,
+  db,
+} from "../firebase.config";
+
+import {
+  FaAndroid,
+  FaApple,
   FaArrowRight,
-  FaPlus,
+  FaBullhorn,
+  FaCamera,
+  FaCheckCircle,
+  FaCloudUploadAlt,
+  FaCode,
+  FaEdit,
+  FaExclamationTriangle,
+  FaExternalLinkAlt,
+  FaGlobe,
   FaImage,
+  FaImages,
+  FaLaptopCode,
+  FaLayerGroup,
+  FaLink,
+  FaMobileAlt,
+  FaPlus,
+  FaRegStar,
   FaSave,
+  FaSearch,
+  FaShieldAlt,
+  FaStar,
+  FaTag,
+  FaTimes,
+  FaTools,
+  FaTrash,
 } from "react-icons/fa";
 
+
+/* ======================================================
+   CONFIGURACIÓN CLOUDINARY
+
+   RECOMENDADO:
+   crear en .env:
+
+   VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
+   VITE_CLOUDINARY_UPLOAD_PRESET=macro
+====================================================== */
+
+const CLOUDINARY_CLOUD_NAME =
+  import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ||
+  "dxj4iczvk";
+
+const CLOUDINARY_UPLOAD_PRESET =
+  import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET ||
+  "macro";
+
+
+/* ======================================================
+   CONFIGURACIÓN GENERAL
+====================================================== */
+
+const MAX_IMAGENES = 8;
+const MAX_GALERIA = 12;
+
+const LIMITE_CLOUDINARY_BYTES =
+  9 * 1024 * 1024;
+
+const MAX_DIMENSION_OPTIMIZADA =
+  3000;
+
+const CALIDAD_INICIAL =
+  0.88;
+
+const CALIDAD_MINIMA =
+  0.58;
+
+
+/* ======================================================
+   TIPOS DE PROYECTO
+====================================================== */
+
+const tiposProyecto = [
+  {
+    value: "web",
+    label: "Página web",
+    icon: <FaGlobe />,
+  },
+
+  {
+    value: "app",
+    label: "Aplicación móvil",
+    icon: <FaMobileAlt />,
+  },
+
+  {
+    value: "publicidad",
+    label: "Publicidad / Marketing",
+    icon: <FaBullhorn />,
+  },
+
+  {
+    value: "camaras",
+    label: "Cámaras y Seguridad",
+    icon: <FaCamera />,
+  },
+
+  {
+    value: "software",
+    label: "Software / Sistema",
+    icon: <FaLaptopCode />,
+  },
+
+  {
+    value: "otro",
+    label: "Otro",
+    icon: <FaTools />,
+  },
+];
+
+
+/* ======================================================
+   ESTADOS
+====================================================== */
+
+const estadosProyecto = [
+  "En desarrollo",
+  "Finalizado",
+  "Activo",
+  "En mantenimiento",
+];
+
+
+/* ======================================================
+   COMPONENTE
+====================================================== */
+
 function SubirProyecto() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const { modoOscuro } = useOutletContext() || {};
+  const {
+    modoOscuro = false,
+  } = useOutletContext() || {};
 
-  // ======================================================
-  // FORMULARIO
-  // ======================================================
 
-  const [nombre, setNombre] = useState("");
-  const [descripcion, setDescripcion] = useState("");
+  /* ======================================================
+     FORMULARIO GENERAL
+  ====================================================== */
 
-  const [categoria, setCategoria] =
-    useState("Construcciones");
+  const [
+    nombre,
+    setNombre,
+  ] = useState("");
 
-  const [tipo, setTipo] =
-    useState("Residencial");
+  const [
+    descripcion,
+    setDescripcion,
+  ] = useState("");
 
-  const [ubicacion, setUbicacion] =
-    useState("");
+  const [
+    tipo,
+    setTipo,
+  ] = useState("web");
 
-  const [destacado, setDestacado] =
-    useState(false);
+  const [
+    cliente,
+    setCliente,
+  ] = useState("");
 
-  // ======================================================
-  // ARCHIVOS NUEVOS
-  // ======================================================
+  const [
+    estado,
+    setEstado,
+  ] = useState(
+    "Finalizado"
+  );
 
-  const [imagenes, setImagenes] =
-    useState([]);
+  const [
+    tecnologiasTexto,
+    setTecnologiasTexto,
+  ] = useState("");
 
-  const [galeria, setGaleria] =
-    useState([]);
+  const [
+    urlProyecto,
+    setUrlProyecto,
+  ] = useState("");
 
-  // ======================================================
-  // PREVIEWS NUEVOS
-  // ======================================================
+  const [
+    destacado,
+    setDestacado,
+  ] = useState(false);
 
-  const [previewImagenes, setPreviewImagenes] =
-    useState([]);
 
-  const [previewGaleria, setPreviewGaleria] =
-    useState([]);
+  /* ======================================================
+     APP
+  ====================================================== */
 
-  // ======================================================
-  // IMÁGENES YA GUARDADAS
-  // ======================================================
+  const [
+    plataformaApp,
+    setPlataformaApp,
+  ] = useState("Ambas");
+
+  const [
+    appStoreUrl,
+    setAppStoreUrl,
+  ] = useState("");
+
+  const [
+    playStoreUrl,
+    setPlayStoreUrl,
+  ] = useState("");
+
+
+  /* ======================================================
+     CÁMARAS
+  ====================================================== */
+
+  const [
+    cantidadCamaras,
+    setCantidadCamaras,
+  ] = useState("");
+
+  const [
+    tipoInstalacion,
+    setTipoInstalacion,
+  ] = useState("");
+
+
+  /* ======================================================
+     PUBLICIDAD
+  ====================================================== */
+
+  const [
+    tipoCampana,
+    setTipoCampana,
+  ] = useState("");
+
+  const [
+    plataformasPublicidad,
+    setPlataformasPublicidad,
+  ] = useState("");
+
+
+  /* ======================================================
+     IMÁGENES
+  ====================================================== */
+
+  const [
+    imagenes,
+    setImagenes,
+  ] = useState([]);
+
+  const [
+    galeria,
+    setGaleria,
+  ] = useState([]);
+
+  const [
+    previewImagenes,
+    setPreviewImagenes,
+  ] = useState([]);
+
+  const [
+    previewGaleria,
+    setPreviewGaleria,
+  ] = useState([]);
 
   const [
     imagenesExistentes,
@@ -93,170 +293,179 @@ function SubirProyecto() {
     setGaleriaExistente,
   ] = useState([]);
 
-  // ======================================================
-  // PROYECTOS
-  // ======================================================
 
-  const [proyectos, setProyectos] =
-    useState([]);
+  /* ======================================================
+     PROYECTOS
+  ====================================================== */
 
-  const [editId, setEditId] =
-    useState(null);
+  const [
+    proyectos,
+    setProyectos,
+  ] = useState([]);
 
-  // ======================================================
-  // ESTADOS
-  // ======================================================
+  const [
+    editId,
+    setEditId,
+  ] = useState(null);
 
-  const [loading, setLoading] =
-    useState(false);
 
-  const [error, setError] =
-    useState("");
+  /* ======================================================
+     ESTADOS UI
+  ====================================================== */
 
-  const [mensaje, setMensaje] =
-    useState("");
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  // ======================================================
-  // FILTROS
-  // ======================================================
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  const [busqueda, setBusqueda] =
-    useState("");
+  const [
+    mensaje,
+    setMensaje,
+  ] = useState("");
 
-  const [filtro, setFiltro] =
-    useState("Todos");
+  const [
+    busqueda,
+    setBusqueda,
+  ] = useState("");
 
-  // ======================================================
-  // CONFIGURACIÓN
-  // ======================================================
+  const [
+    filtro,
+    setFiltro,
+  ] = useState("todos");
 
-  const MAX_IMAGENES = 8;
-  const MAX_GALERIA = 12;
 
-  // Cloudinary Free acepta imágenes de hasta 10 MB.
-  // Dejamos margen para evitar rechazos por tamaño.
-  const LIMITE_CLOUDINARY_BYTES =
-    9 * 1024 * 1024;
-
-  const MAX_DIMENSION_OPTIMIZADA =
-    3000;
-
-  const CALIDAD_INICIAL =
-    0.88;
-
-  const CALIDAD_MINIMA =
-    0.58;
-
-  const categorias = [
-    "Construcciones",
-    "Remodelaciones",
-    "Herrería",
-    "Aluminios y Vidrios",
-    "Cancelería",
-    "Inmobiliaria",
-    "Otros",
-  ];
-
-  const tiposObra = [
-    "Residencial",
-    "Comercial",
-    "Industrial",
-    "Inmobiliario",
-    "Otro",
-  ];
-
-  // ======================================================
-  // LISTAR PROYECTOS
-  // ======================================================
+  /* ======================================================
+     LISTAR PROYECTOS
+  ====================================================== */
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, "proyectos"),
+    const unsub =
+      onSnapshot(
+        collection(
+          db,
+          "proyectos"
+        ),
 
-      (snap) => {
-        const data = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
+        (snapshot) => {
+          const data =
+            snapshot.docs.map(
+              (documento) => ({
+                id:
+                  documento.id,
 
-        data.sort((a, b) => {
-          const fechaA =
-            a.fechaActualizacion?.toMillis?.() ||
-            a.fecha?.toMillis?.() ||
-            0;
+                ...documento.data(),
+              })
+            );
 
-          const fechaB =
-            b.fechaActualizacion?.toMillis?.() ||
-            b.fecha?.toMillis?.() ||
-            0;
 
-          return fechaB - fechaA;
-        });
+          data.sort(
+            (a, b) => {
+              const fechaA =
+                a.fechaActualizacion
+                  ?.toMillis?.() ||
+                a.fechaCreacion
+                  ?.toMillis?.() ||
+                a.fecha
+                  ?.toMillis?.() ||
+                0;
 
-        setProyectos(data);
-      },
 
-      (error) => {
-        console.error(
-          "Error cargando proyectos:",
-          error
-        );
-      }
-    );
+              const fechaB =
+                b.fechaActualizacion
+                  ?.toMillis?.() ||
+                b.fechaCreacion
+                  ?.toMillis?.() ||
+                b.fecha
+                  ?.toMillis?.() ||
+                0;
 
-    return () => unsub();
+
+              return (
+                fechaB -
+                fechaA
+              );
+            }
+          );
+
+
+          setProyectos(
+            data
+          );
+        },
+
+        (firebaseError) => {
+          console.error(
+            "Error cargando proyectos Macro:",
+            firebaseError
+          );
+        }
+      );
+
+
+    return () =>
+      unsub();
+
   }, []);
 
-  // ======================================================
-  // LIMPIAR OBJECT URL AL DESMONTAR
-  // ======================================================
+
+  /* ======================================================
+     LIMPIAR OBJECT URL
+  ====================================================== */
 
   useEffect(() => {
     return () => {
-      previewImagenes.forEach((item) => {
-        URL.revokeObjectURL(item.url);
-      });
+      previewImagenes.forEach(
+        (item) => {
+          URL.revokeObjectURL(
+            item.url
+          );
+        }
+      );
 
-      previewGaleria.forEach((item) => {
-        URL.revokeObjectURL(item.url);
-      });
-    };
-  }, []);
 
-  // ======================================================
-  // OPTIMIZAR IMÁGENES GRANDES
-  // ======================================================
-
-  const esFormatoRawNoCompatible =
-    (file) => {
-      const nombre =
-        String(
-          file?.name ||
-          ""
-        ).toLowerCase();
-
-      return (
-        nombre.endsWith(
-          ".dng"
-        ) ||
-        nombre.endsWith(
-          ".raw"
-        ) ||
-        nombre.endsWith(
-          ".cr2"
-        ) ||
-        nombre.endsWith(
-          ".cr3"
-        ) ||
-        nombre.endsWith(
-          ".nef"
-        ) ||
-        nombre.endsWith(
-          ".arw"
-        )
+      previewGaleria.forEach(
+        (item) => {
+          URL.revokeObjectURL(
+            item.url
+          );
+        }
       );
     };
 
+  }, []);
+
+
+  /* ======================================================
+     FORMATOS RAW NO COMPATIBLES
+  ====================================================== */
+
+  const esFormatoRawNoCompatible =
+    (file) => {
+      const nombreArchivo =
+        String(
+          file?.name || ""
+        ).toLowerCase();
+
+
+      return (
+        nombreArchivo.endsWith(".dng") ||
+        nombreArchivo.endsWith(".raw") ||
+        nombreArchivo.endsWith(".cr2") ||
+        nombreArchivo.endsWith(".cr3") ||
+        nombreArchivo.endsWith(".nef") ||
+        nombreArchivo.endsWith(".arw")
+      );
+    };
+
+
+  /* ======================================================
+     CARGAR IMAGEN
+  ====================================================== */
 
   const cargarImagenEnNavegador =
     (file) =>
@@ -265,7 +474,6 @@ function SubirProyecto() {
           resolve,
           reject
         ) => {
-
           const url =
             URL.createObjectURL(
               file
@@ -277,7 +485,6 @@ function SubirProyecto() {
 
           img.onload =
             () => {
-
               URL.revokeObjectURL(
                 url
               );
@@ -285,13 +492,11 @@ function SubirProyecto() {
               resolve(
                 img
               );
-
             };
 
 
           img.onerror =
             () => {
-
               URL.revokeObjectURL(
                 url
               );
@@ -301,21 +506,23 @@ function SubirProyecto() {
                   `El navegador no puede procesar "${file.name}".`
                 )
               );
-
             };
 
 
           img.src =
             url;
-
         }
       );
 
 
+  /* ======================================================
+     CANVAS A BLOB
+  ====================================================== */
+
   const canvasABlob =
     (
       canvas,
-      tipo,
+      tipoImagen,
       calidad
     ) =>
       new Promise(
@@ -323,12 +530,9 @@ function SubirProyecto() {
           resolve,
           reject
         ) => {
-
           canvas.toBlob(
             (blob) => {
-
               if (!blob) {
-
                 reject(
                   new Error(
                     "No se pudo optimizar la imagen."
@@ -336,35 +540,26 @@ function SubirProyecto() {
                 );
 
                 return;
-
               }
-
 
               resolve(
                 blob
               );
-
             },
 
-            tipo,
-
+            tipoImagen,
             calidad
           );
-
         }
       );
 
 
+  /* ======================================================
+     OPTIMIZAR IMAGEN
+  ====================================================== */
+
   const optimizarImagen =
-    async (
-      file
-    ) => {
-
-      /*
-        Si ya está debajo del límite seguro,
-        no tocamos el archivo.
-      */
-
+    async (file) => {
       if (
         file.size <=
         LIMITE_CLOUDINARY_BYTES
@@ -373,45 +568,36 @@ function SubirProyecto() {
       }
 
 
-      /*
-        DNG / RAW no puede convertirse de forma
-        confiable con Canvas del navegador.
-
-        En estos casos mostramos un mensaje claro.
-      */
-
       if (
         esFormatoRawNoCompatible(
           file
         )
       ) {
-
         throw new Error(
-          `"${file.name}" es una fotografía RAW/DNG de ${(file.size / 1024 / 1024).toFixed(
+          `"${file.name}" es una fotografía RAW/DNG de ${(
+            file.size /
+            1024 /
+            1024
+          ).toFixed(
             1
-          )} MB. El navegador no puede convertir automáticamente este formato. En tu celular expórtala o compártela como JPG/HEIC y vuelve a seleccionarla.`
+          )} MB. Exporta la imagen como JPG, PNG o HEIC antes de subirla.`
         );
-
       }
 
 
       let imagen;
 
-      try {
 
+      try {
         imagen =
           await cargarImagenEnNavegador(
             file
           );
 
       } catch {
-
         throw new Error(
-          `"${file.name}" pesa ${(file.size / 1024 / 1024).toFixed(
-            1
-          )} MB y su formato no puede optimizarse automáticamente en este navegador.`
+          `"${file.name}" no puede optimizarse automáticamente en este navegador.`
         );
-
       }
 
 
@@ -427,6 +613,7 @@ function SubirProyecto() {
       const escala =
         Math.min(
           1,
+
           MAX_DIMENSION_OPTIMIZADA /
             Math.max(
               anchoOriginal,
@@ -438,15 +625,18 @@ function SubirProyecto() {
       const ancho =
         Math.max(
           1,
+
           Math.round(
             anchoOriginal *
               escala
           )
         );
 
+
       const alto =
         Math.max(
           1,
+
           Math.round(
             altoOriginal *
               escala
@@ -473,11 +663,9 @@ function SubirProyecto() {
 
 
       if (!ctx) {
-
         throw new Error(
-          `No se pudo preparar "${file.name}" para subirla.`
+          `No se pudo preparar "${file.name}".`
         );
-
       }
 
 
@@ -486,12 +674,6 @@ function SubirProyecto() {
 
       ctx.imageSmoothingQuality =
         "high";
-
-
-      /*
-        Fondo blanco para evitar transparencia
-        negra al convertir PNG a JPEG.
-      */
 
       ctx.fillStyle =
         "#ffffff";
@@ -502,7 +684,6 @@ function SubirProyecto() {
         ancho,
         alto
       );
-
 
       ctx.drawImage(
         imagen,
@@ -515,6 +696,7 @@ function SubirProyecto() {
 
       let calidad =
         CALIDAD_INICIAL;
+
 
       let blob =
         await canvasABlob(
@@ -530,10 +712,10 @@ function SubirProyecto() {
         calidad >
           CALIDAD_MINIMA
       ) {
-
         calidad =
           Math.max(
             CALIDAD_MINIMA,
+
             calidad -
               0.08
           );
@@ -545,7 +727,6 @@ function SubirProyecto() {
             "image/jpeg",
             calidad
           );
-
       }
 
 
@@ -553,11 +734,9 @@ function SubirProyecto() {
         blob.size >
         LIMITE_CLOUDINARY_BYTES
       ) {
-
         throw new Error(
-          `"${file.name}" sigue siendo demasiado pesada después de optimizarla. Prueba exportándola como JPG desde tu celular.`
+          `"${file.name}" continúa siendo demasiado pesada después de optimizarla.`
         );
-
       }
 
 
@@ -583,21 +762,19 @@ function SubirProyecto() {
             Date.now(),
         }
       );
-
     };
 
 
-  const optimizarArchivos =
-    async (
-      files
-    ) => {
+  /* ======================================================
+     OPTIMIZAR VARIAS
+  ====================================================== */
 
+  const optimizarArchivos =
+    async (files) => {
       const lista =
         Array.from(
-          files ||
-          []
+          files || []
         );
-
 
       const resultado =
         [];
@@ -606,7 +783,6 @@ function SubirProyecto() {
       for (
         const file of lista
       ) {
-
         const optimizado =
           await optimizarImagen(
             file
@@ -615,684 +791,1086 @@ function SubirProyecto() {
         resultado.push(
           optimizado
         );
-
       }
 
 
       return resultado;
-
     };
 
 
-  // ======================================================
-  // VALIDAR ARCHIVO
-  // ======================================================
+  /* ======================================================
+     VALIDAR ARCHIVO
+  ====================================================== */
 
-  const validarArchivo = (file) => {
-    if (!file.type.startsWith("image/")) {
-      return `"${file.name}" no es una imagen válida.`;
-    }
+  const validarArchivo =
+    (file) => {
+      if (
+        !file.type.startsWith(
+          "image/"
+        )
+      ) {
+        return `"${file.name}" no es una imagen válida.`;
+      }
 
-    return null;
-  };
+      return null;
+    };
 
-  // ======================================================
-  // AGREGAR IMÁGENES PRINCIPALES
-  // ======================================================
 
-  const handlePreviewImagenes = async (files) => {
-    setError("");
-    setMensaje("");
+  /* ======================================================
+     PRINCIPALES
+  ====================================================== */
 
-    const originales =
-      Array.from(files || []);
+  const handlePreviewImagenes =
+    async (files) => {
+      setError("");
+      setMensaje("");
 
-    if (originales.length === 0) {
-      return;
-    }
 
-    let nuevos;
-
-    try {
-
-      setLoading(
-        true
-      );
-
-      nuevos =
-        await optimizarArchivos(
-          originales
+      const originales =
+        Array.from(
+          files || []
         );
 
-    } catch (error) {
 
-      setError(
-        error.message ||
-          "No se pudieron preparar las imágenes."
-      );
-
-      return;
-
-    } finally {
-
-      setLoading(
-        false
-      );
-
-    }
-
-    const total =
-      imagenesExistentes.length +
-      imagenes.length +
-      nuevos.length;
-
-    if (total > MAX_IMAGENES) {
-      setError(
-        `Puedes tener un máximo de ${MAX_IMAGENES} imágenes principales.`
-      );
-      return;
-    }
-
-    for (const file of nuevos) {
-      const problema =
-        validarArchivo(file);
-
-      if (problema) {
-        setError(problema);
+      if (
+        originales.length ===
+        0
+      ) {
         return;
       }
-    }
 
-    const previews = nuevos.map(
-      (file) => ({
-        file,
-        url: URL.createObjectURL(file),
-      })
-    );
 
-    setImagenes((prev) => [
-      ...prev,
-      ...nuevos,
-    ]);
+      let nuevos;
 
-    setPreviewImagenes((prev) => [
-      ...prev,
-      ...previews,
-    ]);
-  };
-
-  // ======================================================
-  // AGREGAR GALERÍA
-  // ======================================================
-
-  const handlePreviewGaleria = async (files) => {
-    setError("");
-    setMensaje("");
-
-    const originales =
-      Array.from(files || []);
-
-    if (originales.length === 0) {
-      return;
-    }
-
-    let nuevos;
-
-    try {
-
-      setLoading(
-        true
-      );
-
-      nuevos =
-        await optimizarArchivos(
-          originales
-        );
-
-    } catch (error) {
-
-      setError(
-        error.message ||
-          "No se pudieron preparar las imágenes."
-      );
-
-      return;
-
-    } finally {
-
-      setLoading(
-        false
-      );
-
-    }
-
-    const total =
-      galeriaExistente.length +
-      galeria.length +
-      nuevos.length;
-
-    if (total > MAX_GALERIA) {
-      setError(
-        `Puedes tener un máximo de ${MAX_GALERIA} imágenes en diseños relacionados.`
-      );
-      return;
-    }
-
-    for (const file of nuevos) {
-      const problema =
-        validarArchivo(file);
-
-      if (problema) {
-        setError(problema);
-        return;
-      }
-    }
-
-    const previews = nuevos.map(
-      (file) => ({
-        file,
-        url: URL.createObjectURL(file),
-      })
-    );
-
-    setGaleria((prev) => [
-      ...prev,
-      ...nuevos,
-    ]);
-
-    setPreviewGaleria((prev) => [
-      ...prev,
-      ...previews,
-    ]);
-  };
-
-  // ======================================================
-  // ELIMINAR NUEVA IMAGEN PRINCIPAL
-  // ======================================================
-
-  const eliminarNuevaImagen = (index) => {
-    const preview =
-      previewImagenes[index];
-
-    if (preview?.url) {
-      URL.revokeObjectURL(preview.url);
-    }
-
-    setImagenes((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
-
-    setPreviewImagenes((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
-  };
-
-  // ======================================================
-  // ELIMINAR NUEVA GALERÍA
-  // ======================================================
-
-  const eliminarNuevaGaleria = (index) => {
-    const preview =
-      previewGaleria[index];
-
-    if (preview?.url) {
-      URL.revokeObjectURL(preview.url);
-    }
-
-    setGaleria((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
-
-    setPreviewGaleria((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
-  };
-
-  // ======================================================
-  // ELIMINAR IMAGEN EXISTENTE
-  // ======================================================
-
-  const eliminarImg = (url, tipoImagen) => {
-    if (tipoImagen === "main") {
-      setImagenesExistentes((prev) =>
-        prev.filter((i) => i !== url)
-      );
-    } else {
-      setGaleriaExistente((prev) =>
-        prev.filter((i) => i !== url)
-      );
-    }
-  };
-
-  // ======================================================
-  // CLOUDINARY
-  // ======================================================
-
-  const subirImagen = async (file) => {
-    const formData =
-      new FormData();
-
-    formData.append(
-      "file",
-      file
-    );
-
-    formData.append(
-      "upload_preset",
-      "wealth"
-    );
-
-    const res = await fetch(
-      "https://api.cloudinary.com/v1_1/dxj4iczvk/image/upload",
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    if (!res.ok) {
-      let detalle = "";
 
       try {
+        setLoading(true);
 
-        const errorData =
-          await res.json();
+        nuevos =
+          await optimizarArchivos(
+            originales
+          );
 
-        detalle =
-          errorData?.error?.message ||
-          "";
+      } catch (uploadError) {
+        setError(
+          uploadError.message ||
+          "No se pudieron preparar las imágenes."
+        );
 
-      } catch {
-        // Cloudinary no devolvió JSON.
+        return;
+
+      } finally {
+        setLoading(false);
       }
 
-      throw new Error(
-        detalle
-          ? `No se pudo subir "${file.name}": ${detalle}`
-          : `No se pudo subir "${file.name}".`
-      );
-    }
 
-    const data =
-      await res.json();
+      const total =
+        imagenesExistentes.length +
+        imagenes.length +
+        nuevos.length;
 
-    if (!data.secure_url) {
-      throw new Error(
-        "Cloudinary no devolvió la URL de la imagen."
-      );
-    }
 
-    return data.secure_url;
-  };
+      if (
+        total >
+        MAX_IMAGENES
+      ) {
+        setError(
+          `Puedes tener un máximo de ${MAX_IMAGENES} imágenes principales.`
+        );
 
-  // ======================================================
-  // LIMPIAR FORMULARIO
-  // ======================================================
+        return;
+      }
 
-  const limpiarFormulario = () => {
-    previewImagenes.forEach((item) => {
-      URL.revokeObjectURL(item.url);
-    });
 
-    previewGaleria.forEach((item) => {
-      URL.revokeObjectURL(item.url);
-    });
+      for (
+        const file of nuevos
+      ) {
+        const problema =
+          validarArchivo(
+            file
+          );
 
-    setNombre("");
-    setDescripcion("");
+        if (problema) {
+          setError(
+            problema
+          );
 
-    setCategoria(
-      "Construcciones"
-    );
+          return;
+        }
+      }
 
-    setTipo(
-      "Residencial"
-    );
 
-    setUbicacion("");
+      const previews =
+        nuevos.map(
+          (file) => ({
+            file,
 
-    setDestacado(false);
+            url:
+              URL.createObjectURL(
+                file
+              ),
+          })
+        );
 
-    setImagenes([]);
-    setGaleria([]);
 
-    setPreviewImagenes([]);
-    setPreviewGaleria([]);
-
-    setImagenesExistentes([]);
-    setGaleriaExistente([]);
-
-    setEditId(null);
-
-    setError("");
-  };
-
-  // ======================================================
-  // CANCELAR EDICIÓN
-  // ======================================================
-
-  const cancelarEdicion = () => {
-    limpiarFormulario();
-
-    setMensaje(
-      "Edición cancelada."
-    );
-  };
-
-  // ======================================================
-  // VALIDAR FORMULARIO
-  // ======================================================
-
-  const validarFormulario = () => {
-    setError("");
-
-    if (!nombre.trim()) {
-      setError(
-        "Escribe el nombre del proyecto."
+      setImagenes(
+        (prev) => [
+          ...prev,
+          ...nuevos,
+        ]
       );
 
-      return false;
-    }
 
-    if (
-      nombre.trim().length < 3
-    ) {
-      setError(
-        "El nombre del proyecto es demasiado corto."
+      setPreviewImagenes(
+        (prev) => [
+          ...prev,
+          ...previews,
+        ]
       );
+    };
 
-      return false;
-    }
 
-    if (!descripcion.trim()) {
-      setError(
-        "Escribe una descripción del proyecto."
-      );
+  /* ======================================================
+     GALERÍA
+  ====================================================== */
 
-      return false;
-    }
-
-    if (
-      descripcion.trim().length < 10
-    ) {
-      setError(
-        "La descripción debe contener al menos 10 caracteres."
-      );
-
-      return false;
-    }
-
-    const totalImagenes =
-      imagenesExistentes.length +
-      imagenes.length;
-
-    if (totalImagenes === 0) {
-      setError(
-        "Agrega al menos una imagen principal del proyecto."
-      );
-
-      return false;
-    }
-
-    return true;
-  };
-
-  // ======================================================
-  // CREATE / UPDATE
-  // ======================================================
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setMensaje("");
-
-    if (!validarFormulario()) {
-      return;
-    }
-
-    try {
-      setLoading(true);
+  const handlePreviewGaleria =
+    async (files) => {
       setError("");
+      setMensaje("");
 
-      // ================================================
-      // SUBIR NUEVAS IMÁGENES
-      // ================================================
 
-      const urls =
-        imagenes.length > 0
-          ? await Promise.all(
-              imagenes.map(subirImagen)
-            )
-          : [];
-
-      const galeriaUrls =
-        galeria.length > 0
-          ? await Promise.all(
-              galeria.map(subirImagen)
-            )
-          : [];
-
-      // ================================================
-      // COMBINAR VIEJAS + NUEVAS
-      // ================================================
-
-      const imagenesFinales = [
-        ...imagenesExistentes,
-        ...urls,
-      ];
-
-      const galeriaFinal = [
-        ...galeriaExistente,
-        ...galeriaUrls,
-      ];
-
-      // ================================================
-      // DATOS
-      // ================================================
-
-      const datos = {
-        nombre:
-          nombre.trim(),
-
-        descripcion:
-          descripcion.trim(),
-
-        categoria,
-
-        tipo,
-
-        ubicacion:
-          ubicacion.trim(),
-
-        destacado,
-
-        imagenes:
-          imagenesFinales,
-
-        // Primera imagen = portada
-        imagen:
-          imagenesFinales[0] ||
-          "",
-
-        galeria:
-          galeriaFinal,
-
-        fechaActualizacion:
-          serverTimestamp(),
-      };
-
-      // ================================================
-      // EDITAR
-      // ================================================
-
-      if (editId) {
-        await updateDoc(
-          doc(
-            db,
-            "proyectos",
-            editId
-          ),
-          datos
+      const originales =
+        Array.from(
+          files || []
         );
 
-        setMensaje(
-          "✅ Proyecto actualizado correctamente."
+
+      if (
+        originales.length ===
+        0
+      ) {
+        return;
+      }
+
+
+      let nuevos;
+
+
+      try {
+        setLoading(true);
+
+        nuevos =
+          await optimizarArchivos(
+            originales
+          );
+
+      } catch (uploadError) {
+        setError(
+          uploadError.message ||
+          "No se pudieron preparar las capturas."
+        );
+
+        return;
+
+      } finally {
+        setLoading(false);
+      }
+
+
+      const total =
+        galeriaExistente.length +
+        galeria.length +
+        nuevos.length;
+
+
+      if (
+        total >
+        MAX_GALERIA
+      ) {
+        setError(
+          `Puedes tener un máximo de ${MAX_GALERIA} imágenes adicionales.`
+        );
+
+        return;
+      }
+
+
+      for (
+        const file of nuevos
+      ) {
+        const problema =
+          validarArchivo(
+            file
+          );
+
+        if (problema) {
+          setError(
+            problema
+          );
+
+          return;
+        }
+      }
+
+
+      const previews =
+        nuevos.map(
+          (file) => ({
+            file,
+
+            url:
+              URL.createObjectURL(
+                file
+              ),
+          })
+        );
+
+
+      setGaleria(
+        (prev) => [
+          ...prev,
+          ...nuevos,
+        ]
+      );
+
+
+      setPreviewGaleria(
+        (prev) => [
+          ...prev,
+          ...previews,
+        ]
+      );
+    };
+
+
+  /* ======================================================
+     ELIMINAR NUEVAS
+  ====================================================== */
+
+  const eliminarNuevaImagen =
+    (index) => {
+      const preview =
+        previewImagenes[
+          index
+        ];
+
+
+      if (
+        preview?.url
+      ) {
+        URL.revokeObjectURL(
+          preview.url
         );
       }
 
-      // ================================================
-      // NUEVO
-      // ================================================
 
-      else {
-        await addDoc(
-          collection(
-            db,
-            "proyectos"
-          ),
+      setImagenes(
+        (prev) =>
+          prev.filter(
+            (_, i) =>
+              i !== index
+          )
+      );
+
+
+      setPreviewImagenes(
+        (prev) =>
+          prev.filter(
+            (_, i) =>
+              i !== index
+          )
+      );
+    };
+
+
+  const eliminarNuevaGaleria =
+    (index) => {
+      const preview =
+        previewGaleria[
+          index
+        ];
+
+
+      if (
+        preview?.url
+      ) {
+        URL.revokeObjectURL(
+          preview.url
+        );
+      }
+
+
+      setGaleria(
+        (prev) =>
+          prev.filter(
+            (_, i) =>
+              i !== index
+          )
+      );
+
+
+      setPreviewGaleria(
+        (prev) =>
+          prev.filter(
+            (_, i) =>
+              i !== index
+          )
+      );
+    };
+
+
+  /* ======================================================
+     ELIMINAR EXISTENTE
+  ====================================================== */
+
+  const eliminarImg =
+    (
+      url,
+      tipoImagen
+    ) => {
+      if (
+        tipoImagen ===
+        "main"
+      ) {
+        setImagenesExistentes(
+          (prev) =>
+            prev.filter(
+              (imagen) =>
+                imagen !== url
+            )
+        );
+
+        return;
+      }
+
+
+      setGaleriaExistente(
+        (prev) =>
+          prev.filter(
+            (imagen) =>
+              imagen !== url
+          )
+      );
+    };
+
+
+  /* ======================================================
+     CLOUDINARY
+  ====================================================== */
+
+  const subirImagen =
+    async (file) => {
+      const formData =
+        new FormData();
+
+
+      formData.append(
+        "file",
+        file
+      );
+
+
+      formData.append(
+        "upload_preset",
+        CLOUDINARY_UPLOAD_PRESET
+      );
+
+
+      const res =
+        await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+
           {
-            ...datos,
+            method:
+              "POST",
 
-            fecha:
-              serverTimestamp(),
+            body:
+              formData,
           }
         );
 
-        setMensaje(
-          "✅ Proyecto publicado correctamente."
+
+      if (!res.ok) {
+        let detalle =
+          "";
+
+
+        try {
+          const errorData =
+            await res.json();
+
+          detalle =
+            errorData
+              ?.error
+              ?.message ||
+            "";
+
+        } catch {
+          // ignorar
+        }
+
+
+        throw new Error(
+          detalle
+            ? `No se pudo subir "${file.name}": ${detalle}`
+            : `No se pudo subir "${file.name}".`
         );
       }
 
+
+      const data =
+        await res.json();
+
+
+      if (
+        !data.secure_url
+      ) {
+        throw new Error(
+          "Cloudinary no devolvió la URL de la imagen."
+        );
+      }
+
+
+      return data.secure_url;
+    };
+
+
+  /* ======================================================
+     LIMPIAR FORMULARIO
+  ====================================================== */
+
+  const limpiarFormulario =
+    () => {
+      previewImagenes.forEach(
+        (item) => {
+          URL.revokeObjectURL(
+            item.url
+          );
+        }
+      );
+
+
+      previewGaleria.forEach(
+        (item) => {
+          URL.revokeObjectURL(
+            item.url
+          );
+        }
+      );
+
+
+      setNombre("");
+      setDescripcion("");
+
+      setTipo("web");
+
+      setCliente("");
+
+      setEstado(
+        "Finalizado"
+      );
+
+      setTecnologiasTexto("");
+
+      setUrlProyecto("");
+
+      setDestacado(false);
+
+
+      setPlataformaApp(
+        "Ambas"
+      );
+
+      setAppStoreUrl("");
+
+      setPlayStoreUrl("");
+
+
+      setCantidadCamaras("");
+
+      setTipoInstalacion("");
+
+
+      setTipoCampana("");
+
+      setPlataformasPublicidad("");
+
+
+      setImagenes([]);
+
+      setGaleria([]);
+
+      setPreviewImagenes([]);
+
+      setPreviewGaleria([]);
+
+      setImagenesExistentes([]);
+
+      setGaleriaExistente([]);
+
+      setEditId(null);
+
+      setError("");
+    };
+
+
+  /* ======================================================
+     CANCELAR EDICIÓN
+  ====================================================== */
+
+  const cancelarEdicion =
+    () => {
       limpiarFormulario();
 
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    } catch (error) {
-      console.error(
-        "Error guardando proyecto:",
-        error
+      setMensaje(
+        "Edición cancelada."
       );
+    };
 
-      setError(
-        error.message ||
+
+  /* ======================================================
+     VALIDAR
+  ====================================================== */
+
+  const validarFormulario =
+    () => {
+      setError("");
+
+
+      if (
+        nombre.trim().length <
+        3
+      ) {
+        setError(
+          "Escribe un nombre válido para el proyecto."
+        );
+
+        return false;
+      }
+
+
+      if (
+        descripcion
+          .trim()
+          .length <
+        10
+      ) {
+        setError(
+          "La descripción debe tener al menos 10 caracteres."
+        );
+
+        return false;
+      }
+
+
+      const totalImagenes =
+        imagenesExistentes.length +
+        imagenes.length;
+
+
+      if (
+        totalImagenes ===
+        0
+      ) {
+        setError(
+          "Agrega al menos una imagen principal del proyecto."
+        );
+
+        return false;
+      }
+
+
+      return true;
+    };
+
+
+  /* ======================================================
+     TECNOLOGÍAS ARRAY
+  ====================================================== */
+
+  const obtenerTecnologias =
+    () => {
+      return tecnologiasTexto
+        .split(",")
+        .map(
+          (item) =>
+            item.trim()
+        )
+        .filter(Boolean);
+    };
+
+
+  /* ======================================================
+     NOMBRE CATEGORÍA
+  ====================================================== */
+
+  const obtenerNombreTipo =
+    (tipoProyecto) => {
+      return (
+        tiposProyecto.find(
+          (item) =>
+            item.value ===
+            tipoProyecto
+        )?.label ||
+        "Otro"
+      );
+    };
+
+
+  /* ======================================================
+     CREATE / UPDATE
+  ====================================================== */
+
+  const handleSubmit =
+    async (e) => {
+      e.preventDefault();
+
+      setMensaje("");
+
+
+      if (
+        !validarFormulario()
+      ) {
+        return;
+      }
+
+
+      try {
+        setLoading(true);
+
+        setError("");
+
+
+        /* =====================================
+           SUBIR IMÁGENES
+        ===================================== */
+
+        const urls =
+          imagenes.length >
+          0
+            ? await Promise.all(
+                imagenes.map(
+                  subirImagen
+                )
+              )
+            : [];
+
+
+        const galeriaUrls =
+          galeria.length >
+          0
+            ? await Promise.all(
+                galeria.map(
+                  subirImagen
+                )
+              )
+            : [];
+
+
+        const imagenesFinales = [
+          ...imagenesExistentes,
+          ...urls,
+        ];
+
+
+        const galeriaFinal = [
+          ...galeriaExistente,
+          ...galeriaUrls,
+        ];
+
+
+        /* =====================================
+           BASE
+        ===================================== */
+
+        const datos = {
+          nombre:
+            nombre.trim(),
+
+          descripcion:
+            descripcion.trim(),
+
+          tipo,
+
+          categoria:
+            obtenerNombreTipo(
+              tipo
+            ),
+
+          cliente:
+            cliente.trim(),
+
+          estado,
+
+          tecnologias:
+            obtenerTecnologias(),
+
+          urlProyecto:
+            urlProyecto.trim(),
+
+          destacado,
+
+          imagenes:
+            imagenesFinales,
+
+          imagen:
+            imagenesFinales[0] ||
+            "",
+
+          galeria:
+            galeriaFinal,
+
+          fechaActualizacion:
+            serverTimestamp(),
+        };
+
+
+        /* =====================================
+           DATOS APP
+        ===================================== */
+
+        if (
+          tipo ===
+          "app"
+        ) {
+          datos.plataforma =
+            plataformaApp;
+
+          datos.appStoreUrl =
+            appStoreUrl.trim();
+
+          datos.playStoreUrl =
+            playStoreUrl.trim();
+        }
+
+
+        /* =====================================
+           CÁMARAS
+        ===================================== */
+
+        if (
+          tipo ===
+          "camaras"
+        ) {
+          datos.cantidadCamaras =
+            cantidadCamaras
+              ? Number(
+                  cantidadCamaras
+                )
+              : 0;
+
+          datos.tipoInstalacion =
+            tipoInstalacion.trim();
+        }
+
+
+        /* =====================================
+           PUBLICIDAD
+        ===================================== */
+
+        if (
+          tipo ===
+          "publicidad"
+        ) {
+          datos.tipoCampana =
+            tipoCampana.trim();
+
+          datos.plataformasPublicidad =
+            plataformasPublicidad.trim();
+        }
+
+
+        /* =====================================
+           EDITAR
+        ===================================== */
+
+        if (editId) {
+          await updateDoc(
+            doc(
+              db,
+              "proyectos",
+              editId
+            ),
+
+            datos
+          );
+
+
+          setMensaje(
+            "Proyecto actualizado correctamente."
+          );
+        }
+
+
+        /* =====================================
+           NUEVO
+        ===================================== */
+
+        else {
+          await addDoc(
+            collection(
+              db,
+              "proyectos"
+            ),
+
+            {
+              ...datos,
+
+              fechaCreacion:
+                serverTimestamp(),
+
+              fecha:
+                serverTimestamp(),
+            }
+          );
+
+
+          setMensaje(
+            "Proyecto publicado correctamente en Macro."
+          );
+        }
+
+
+        limpiarFormulario();
+
+
+        window.scrollTo({
+          top: 0,
+
+          behavior:
+            "smooth",
+        });
+
+      } catch (firebaseError) {
+        console.error(
+          "Error guardando proyecto:",
+          firebaseError
+        );
+
+
+        setError(
+          firebaseError.message ||
           "No se pudo guardar el proyecto."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+        );
 
-  // ======================================================
-  // EDITAR
-  // ======================================================
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleEdit = (p) => {
-    setMensaje("");
-    setError("");
 
-    setEditId(p.id);
+  /* ======================================================
+     EDITAR
+  ====================================================== */
 
-    setNombre(
-      p.nombre || ""
-    );
+  const handleEdit =
+    (proyecto) => {
+      setMensaje("");
+      setError("");
 
-    setDescripcion(
-      p.descripcion || ""
-    );
 
-    setCategoria(
-      p.categoria ||
-        "Construcciones"
-    );
-
-    setTipo(
-      p.tipo ||
-        "Residencial"
-    );
-
-    setUbicacion(
-      p.ubicacion || ""
-    );
-
-    setDestacado(
-      Boolean(p.destacado)
-    );
-
-    setImagenesExistentes(
-      Array.isArray(p.imagenes)
-        ? p.imagenes
-        : p.imagen
-        ? [p.imagen]
-        : []
-    );
-
-    setGaleriaExistente(
-      Array.isArray(p.galeria)
-        ? p.galeria
-        : []
-    );
-
-    setImagenes([]);
-    setGaleria([]);
-
-    setPreviewImagenes([]);
-    setPreviewGaleria([]);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  // ======================================================
-  // ELIMINAR PROYECTO
-  // ======================================================
-
-  const handleDelete = async (id) => {
-    const proyecto =
-      proyectos.find(
-        (p) => p.id === id
+      setEditId(
+        proyecto.id
       );
 
-    const ok =
-      window.confirm(
-        `¿Eliminar "${
-          proyecto?.nombre ||
-          "este proyecto"
-        }" definitivamente?`
+
+      setNombre(
+        proyecto.nombre ||
+        ""
       );
 
-    if (!ok) return;
 
-    try {
-      await deleteDoc(
-        doc(
-          db,
-          "proyectos",
-          id
+      setDescripcion(
+        proyecto.descripcion ||
+        ""
+      );
+
+
+      setTipo(
+        proyecto.tipo ||
+        "web"
+      );
+
+
+      setCliente(
+        proyecto.cliente ||
+        ""
+      );
+
+
+      setEstado(
+        proyecto.estado ||
+        "Finalizado"
+      );
+
+
+      setTecnologiasTexto(
+        Array.isArray(
+          proyecto.tecnologias
+        )
+          ? proyecto.tecnologias.join(
+              ", "
+            )
+          : proyecto.tecnologias ||
+            ""
+      );
+
+
+      setUrlProyecto(
+        proyecto.urlProyecto ||
+        proyecto.url ||
+        ""
+      );
+
+
+      setDestacado(
+        Boolean(
+          proyecto.destacado
         )
       );
 
-      if (editId === id) {
-        limpiarFormulario();
+
+      setPlataformaApp(
+        proyecto.plataforma ||
+        "Ambas"
+      );
+
+
+      setAppStoreUrl(
+        proyecto.appStoreUrl ||
+        ""
+      );
+
+
+      setPlayStoreUrl(
+        proyecto.playStoreUrl ||
+        ""
+      );
+
+
+      setCantidadCamaras(
+        proyecto.cantidadCamaras ||
+        ""
+      );
+
+
+      setTipoInstalacion(
+        proyecto.tipoInstalacion ||
+        ""
+      );
+
+
+      setTipoCampana(
+        proyecto.tipoCampana ||
+        ""
+      );
+
+
+      setPlataformasPublicidad(
+        proyecto.plataformasPublicidad ||
+        ""
+      );
+
+
+      setImagenesExistentes(
+        Array.isArray(
+          proyecto.imagenes
+        )
+          ? proyecto.imagenes
+          : proyecto.imagen
+          ? [
+              proyecto.imagen,
+            ]
+          : []
+      );
+
+
+      setGaleriaExistente(
+        Array.isArray(
+          proyecto.galeria
+        )
+          ? proyecto.galeria
+          : []
+      );
+
+
+      setImagenes([]);
+      setGaleria([]);
+
+      setPreviewImagenes([]);
+      setPreviewGaleria([]);
+
+
+      window.scrollTo({
+        top: 0,
+
+        behavior:
+          "smooth",
+      });
+    };
+
+
+  /* ======================================================
+     ELIMINAR
+  ====================================================== */
+
+  const handleDelete =
+    async (id) => {
+      const proyecto =
+        proyectos.find(
+          (item) =>
+            item.id === id
+        );
+
+
+      const ok =
+        window.confirm(
+          `¿Eliminar "${
+            proyecto?.nombre ||
+            "este proyecto"
+          }" definitivamente?`
+        );
+
+
+      if (!ok) {
+        return;
       }
-    } catch (error) {
-      console.error(
-        "Error eliminando proyecto:",
-        error
-      );
 
-      setError(
-        "No se pudo eliminar el proyecto."
-      );
-    }
-  };
 
-  // ======================================================
-  // FILTRAR PROYECTOS
-  // ======================================================
+      try {
+        await deleteDoc(
+          doc(
+            db,
+            "proyectos",
+            id
+          )
+        );
+
+
+        if (
+          editId === id
+        ) {
+          limpiarFormulario();
+        }
+
+      } catch (firebaseError) {
+        console.error(
+          "Error eliminando proyecto:",
+          firebaseError
+        );
+
+
+        setError(
+          "No se pudo eliminar el proyecto."
+        );
+      }
+    };
+
+
+  /* ======================================================
+     FILTRADOS
+  ====================================================== */
 
   const proyectosFiltrados =
     useMemo(() => {
@@ -1301,18 +1879,27 @@ function SubirProyecto() {
           .trim()
           .toLowerCase();
 
+
       return proyectos.filter(
-        (p) => {
+        (proyecto) => {
           const contenido = [
-            p.nombre,
-            p.descripcion,
-            p.categoria,
-            p.tipo,
-            p.ubicacion,
+            proyecto.nombre,
+            proyecto.descripcion,
+            proyecto.categoria,
+            proyecto.tipo,
+            proyecto.cliente,
+            proyecto.estado,
+
+            ...(Array.isArray(
+              proyecto.tecnologias
+            )
+              ? proyecto.tecnologias
+              : []),
           ]
             .filter(Boolean)
             .join(" ")
             .toLowerCase();
+
 
           const coincideBusqueda =
             !texto ||
@@ -1320,220 +1907,506 @@ function SubirProyecto() {
               texto
             );
 
-          const coincideCategoria =
-            filtro === "Todos" ||
-            p.categoria === filtro;
+
+          const coincideTipo =
+            filtro === "todos" ||
+            proyecto.tipo ===
+              filtro;
+
 
           return (
             coincideBusqueda &&
-            coincideCategoria
+            coincideTipo
           );
         }
       );
+
     }, [
       proyectos,
       busqueda,
       filtro,
     ]);
 
-  // ======================================================
-  // CONTADORES
-  // ======================================================
+
+  /* ======================================================
+     CONTADORES
+  ====================================================== */
 
   const totalPrincipales =
     imagenesExistentes.length +
     imagenes.length;
 
+
   const totalGaleria =
     galeriaExistente.length +
     galeria.length;
 
-  // ======================================================
-  // RENDER
-  // ======================================================
+
+  /* ======================================================
+     RENDER
+  ====================================================== */
 
   return (
     <div
-      className={`min-h-screen px-4 sm:px-6 py-8 md:py-12 transition-colors duration-300 ${
-        modoOscuro
-          ? "bg-black text-white"
-          : "bg-gray-50 text-gray-900"
-      }`}
+      className={`
+        min-h-screen
+
+        px-4
+        sm:px-6
+
+        py-8
+        md:py-12
+
+        transition-colors
+
+        ${
+          modoOscuro
+            ? `
+              bg-slate-950
+              text-white
+            `
+            : `
+              bg-[#f7fcff]
+              text-slate-900
+            `
+        }
+      `}
     >
 
-      {/* ================================================= */}
-      {/* HEADER */}
-      {/* ================================================= */}
+      <div
+        className="
+          max-w-7xl
+          mx-auto
+        "
+      >
 
-      <div className="max-w-7xl mx-auto">
+        {/* ================================================= */}
+        {/* HEADER */}
+        {/* ================================================= */}
 
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 mb-9">
+        <div
+          className="
+            flex
+            flex-col
 
-          <div className="flex items-center gap-4">
+            lg:flex-row
+            lg:items-center
+            lg:justify-between
+
+            gap-5
+
+            mb-9
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-4
+            "
+          >
 
             <div
               className="
                 w-14
                 h-14
+
                 rounded-2xl
-                bg-yellow-500/10
-                border
-                border-yellow-500/20
+
+                bg-gradient-to-br
+                from-sky-400
+                to-blue-500
+
+                text-white
+
                 flex
                 items-center
                 justify-center
+
                 shrink-0
+
+                shadow-lg
+                shadow-sky-200/30
               "
             >
-              <FaFolderOpen className="text-yellow-500 text-2xl" />
+
+              <FaLaptopCode
+                size={23}
+              />
+
             </div>
+
 
             <div>
 
-              <p className="text-xs uppercase tracking-[0.25em] text-yellow-500 font-semibold">
-                Administración
+              <p
+                className="
+                  text-xs
+
+                  uppercase
+                  tracking-[0.25em]
+
+                  text-sky-500
+
+                  font-bold
+                "
+              >
+
+                Macro Admin
+
               </p>
 
-              <h1 className="text-3xl md:text-4xl font-bold mt-1">
-                Panel de Proyectos
+
+              <h1
+                className="
+                  text-3xl
+                  md:text-4xl
+
+                  font-black
+
+                  mt-1
+                "
+              >
+
+                Proyectos
+
               </h1>
 
-              <p className="text-zinc-500 mt-1">
-                Administra el catálogo público de Wealth.
+
+              <p
+                className="
+                  text-slate-500
+
+                  mt-1
+                "
+              >
+
+                Crea y administra el portafolio tecnológico de Macro.
+
               </p>
 
             </div>
 
           </div>
 
+
           <button
             type="button"
             onClick={() =>
-              navigate("/proyectos")
+              navigate("/")
             }
-            className={`${botonBase(modoOscuro)} ${modoOscuro ? "border-zinc-600 text-zinc-300" : "border-gray-300 text-gray-700"} hover:border-yellow-500/60 hover:text-yellow-500`}
+            className={botonSecundario(
+              modoOscuro
+            )}
           >
-            <FaBuilding />
 
-            Ver proyectos
+            <FaGlobe />
+
+            Ver página pública
 
             <FaArrowRight />
+
           </button>
 
         </div>
 
+
         {/* ================================================= */}
-        {/* MENSAJES */}
+        {/* ALERTAS */}
         {/* ================================================= */}
 
         {error && (
-          <div className="mb-6 bg-red-500/5 border border-red-500/30 text-red-300 px-5 py-4 rounded-2xl flex items-start gap-3">
 
-            <FaExclamationTriangle className="mt-1 shrink-0" />
+          <div
+            className="
+              mb-6
+
+              bg-red-50
+              border
+              border-red-200
+
+              text-red-600
+
+              px-5
+              py-4
+
+              rounded-2xl
+
+              flex
+              items-start
+              gap-3
+            "
+          >
+
+            <FaExclamationTriangle className="mt-0.5 shrink-0" />
 
             <span>
               {error}
             </span>
 
           </div>
+
         )}
 
-        {mensaje && (
-          <div className="mb-6 bg-green-500/5 border border-green-500/30 text-green-300 px-5 py-4 rounded-2xl flex items-start gap-3">
 
-            <FaCheckCircle className="mt-1 shrink-0" />
+        {mensaje && (
+
+          <div
+            className="
+              mb-6
+
+              bg-emerald-50
+              border
+              border-emerald-200
+
+              text-emerald-600
+
+              px-5
+              py-4
+
+              rounded-2xl
+
+              flex
+              items-start
+              gap-3
+            "
+          >
+
+            <FaCheckCircle className="mt-0.5 shrink-0" />
 
             <span>
               {mensaje}
             </span>
 
           </div>
+
         )}
+
 
         {/* ================================================= */}
         {/* EDITANDO */}
         {/* ================================================= */}
 
         {editId && (
-          <div className="mb-6 bg-blue-500/5 border border-blue-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
-            <div className="flex items-center gap-3">
+          <div
+            className="
+              mb-6
 
-              <FaEdit className="text-blue-400" />
+              bg-blue-50
+              border
+              border-blue-200
+
+              rounded-2xl
+
+              p-5
+
+              flex
+              flex-col
+              sm:flex-row
+
+              sm:items-center
+              justify-between
+
+              gap-4
+            "
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                gap-3
+              "
+            >
+
+              <FaEdit
+                className="
+                  text-blue-500
+                "
+              />
+
 
               <div>
 
-                <p className={modoOscuro ? "font-bold text-white" : "font-bold text-gray-900"}>
+                <p
+                  className="
+                    font-bold
+                    text-slate-900
+                  "
+                >
+
                   Editando proyecto
+
                 </p>
 
-                <p className="text-sm text-zinc-400">
+
+                <p
+                  className="
+                    text-sm
+                    text-slate-500
+                  "
+                >
+
                   {nombre}
+
                 </p>
 
               </div>
 
             </div>
+
 
             <button
               type="button"
               onClick={
                 cancelarEdicion
               }
-              className={`${botonBase(modoOscuro)} border-zinc-600 text-zinc-300 hover:border-red-500/50 hover:text-red-400`}
+              className="
+                px-4
+                py-2.5
+
+                rounded-xl
+
+                bg-white
+
+                border
+                border-red-200
+
+                text-red-500
+
+                font-semibold
+
+                flex
+                items-center
+                justify-center
+                gap-2
+              "
             >
+
               <FaTimes />
 
               Cancelar edición
+
             </button>
 
           </div>
+
         )}
 
+
         {/* ================================================= */}
-        {/* FORMULARIO */}
+        {/* FORM */}
         {/* ================================================= */}
 
         <div
           className={`
-            border
             rounded-[30px]
+
             overflow-hidden
-            shadow-2xl
+
+            border
+
+            shadow-xl
+
             ${
               modoOscuro
-                ? "bg-zinc-950 border-zinc-700"
-                : "bg-white border-gray-200 shadow-gray-200/70"
+                ? `
+                  bg-slate-900
+                  border-slate-800
+                `
+                : `
+                  bg-white
+                  border-sky-100
+                  shadow-sky-100/50
+                `
             }
           `}
         >
 
-          {/* CABECERA FORMULARIO */}
+          {/* HEADER FORM */}
 
-          <div className={`p-6 md:p-8 border-b ${
-            modoOscuro ? "border-zinc-800" : "border-gray-200"
-          }`}>
+          <div
+            className={`
+              p-6
+              md:p-8
 
-            <div className="flex items-center gap-3">
+              border-b
 
-              <div className="w-11 h-11 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-                {editId ? (
-                  <FaEdit />
-                ) : (
-                  <FaPlus />
-                )}
+              ${
+                modoOscuro
+                  ? "border-slate-800"
+                  : "border-sky-100"
+              }
+            `}
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                gap-3
+              "
+            >
+
+              <div
+                className="
+                  w-11
+                  h-11
+
+                  rounded-xl
+
+                  bg-sky-50
+                  border
+                  border-sky-100
+
+                  text-sky-500
+
+                  flex
+                  items-center
+                  justify-center
+                "
+              >
+
+                {editId
+                  ? <FaEdit />
+                  : <FaPlus />
+                }
+
               </div>
+
 
               <div>
 
-                <h2 className="text-xl md:text-2xl font-bold">
+                <h2
+                  className="
+                    text-xl
+                    md:text-2xl
+
+                    font-bold
+                  "
+                >
+
                   {editId
                     ? "Editar proyecto"
-                    : "Nuevo proyecto"}
+                    : "Nuevo proyecto"
+                  }
+
                 </h2>
 
-                <p className={`text-sm mt-1 ${modoOscuro ? "text-zinc-500" : "text-gray-500"}`}>
-                  Completa la información que aparecerá en el catálogo.
+
+                <p
+                  className="
+                    text-sm
+                    text-slate-500
+
+                    mt-1
+                  "
+                >
+
+                  La información aparecerá en el portafolio público de Macro.
+
                 </p>
 
               </div>
@@ -1542,42 +2415,215 @@ function SubirProyecto() {
 
           </div>
 
+
           <form
-            onSubmit={handleSubmit}
-            className="p-6 md:p-8 lg:p-10 space-y-10"
+            onSubmit={
+              handleSubmit
+            }
+            className="
+              p-6
+              md:p-8
+              lg:p-10
+
+              space-y-10
+            "
           >
 
             {/* ================================================= */}
-            {/* INFORMACIÓN */}
+            {/* 01 TIPO */}
             {/* ================================================= */}
 
             <section>
 
               <TituloSeccion
                 numero="01"
-                titulo="Información del proyecto"
-                descripcion="Datos principales que verá el cliente."
+                titulo="Tipo de proyecto"
+                descripcion="Selecciona qué clase de solución tecnológica estás publicando."
               />
 
-              <div className="space-y-5 mt-6">
 
-                {/* NOMBRE */}
+              <div
+                className="
+                  grid
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+
+                  gap-3
+
+                  mt-6
+                "
+              >
+
+                {tiposProyecto.map(
+                  (item) => (
+
+                    <button
+                      key={
+                        item.value
+                      }
+                      type="button"
+                      onClick={() =>
+                        setTipo(
+                          item.value
+                        )
+                      }
+                      className={`
+                        p-4
+
+                        rounded-2xl
+
+                        border
+
+                        text-left
+
+                        flex
+                        items-center
+                        gap-3
+
+                        transition-all
+
+                        ${
+                          tipo ===
+                          item.value
+                            ? `
+                              bg-sky-50
+                              border-sky-400
+                              text-sky-700
+                              shadow-sm
+                            `
+                            : modoOscuro
+                            ? `
+                              bg-slate-950
+                              border-slate-700
+                              text-slate-300
+
+                              hover:border-sky-500/40
+                            `
+                            : `
+                              bg-white
+                              border-slate-200
+                              text-slate-600
+
+                              hover:border-sky-300
+                            `
+                        }
+                      `}
+                    >
+
+                      <div
+                        className={`
+                          w-10
+                          h-10
+
+                          rounded-xl
+
+                          flex
+                          items-center
+                          justify-center
+
+                          ${
+                            tipo ===
+                            item.value
+                              ? `
+                                bg-sky-400
+                                text-white
+                              `
+                              : `
+                                bg-sky-50
+                                text-sky-500
+                              `
+                          }
+                        `}
+                      >
+
+                        {item.icon}
+
+                      </div>
+
+
+                      <span
+                        className="
+                          font-semibold
+                          text-sm
+                        "
+                      >
+
+                        {item.label}
+
+                      </span>
+
+                    </button>
+
+                  )
+                )}
+
+              </div>
+
+            </section>
+
+
+            {/* ================================================= */}
+            {/* 02 INFORMACIÓN */}
+            {/* ================================================= */}
+
+            <section
+              className={`
+                border-t
+                pt-9
+
+                ${
+                  modoOscuro
+                    ? "border-slate-800"
+                    : "border-sky-100"
+                }
+              `}
+            >
+
+              <TituloSeccion
+                numero="02"
+                titulo="Información del proyecto"
+                descripcion="Datos principales que verá el público."
+              />
+
+
+              <div
+                className="
+                  space-y-5
+
+                  mt-6
+                "
+              >
 
                 <Campo
                   titulo="Nombre del proyecto"
-                  icon={<FaBuilding />}
+                  icon={<FaLaptopCode />}
                 >
+
                   <input
                     type="text"
-                    value={nombre}
+                    value={
+                      nombre
+                    }
                     onChange={(e) =>
                       setNombre(
                         e.target.value
                       )
                     }
                     maxLength={120}
-                    placeholder="Ej: Fachada residencial con herrería moderna"
-                    className={inputClass(modoOscuro)}
+                    placeholder={
+                      tipo === "web"
+                        ? "Ej. Página web para Restaurante Riviera"
+                        : tipo === "app"
+                        ? "Ej. Aplicación móvil de reservaciones"
+                        : tipo === "camaras"
+                        ? "Ej. Sistema de videovigilancia para oficina"
+                        : "Nombre del proyecto"
+                    }
+                    className={
+                      inputClass(
+                        modoOscuro
+                      )
+                    }
                   />
 
                   <ContadorTexto
@@ -1586,558 +2632,995 @@ function SubirProyecto() {
                     }
                     max={120}
                   />
+
                 </Campo>
 
-                {/* CATEGORIA + TIPO */}
 
-                <div className="grid md:grid-cols-2 gap-5">
+                <div
+                  className="
+                    grid
+                    md:grid-cols-2
+
+                    gap-5
+                  "
+                >
 
                   <Campo
-                    titulo="Categoría"
+                    titulo="Cliente"
                     icon={<FaTag />}
+                    opcional
                   >
-                    <select
-                      value={categoria}
+
+                    <input
+                      type="text"
+                      value={
+                        cliente
+                      }
                       onChange={(e) =>
-                        setCategoria(
+                        setCliente(
                           e.target.value
                         )
                       }
-                      className={inputClass(modoOscuro)}
-                    >
-                      {categorias.map(
-                        (cat) => (
-                          <option
-                            key={cat}
-                            value={cat}
-                          >
-                            {cat}
-                          </option>
+                      placeholder="Empresa o cliente"
+                      className={
+                        inputClass(
+                          modoOscuro
                         )
-                      )}
-                    </select>
+                      }
+                    />
+
                   </Campo>
 
+
                   <Campo
-                    titulo="Tipo de obra"
-                    icon={<FaHome />}
+                    titulo="Estado"
+                    icon={<FaCheckCircle />}
                   >
+
                     <select
-                      value={tipo}
+                      value={
+                        estado
+                      }
                       onChange={(e) =>
-                        setTipo(
+                        setEstado(
                           e.target.value
                         )
                       }
-                      className={inputClass(modoOscuro)}
+                      className={
+                        inputClass(
+                          modoOscuro
+                        )
+                      }
                     >
-                      {tiposObra.map(
-                        (tipoObra) => (
+
+                      {estadosProyecto.map(
+                        (item) => (
+
                           <option
                             key={
-                              tipoObra
+                              item
                             }
                             value={
-                              tipoObra
+                              item
                             }
                           >
-                            {tipoObra}
+
+                            {item}
+
                           </option>
+
                         )
                       )}
+
                     </select>
+
                   </Campo>
 
                 </div>
 
-                {/* UBICACIÓN */}
-
-                <Campo
-                  titulo="Ubicación del proyecto"
-                  icon={
-                    <FaMapMarkerAlt />
-                  }
-                  opcional
-                >
-                  <input
-                    type="text"
-                    value={ubicacion}
-                    onChange={(e) =>
-                      setUbicacion(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Ej: San Francisco de Campeche, Campeche"
-                    className={inputClass(modoOscuro)}
-                  />
-                </Campo>
-
-                {/* DESCRIPCIÓN */}
 
                 <Campo
                   titulo="Descripción"
-                  icon={
-                    <FaLayerGroup />
-                  }
+                  icon={<FaLayerGroup />}
                 >
+
                   <textarea
                     rows={6}
-                    value={descripcion}
+                    value={
+                      descripcion
+                    }
                     onChange={(e) =>
                       setDescripcion(
                         e.target.value
                       )
                     }
-                    maxLength={1200}
-                    placeholder="Describe el trabajo realizado, materiales, acabados, características principales..."
-                    className={inputClass(modoOscuro)}
+                    maxLength={1500}
+                    placeholder="Describe el proyecto, objetivo, características principales y solución desarrollada..."
+                    className={
+                      inputClass(
+                        modoOscuro
+                      )
+                    }
                   />
 
                   <ContadorTexto
                     actual={
                       descripcion.length
                     }
-                    max={1200}
+                    max={1500}
                   />
+
+                </Campo>
+
+
+                <Campo
+                  titulo="Tecnologías utilizadas"
+                  icon={<FaCode />}
+                  opcional
+                >
+
+                  <input
+                    type="text"
+                    value={
+                      tecnologiasTexto
+                    }
+                    onChange={(e) =>
+                      setTecnologiasTexto(
+                        e.target.value
+                      )
+                    }
+                    placeholder="React, Firebase, Node.js, Flutter..."
+                    className={
+                      inputClass(
+                        modoOscuro
+                      )
+                    }
+                  />
+
+                  <p
+                    className="
+                      text-xs
+                      text-slate-400
+
+                      mt-2
+                    "
+                  >
+
+                    Separa cada tecnología con una coma.
+
+                  </p>
+
                 </Campo>
 
               </div>
 
             </section>
 
+
             {/* ================================================= */}
-            {/* MULTIMEDIA */}
+            {/* 03 DATOS SEGÚN TIPO */}
             {/* ================================================= */}
 
-            <section className={`border-t pt-9 ${
-              modoOscuro ? "border-zinc-800" : "border-gray-200"
-            }`}>
+            <section
+              className={`
+                border-t
+                pt-9
+
+                ${
+                  modoOscuro
+                    ? "border-slate-800"
+                    : "border-sky-100"
+                }
+              `}
+            >
 
               <TituloSeccion
-                numero="02"
-                titulo="Multimedia"
-                descripcion="Agrega fotografías principales y diseños relacionados."
+                numero="03"
+                titulo="Detalles específicos"
+                descripcion={`Información adicional para ${obtenerNombreTipo(
+                  tipo
+                )}.`}
               />
 
-              {/* ================================================= */}
-              {/* PRINCIPALES */}
-              {/* ================================================= */}
 
-              <div className="mt-6">
+              <div
+                className="
+                  mt-6
+                  space-y-5
+                "
+              >
 
-                <div className="flex flex-wrap justify-between items-end gap-3 mb-3">
+                {/* WEB / SOFTWARE */}
 
-                  <div>
+                {[
+                  "web",
+                  "software",
+                ].includes(
+                  tipo
+                ) && (
 
-                    <p className="font-semibold flex items-center gap-2">
-                      <FaImage className="text-yellow-500" />
-                      Imágenes principales
-                    </p>
+                  <Campo
+                    titulo="URL del proyecto"
+                    icon={<FaLink />}
+                    opcional
+                  >
 
-                    <p className="text-xs text-zinc-500 mt-1">
-                      La primera imagen será utilizada como portada.
-                    </p>
-
-                  </div>
-
-                  <span className={`text-xs border px-3 py-1.5 rounded-full ${
-                    modoOscuro
-                      ? "bg-black border-zinc-700 text-zinc-400"
-                      : "bg-gray-50 border-gray-300 text-gray-600"
-                  }`}>
-                    {totalPrincipales}/{MAX_IMAGENES}
-                  </span>
-
-                </div>
-
-                <label
-                  className="
-                    block
-                    border-2
-                    border-dashed
-                    border-yellow-500/40
-                    hover:border-yellow-500
-                    bg-yellow-500/[0.03]
-                    hover:bg-yellow-500/[0.06]
-                    rounded-3xl
-                    p-8
-                    md:p-10
-                    text-center
-                    cursor-pointer
-                    transition-all
-                  "
-                >
-
-                  <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center mx-auto">
-
-                    <FaCloudUploadAlt className="text-yellow-500 text-2xl" />
-
-                  </div>
-
-                  <p className={`font-bold mt-4 ${modoOscuro ? "text-white" : "text-gray-900"}`}>
-                    Agregar imágenes del proyecto
-                  </p>
-
-                  <p className="text-sm text-zinc-500 mt-2">
-                    JPG, PNG o WEBP · Las fotos grandes se optimizan automáticamente
-                  </p>
-
-                  <p className="text-xs text-zinc-600 mt-1">
-                    Hasta {MAX_IMAGENES} imágenes · Máx. 3000 px al optimizar
-                  </p>
-
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files =
-                        e.target.files;
-
-                      await handlePreviewImagenes(
-                        files
-                      );
-
-                      e.target.value =
-                        "";
-                    }}
-                  />
-
-                </label>
-
-                {/* EXISTENTES */}
-
-                {imagenesExistentes.length >
-                  0 && (
-                  <div className="mt-5">
-
-                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
-                      Imágenes guardadas
-                    </p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-
-                      {imagenesExistentes.map(
-                        (img, i) => (
-                          <ImagenPreview
-                            key={img}
-                            src={img}
-                            etiqueta={
-                              i === 0
-                                ? "PORTADA"
-                                : "GUARDADA"
-                            }
-                            color="yellow"
-                            onDelete={() =>
-                              eliminarImg(
-                                img,
-                                "main"
-                              )
-                            }
-                          />
+                    <input
+                      type="url"
+                      value={
+                        urlProyecto
+                      }
+                      onChange={(e) =>
+                        setUrlProyecto(
+                          e.target.value
                         )
-                      )}
+                      }
+                      placeholder="https://www.ejemplo.com"
+                      className={
+                        inputClass(
+                          modoOscuro
+                        )
+                      }
+                    />
+
+                  </Campo>
+
+                )}
+
+
+                {/* APP */}
+
+                {tipo === "app" && (
+                  <>
+
+                    <Campo
+                      titulo="Plataforma"
+                      icon={<FaMobileAlt />}
+                    >
+
+                      <select
+                        value={
+                          plataformaApp
+                        }
+                        onChange={(e) =>
+                          setPlataformaApp(
+                            e.target.value
+                          )
+                        }
+                        className={
+                          inputClass(
+                            modoOscuro
+                          )
+                        }
+                      >
+
+                        <option>
+                          Ambas
+                        </option>
+
+                        <option>
+                          Android
+                        </option>
+
+                        <option>
+                          iOS
+                        </option>
+
+                      </select>
+
+                    </Campo>
+
+
+                    <div
+                      className="
+                        grid
+                        md:grid-cols-2
+
+                        gap-5
+                      "
+                    >
+
+                      <Campo
+                        titulo="Google Play"
+                        icon={<FaAndroid />}
+                        opcional
+                      >
+
+                        <input
+                          type="url"
+                          value={
+                            playStoreUrl
+                          }
+                          onChange={(e) =>
+                            setPlayStoreUrl(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Link de Google Play"
+                          className={
+                            inputClass(
+                              modoOscuro
+                            )
+                          }
+                        />
+
+                      </Campo>
+
+
+                      <Campo
+                        titulo="App Store"
+                        icon={<FaApple />}
+                        opcional
+                      >
+
+                        <input
+                          type="url"
+                          value={
+                            appStoreUrl
+                          }
+                          onChange={(e) =>
+                            setAppStoreUrl(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Link de App Store"
+                          className={
+                            inputClass(
+                              modoOscuro
+                            )
+                          }
+                        />
+
+                      </Campo>
 
                     </div>
+
+                  </>
+                )}
+
+
+                {/* CAMARAS */}
+
+                {tipo === "camaras" && (
+                  <div
+                    className="
+                      grid
+                      md:grid-cols-2
+
+                      gap-5
+                    "
+                  >
+
+                    <Campo
+                      titulo="Cantidad de cámaras"
+                      icon={<FaCamera />}
+                      opcional
+                    >
+
+                      <input
+                        type="number"
+                        min="0"
+                        value={
+                          cantidadCamaras
+                        }
+                        onChange={(e) =>
+                          setCantidadCamaras(
+                            e.target.value
+                          )
+                        }
+                        placeholder="Ej. 8"
+                        className={
+                          inputClass(
+                            modoOscuro
+                          )
+                        }
+                      />
+
+                    </Campo>
+
+
+                    <Campo
+                      titulo="Tipo de instalación"
+                      icon={<FaShieldAlt />}
+                      opcional
+                    >
+
+                      <input
+                        type="text"
+                        value={
+                          tipoInstalacion
+                        }
+                        onChange={(e) =>
+                          setTipoInstalacion(
+                            e.target.value
+                          )
+                        }
+                        placeholder="CCTV, IP, inalámbrica..."
+                        className={
+                          inputClass(
+                            modoOscuro
+                          )
+                        }
+                      />
+
+                    </Campo>
 
                   </div>
                 )}
 
-                {/* NUEVAS */}
 
-                {previewImagenes.length >
-                  0 && (
-                  <div className="mt-5">
+                {/* PUBLICIDAD */}
 
-                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
-                      Nuevas imágenes
-                    </p>
+                {tipo ===
+                  "publicidad" && (
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div
+                    className="
+                      grid
+                      md:grid-cols-2
 
-                      {previewImagenes.map(
-                        (item, i) => (
-                          <ImagenPreview
-                            key={`${item.file.name}-${i}`}
-                            src={
-                              item.url
-                            }
-                            etiqueta="NUEVA"
-                            color="yellow"
-                            onDelete={() =>
-                              eliminarNuevaImagen(
-                                i
-                              )
-                            }
-                          />
-                        )
-                      )}
+                      gap-5
+                    "
+                  >
 
-                    </div>
+                    <Campo
+                      titulo="Tipo de campaña"
+                      icon={<FaBullhorn />}
+                      opcional
+                    >
 
-                  </div>
-                )}
+                      <input
+                        type="text"
+                        value={
+                          tipoCampana
+                        }
+                        onChange={(e) =>
+                          setTipoCampana(
+                            e.target.value
+                          )
+                        }
+                        placeholder="Redes sociales, branding, anuncios..."
+                        className={
+                          inputClass(
+                            modoOscuro
+                          )
+                        }
+                      />
 
-              </div>
+                    </Campo>
 
-              {/* ================================================= */}
-              {/* GALERÍA RELACIONADA */}
-              {/* ================================================= */}
 
-              <div className="mt-8">
+                    <Campo
+                      titulo="Plataformas"
+                      icon={<FaGlobe />}
+                      opcional
+                    >
 
-                <div className="flex flex-wrap justify-between items-end gap-3 mb-3">
+                      <input
+                        type="text"
+                        value={
+                          plataformasPublicidad
+                        }
+                        onChange={(e) =>
+                          setPlataformasPublicidad(
+                            e.target.value
+                          )
+                        }
+                        placeholder="Facebook, Instagram, Google..."
+                        className={
+                          inputClass(
+                            modoOscuro
+                          )
+                        }
+                      />
 
-                  <div>
-
-                    <p className="font-semibold flex items-center gap-2">
-                      <FaImages className="text-blue-400" />
-                      Diseños relacionados
-                    </p>
-
-                    <p className="text-xs text-zinc-500 mt-1">
-                      Renders, planos, variantes o imágenes adicionales.
-                    </p>
-
-                  </div>
-
-                  <span className={`text-xs border px-3 py-1.5 rounded-full ${
-                    modoOscuro
-                      ? "bg-black border-zinc-700 text-zinc-400"
-                      : "bg-gray-50 border-gray-300 text-gray-600"
-                  }`}>
-                    {totalGaleria}/{MAX_GALERIA}
-                  </span>
-
-                </div>
-
-                <label
-                  className="
-                    block
-                    border-2
-                    border-dashed
-                    border-blue-500/40
-                    hover:border-blue-500
-                    bg-blue-500/[0.03]
-                    hover:bg-blue-500/[0.06]
-                    rounded-3xl
-                    p-8
-                    md:p-10
-                    text-center
-                    cursor-pointer
-                    transition-all
-                  "
-                >
-
-                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto">
-
-                    <FaImages className="text-blue-400 text-2xl" />
+                    </Campo>
 
                   </div>
 
-                  <p className={`font-bold mt-4 ${modoOscuro ? "text-white" : "text-gray-900"}`}>
-                    Agregar diseños relacionados
-                  </p>
-
-                  <p className="text-sm text-zinc-500 mt-2">
-                    JPG, PNG o WEBP · Las fotos grandes se optimizan automáticamente
-                  </p>
-
-                  <p className="text-xs text-zinc-600 mt-1">
-                    Hasta {MAX_GALERIA} imágenes · Máx. 3000 px al optimizar
-                  </p>
-
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files =
-                        e.target.files;
-
-                      await handlePreviewGaleria(
-                        files
-                      );
-
-                      e.target.value =
-                        "";
-                    }}
-                  />
-
-                </label>
-
-                {/* EXISTENTES */}
-
-                {galeriaExistente.length >
-                  0 && (
-                  <div className="mt-5">
-
-                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
-                      Diseños guardados
-                    </p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-
-                      {galeriaExistente.map(
-                        (img) => (
-                          <ImagenPreview
-                            key={img}
-                            src={img}
-                            etiqueta="GUARDADA"
-                            color="blue"
-                            onDelete={() =>
-                              eliminarImg(
-                                img,
-                                "galeria"
-                              )
-                            }
-                          />
-                        )
-                      )}
-
-                    </div>
-
-                  </div>
-                )}
-
-                {/* NUEVAS */}
-
-                {previewGaleria.length >
-                  0 && (
-                  <div className="mt-5">
-
-                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
-                      Nuevos diseños
-                    </p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-
-                      {previewGaleria.map(
-                        (item, i) => (
-                          <ImagenPreview
-                            key={`${item.file.name}-${i}`}
-                            src={
-                              item.url
-                            }
-                            etiqueta="NUEVA"
-                            color="blue"
-                            onDelete={() =>
-                              eliminarNuevaGaleria(
-                                i
-                              )
-                            }
-                          />
-                        )
-                      )}
-
-                    </div>
-
-                  </div>
                 )}
 
               </div>
 
             </section>
 
+
             {/* ================================================= */}
-            {/* PUBLICACIÓN */}
+            {/* 04 MULTIMEDIA */}
             {/* ================================================= */}
 
-            <section className={`border-t pt-9 ${
-              modoOscuro ? "border-zinc-800" : "border-gray-200"
-            }`}>
+            <section
+              className={`
+                border-t
+                pt-9
+
+                ${
+                  modoOscuro
+                    ? "border-slate-800"
+                    : "border-sky-100"
+                }
+              `}
+            >
 
               <TituloSeccion
-                numero="03"
-                titulo="Publicación"
-                descripcion="Configura cómo aparecerá el proyecto en el catálogo."
+                numero="04"
+                titulo="Multimedia"
+                descripcion="Sube la portada, capturas de pantalla o fotografías del proyecto."
               />
 
-              {/* DESTACADO */}
+
+              {/* PRINCIPALES */}
+
+              <div className="mt-6">
+
+                <div
+                  className="
+                    flex
+                    flex-wrap
+
+                    justify-between
+                    items-end
+
+                    gap-3
+
+                    mb-3
+                  "
+                >
+
+                  <div>
+
+                    <p
+                      className="
+                        font-semibold
+
+                        flex
+                        items-center
+                        gap-2
+                      "
+                    >
+
+                      <FaImage className="text-sky-500" />
+
+                      Imágenes principales
+
+                    </p>
+
+
+                    <p
+                      className="
+                        text-xs
+                        text-slate-500
+
+                        mt-1
+                      "
+                    >
+
+                      La primera imagen será la portada del proyecto.
+
+                    </p>
+
+                  </div>
+
+
+                  <ContadorImagenes
+                    actual={
+                      totalPrincipales
+                    }
+                    max={
+                      MAX_IMAGENES
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
+                  />
+
+                </div>
+
+
+                <SelectorImagenes
+                  titulo="Agregar imágenes principales"
+                  descripcion="JPG, PNG o WEBP · Las imágenes grandes se optimizan automáticamente"
+                  onChange={
+                    handlePreviewImagenes
+                  }
+                  loading={
+                    loading
+                  }
+                />
+
+
+                {imagenesExistentes.length >
+                  0 && (
+
+                  <GrupoImagenes
+                    titulo="Imágenes guardadas"
+                  >
+
+                    {imagenesExistentes.map(
+                      (
+                        img,
+                        index
+                      ) => (
+
+                        <ImagenPreview
+                          key={
+                            img
+                          }
+                          src={
+                            img
+                          }
+                          etiqueta={
+                            index ===
+                            0
+                              ? "PORTADA"
+                              : "GUARDADA"
+                          }
+                          onDelete={() =>
+                            eliminarImg(
+                              img,
+                              "main"
+                            )
+                          }
+                        />
+
+                      )
+                    )}
+
+                  </GrupoImagenes>
+
+                )}
+
+
+                {previewImagenes.length >
+                  0 && (
+
+                  <GrupoImagenes
+                    titulo="Nuevas imágenes"
+                  >
+
+                    {previewImagenes.map(
+                      (
+                        item,
+                        index
+                      ) => (
+
+                        <ImagenPreview
+                          key={`${item.file.name}-${index}`}
+                          src={
+                            item.url
+                          }
+                          etiqueta="NUEVA"
+                          onDelete={() =>
+                            eliminarNuevaImagen(
+                              index
+                            )
+                          }
+                        />
+
+                      )
+                    )}
+
+                  </GrupoImagenes>
+
+                )}
+
+              </div>
+
+
+              {/* GALERIA */}
+
+              <div className="mt-9">
+
+                <div
+                  className="
+                    flex
+                    flex-wrap
+
+                    justify-between
+                    items-end
+
+                    gap-3
+
+                    mb-3
+                  "
+                >
+
+                  <div>
+
+                    <p
+                      className="
+                        font-semibold
+
+                        flex
+                        items-center
+                        gap-2
+                      "
+                    >
+
+                      <FaImages className="text-blue-500" />
+
+                      Galería / capturas
+
+                    </p>
+
+
+                    <p
+                      className="
+                        text-xs
+                        text-slate-500
+
+                        mt-1
+                      "
+                    >
+
+                      Pantallas de la app, secciones web, resultados o fotografías adicionales.
+
+                    </p>
+
+                  </div>
+
+
+                  <ContadorImagenes
+                    actual={
+                      totalGaleria
+                    }
+                    max={
+                      MAX_GALERIA
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
+                  />
+
+                </div>
+
+
+                <SelectorImagenes
+                  titulo="Agregar capturas o fotografías"
+                  descripcion="Hasta 12 imágenes adicionales"
+                  onChange={
+                    handlePreviewGaleria
+                  }
+                  loading={
+                    loading
+                  }
+                />
+
+
+                {galeriaExistente.length >
+                  0 && (
+
+                  <GrupoImagenes
+                    titulo="Galería guardada"
+                  >
+
+                    {galeriaExistente.map(
+                      (img) => (
+
+                        <ImagenPreview
+                          key={
+                            img
+                          }
+                          src={
+                            img
+                          }
+                          etiqueta="GUARDADA"
+                          onDelete={() =>
+                            eliminarImg(
+                              img,
+                              "galeria"
+                            )
+                          }
+                        />
+
+                      )
+                    )}
+
+                  </GrupoImagenes>
+
+                )}
+
+
+                {previewGaleria.length >
+                  0 && (
+
+                  <GrupoImagenes
+                    titulo="Nuevas capturas"
+                  >
+
+                    {previewGaleria.map(
+                      (
+                        item,
+                        index
+                      ) => (
+
+                        <ImagenPreview
+                          key={`${item.file.name}-${index}`}
+                          src={
+                            item.url
+                          }
+                          etiqueta="NUEVA"
+                          onDelete={() =>
+                            eliminarNuevaGaleria(
+                              index
+                            )
+                          }
+                        />
+
+                      )
+                    )}
+
+                  </GrupoImagenes>
+
+                )}
+
+              </div>
+
+            </section>
+
+
+            {/* ================================================= */}
+            {/* 05 PUBLICACIÓN */}
+            {/* ================================================= */}
+
+            <section
+              className={`
+                border-t
+                pt-9
+
+                ${
+                  modoOscuro
+                    ? "border-slate-800"
+                    : "border-sky-100"
+                }
+              `}
+            >
+
+              <TituloSeccion
+                numero="05"
+                titulo="Publicación"
+                descripcion="Configura la visibilidad del proyecto dentro de Macro."
+              />
+
 
               <button
                 type="button"
                 onClick={() =>
                   setDestacado(
-                    (prev) => !prev
+                    (actual) =>
+                      !actual
                   )
                 }
                 className={`
                   w-full
+
                   mt-6
+
                   rounded-2xl
+
                   border
+
                   p-5
+
                   text-left
+
                   flex
                   items-center
                   justify-between
+
                   gap-4
+
                   transition-all
+
                   ${
                     destacado
-                      ? "bg-yellow-500/5 border-yellow-500/50"
+                      ? `
+                        bg-sky-50
+                        border-sky-400
+                      `
                       : modoOscuro
-                      ? "bg-black border-zinc-700 hover:border-zinc-500"
-                      : "bg-gray-50 border-gray-300 hover:border-gray-400"
+                      ? `
+                        bg-slate-950
+                        border-slate-700
+                      `
+                      : `
+                        bg-slate-50
+                        border-slate-200
+                      `
                   }
                 `}
               >
 
-                <div className="flex items-center gap-4">
+                <div
+                  className="
+                    flex
+                    items-center
+
+                    gap-4
+                  "
+                >
 
                   <div
                     className={`
                       w-11
                       h-11
+
                       rounded-xl
+
                       border
+
                       flex
                       items-center
                       justify-center
+
                       ${
                         destacado
-                          ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
-                          : "bg-zinc-900 border-zinc-700 text-zinc-500"
+                          ? `
+                            bg-sky-400
+                            border-sky-400
+                            text-white
+                          `
+                          : `
+                            bg-white
+                            border-slate-200
+                            text-slate-400
+                          `
                       }
                     `}
                   >
 
-                    {destacado ? (
-                      <FaStar />
-                    ) : (
-                      <FaRegStar />
-                    )}
+                    {destacado
+                      ? <FaStar />
+                      : <FaRegStar />
+                    }
 
                   </div>
+
 
                   <div>
 
                     <p className="font-bold">
+
                       Proyecto destacado
+
                     </p>
 
-                    <p className={`text-sm mt-1 ${modoOscuro ? "text-zinc-500" : "text-gray-500"}`}>
-                      Los proyectos destacados tendrán mayor presencia visual en el catálogo.
+
+                    <p
+                      className="
+                        text-sm
+                        text-slate-500
+
+                        mt-1
+                      "
+                    >
+
+                      Los proyectos destacados tendrán mayor presencia en el Home y el portafolio.
+
                     </p>
 
                   </div>
 
                 </div>
 
+
                 <div
                   className={`
                     relative
+
                     w-12
                     h-7
+
                     rounded-full
+
+                    shrink-0
+
                     transition
+
                     ${
                       destacado
-                        ? "bg-yellow-500"
-                        : "bg-zinc-700"
+                        ? "bg-sky-400"
+                        : "bg-slate-300"
                     }
                   `}
                 >
@@ -2146,11 +3629,18 @@ function SubirProyecto() {
                     className={`
                       absolute
                       top-1
+
                       w-5
                       h-5
+
                       rounded-full
+
                       bg-white
+
+                      shadow
+
                       transition-all
+
                       ${
                         destacado
                           ? "left-6"
@@ -2163,53 +3653,92 @@ function SubirProyecto() {
 
               </button>
 
-              {/* BOTONES */}
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-7">
+              <div
+                className="
+                  flex
+                  flex-col
+                  sm:flex-row
+
+                  gap-3
+
+                  mt-7
+                "
+              >
 
                 {editId && (
+
                   <button
                     type="button"
                     onClick={
                       cancelarEdicion
                     }
-                    disabled={loading}
-                    className={`${botonBase(modoOscuro)} sm:w-auto border-zinc-600 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500 disabled:opacity-50`}
+                    disabled={
+                      loading
+                    }
+                    className={botonSecundario(
+                      modoOscuro
+                    )}
                   >
+
                     <FaTimes />
 
                     Cancelar
+
                   </button>
+
                 )}
+
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className={`
-                    ${botonBase(modoOscuro)}
+                  disabled={
+                    loading
+                  }
+                  className="
                     flex-1
-                    border-yellow-500/50
-                    text-yellow-400
-                    hover:bg-yellow-500/10
-                    hover:border-yellow-500
+
+                    bg-sky-400
+                    hover:bg-sky-500
+
+                    text-white
+
+                    px-6
+                    py-4
+
+                    rounded-2xl
+
+                    font-bold
+
+                    flex
+                    items-center
+                    justify-center
+                    gap-3
+
+                    shadow-lg
+                    shadow-sky-200/30
+
+                    transition
+
                     disabled:opacity-50
                     disabled:cursor-not-allowed
-                  `}
+                  "
                 >
 
-                  {editId ? (
-                    <FaSave />
-                  ) : (
-                    <FaCloudUploadAlt />
-                  )}
+                  {editId
+                    ? <FaSave />
+                    : <FaCloudUploadAlt />
+                  }
+
 
                   {loading
                     ? editId
-                      ? "Actualizando proyecto..."
-                      : "Publicando proyecto..."
+                      ? "Actualizando..."
+                      : "Publicando..."
                     : editId
                     ? "Guardar cambios"
-                    : "Publicar proyecto"}
+                    : "Publicar proyecto"
+                  }
 
                 </button>
 
@@ -2221,93 +3750,184 @@ function SubirProyecto() {
 
         </div>
 
+
         {/* ================================================= */}
         {/* PROYECTOS PUBLICADOS */}
         {/* ================================================= */}
 
         <section className="mt-14">
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 mb-6">
+          <div className="mb-6">
 
-            <div>
+            <p
+              className="
+                text-xs
+                uppercase
+                tracking-[0.25em]
 
-              <p className="text-xs uppercase tracking-[0.25em] text-yellow-500 font-semibold">
-                Catálogo
-              </p>
+                text-sky-500
 
-              <h2 className="text-2xl md:text-3xl font-bold mt-2">
-                Proyectos publicados
-              </h2>
+                font-bold
+              "
+            >
 
-              <p className="text-zinc-500 mt-1">
-                {proyectos.length}{" "}
-                {proyectos.length === 1
-                  ? "proyecto publicado"
-                  : "proyectos publicados"}
-              </p>
+              Portafolio Macro
 
-            </div>
+            </p>
+
+
+            <h2
+              className="
+                text-2xl
+                md:text-3xl
+
+                font-bold
+
+                mt-2
+              "
+            >
+
+              Proyectos publicados
+
+            </h2>
+
+
+            <p
+              className="
+                text-slate-500
+
+                mt-1
+              "
+            >
+
+              {proyectos.length}{" "}
+
+              {proyectos.length === 1
+                ? "proyecto"
+                : "proyectos"
+              }
+
+            </p>
 
           </div>
 
-          {/* ================================================= */}
-          {/* BUSCADOR + FILTRO */}
-          {/* ================================================= */}
 
-          <div className="flex flex-col md:flex-row gap-4 mb-7">
+          {/* BUSCADOR */}
 
-            <div className="relative flex-1">
+          <div
+            className="
+              flex
+              flex-col
+              md:flex-row
 
-              <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
+              gap-4
+
+              mb-7
+            "
+          >
+
+            <div
+              className="
+                relative
+                flex-1
+              "
+            >
+
+              <FaSearch
+                className="
+                  absolute
+                  left-5
+                  top-1/2
+
+                  -translate-y-1/2
+
+                  text-slate-400
+                "
+              />
+
 
               <input
                 type="text"
-                value={busqueda}
+                value={
+                  busqueda
+                }
                 onChange={(e) =>
                   setBusqueda(
                     e.target.value
                   )
                 }
-                placeholder="Buscar proyecto, ubicación, categoría..."
-                className={`${inputClass(modoOscuro)} pl-12 pr-11`}
+                placeholder="Buscar proyecto, cliente, tecnología..."
+                className={`${inputClass(
+                  modoOscuro
+                )} pl-12 pr-11`}
               />
 
+
               {busqueda && (
+
                 <button
                   type="button"
                   onClick={() =>
-                    setBusqueda("")
+                    setBusqueda(
+                      ""
+                    )
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                  className="
+                    absolute
+                    right-4
+                    top-1/2
+
+                    -translate-y-1/2
+
+                    text-slate-400
+                    hover:text-sky-500
+                  "
                 >
+
                   <FaTimes />
+
                 </button>
+
               )}
 
             </div>
 
+
             <select
-              value={filtro}
+              value={
+                filtro
+              }
               onChange={(e) =>
                 setFiltro(
                   e.target.value
                 )
               }
-              className={`${inputClass(modoOscuro)} md:w-[240px]`}
+              className={`${inputClass(
+                modoOscuro
+              )} md:w-[260px]`}
             >
 
-              <option value="Todos">
-                Todas las categorías
+              <option value="todos">
+                Todos los proyectos
               </option>
 
-              {categorias.map(
-                (cat) => (
+
+              {tiposProyecto.map(
+                (item) => (
+
                   <option
-                    key={cat}
-                    value={cat}
+                    key={
+                      item.value
+                    }
+                    value={
+                      item.value
+                    }
                   >
-                    {cat}
+
+                    {item.label}
+
                   </option>
+
                 )
               )}
 
@@ -2315,219 +3935,602 @@ function SubirProyecto() {
 
           </div>
 
-          {/* RESULTADOS */}
-
-          <p className="text-sm text-zinc-500 mb-5">
-            Mostrando{" "}
-            <span className="text-white font-medium">
-              {
-                proyectosFiltrados.length
-              }
-            </span>{" "}
-            {proyectosFiltrados.length === 1
-              ? "proyecto"
-              : "proyectos"}
-          </p>
 
           {/* SIN RESULTADOS */}
 
           {proyectosFiltrados.length ===
-            0 && (
-            <div className={`border rounded-3xl p-12 text-center ${
-              modoOscuro
-                ? "bg-zinc-950 border-zinc-700"
-                : "bg-white border-gray-200 shadow-sm"
-            }`}>
+          0 ? (
 
-              <FaSearch className="text-zinc-700 text-4xl mx-auto" />
+            <div
+              className={`
+                rounded-[30px]
 
-              <h3 className="text-xl font-bold mt-5">
-                No encontramos proyectos
+                border
+                border-dashed
+
+                p-12
+
+                text-center
+
+                ${
+                  modoOscuro
+                    ? `
+                      bg-slate-900
+                      border-slate-700
+                    `
+                    : `
+                      bg-white
+                      border-sky-200
+                    `
+                }
+              `}
+            >
+
+              <div
+                className="
+                  w-14
+                  h-14
+
+                  mx-auto
+
+                  rounded-2xl
+
+                  bg-sky-50
+                  text-sky-500
+
+                  flex
+                  items-center
+                  justify-center
+
+                  text-xl
+                "
+              >
+
+                <FaSearch />
+
+              </div>
+
+
+              <h3
+                className="
+                  text-xl
+                  font-bold
+
+                  mt-5
+                "
+              >
+
+                {proyectos.length ===
+                0
+                  ? "Todavía no hay proyectos"
+                  : "No encontramos resultados"
+                }
+
               </h3>
 
-              <p className="text-zinc-500 mt-2">
-                Prueba otra búsqueda o cambia la categoría.
+
+              <p
+                className="
+                  text-slate-500
+
+                  mt-2
+                "
+              >
+
+                {proyectos.length ===
+                0
+                  ? "Publica el primer proyecto tecnológico de Macro."
+                  : "Prueba otra búsqueda o cambia el filtro."
+                }
+
               </p>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setBusqueda("");
-                  setFiltro(
-                    "Todos"
-                  );
-                }}
-                className={`${botonBase(modoOscuro)} mx-auto mt-5 border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-500`}
-              >
-                Ver todos
-              </button>
 
-            </div>
-          )}
+              {proyectos.length >
+                0 && (
 
-          {/* ================================================= */}
-          {/* GRID */}
-          {/* ================================================= */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBusqueda("");
 
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    setFiltro(
+                      "todos"
+                    );
+                  }}
+                  className="
+                    mt-5
 
-            {proyectosFiltrados.map(
-              (p) => (
-                <article
-                  key={p.id}
-                  className={`
-                    group
-                    border
-                    rounded-3xl
-                    overflow-hidden
-                    hover:border-yellow-500/50
-                    transition-all
-                    duration-300
-                    hover:-translate-y-1
-                    shadow-xl
-                    ${
-                      modoOscuro
-                        ? "bg-zinc-950 border-zinc-700"
-                        : "bg-white border-gray-200 shadow-gray-200/70"
-                    }
-                  `}
+                    text-sky-500
+
+                    font-semibold
+                  "
                 >
 
-                  {/* IMAGEN */}
+                  Ver todos
 
-                  <div className="relative h-64 bg-zinc-900 overflow-hidden">
+                </button>
 
-                    {p.imagen ? (
-                      <img
-                        src={
-                          p.imagen
-                        }
-                        alt={
-                          p.nombre
-                        }
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                        <FaImage size={40} />
-                      </div>
-                    )}
+              )}
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10 pointer-events-none" />
+            </div>
 
-                    {/* ETIQUETAS */}
+          ) : (
 
-                    <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+            <div
+              className="
+                grid
+                md:grid-cols-2
+                xl:grid-cols-3
 
-                      <span className="bg-black/80 backdrop-blur border border-white/10 px-3 py-1.5 text-xs rounded-full">
-                        {p.categoria ||
-                          "Proyecto"}
-                      </span>
+                gap-6
+              "
+            >
 
-                      {p.destacado && (
-                        <span className="bg-yellow-500 text-black px-3 py-1.5 text-xs font-bold rounded-full flex items-center gap-1">
-                          <FaStar />
-                          Destacado
-                        </span>
+              {proyectosFiltrados.map(
+                (proyecto) => (
+
+                  <article
+                    key={
+                      proyecto.id
+                    }
+                    className={`
+                      group
+
+                      rounded-[26px]
+
+                      overflow-hidden
+
+                      border
+
+                      transition-all
+                      duration-300
+
+                      hover:-translate-y-1
+                      hover:shadow-xl
+
+                      ${
+                        modoOscuro
+                          ? `
+                            bg-slate-900
+                            border-slate-800
+
+                            hover:border-sky-500/40
+                          `
+                          : `
+                            bg-white
+                            border-sky-100
+
+                            hover:border-sky-300
+                          `
+                      }
+                    `}
+                  >
+
+                    {/* FOTO */}
+
+                    <div
+                      className="
+                        relative
+
+                        h-60
+
+                        bg-gradient-to-br
+                        from-sky-100
+                        to-blue-100
+
+                        overflow-hidden
+                      "
+                    >
+
+                      {proyecto.imagen ? (
+
+                        <img
+                          src={
+                            proyecto.imagen
+                          }
+                          alt={
+                            proyecto.nombre
+                          }
+                          loading="lazy"
+                          className="
+                            w-full
+                            h-full
+
+                            object-cover
+
+                            transition-transform
+                            duration-500
+
+                            group-hover:scale-105
+                          "
+                        />
+
+                      ) : (
+
+                        <div
+                          className="
+                            w-full
+                            h-full
+
+                            flex
+                            items-center
+                            justify-center
+                          "
+                        >
+
+                          <FaLaptopCode
+                            className="
+                              text-sky-400
+                              text-5xl
+                            "
+                          />
+
+                        </div>
+
                       )}
 
-                    </div>
 
-                    {/* TOTAL IMÁGENES */}
+                      <div
+                        className="
+                          absolute
+                          inset-0
 
-                    {Array.isArray(
-                      p.imagenes
-                    ) &&
-                      p.imagenes.length >
-                        1 && (
-                        <span className="absolute bottom-4 right-4 bg-black/80 border border-white/10 px-3 py-1.5 rounded-full text-xs flex items-center gap-2">
+                          bg-gradient-to-t
+                          from-black/65
+                          via-transparent
+                          to-transparent
+                        "
+                      />
 
-                          <FaImages />
 
-                          {
-                            p.imagenes.length
+                      <div
+                        className="
+                          absolute
+                          top-4
+                          left-4
+
+                          flex
+                          flex-wrap
+
+                          gap-2
+                        "
+                      >
+
+                        <span
+                          className="
+                            bg-black/75
+                            backdrop-blur
+
+                            border
+                            border-white/10
+
+                            text-white
+
+                            px-3
+                            py-1.5
+
+                            text-xs
+
+                            rounded-full
+                          "
+                        >
+
+                          {proyecto.categoria ||
+                            obtenerNombreTipo(
+                              proyecto.tipo
+                            )
                           }
 
                         </span>
-                      )}
 
-                  </div>
 
-                  {/* INFORMACIÓN */}
+                        {proyecto.destacado && (
 
-                  <div className="p-6">
+                          <span
+                            className="
+                              bg-sky-400
+                              text-white
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                              px-3
+                              py-1.5
 
-                      {p.tipo && (
-                        <span className="text-yellow-500 uppercase tracking-wider">
-                          {p.tipo}
+                              text-xs
+                              font-bold
+
+                              rounded-full
+
+                              flex
+                              items-center
+                              gap-1
+                            "
+                          >
+
+                            <FaStar />
+
+                            Destacado
+
+                          </span>
+
+                        )}
+
+                      </div>
+
+
+                      {proyecto.estado && (
+
+                        <span
+                          className="
+                            absolute
+                            bottom-4
+                            left-4
+
+                            bg-white/90
+
+                            text-slate-700
+
+                            px-3
+                            py-1.5
+
+                            rounded-full
+
+                            text-xs
+                            font-semibold
+                          "
+                        >
+
+                          {proyecto.estado}
+
                         </span>
-                      )}
 
-                      {p.ubicacion && (
-                        <>
-                          <span className="text-zinc-700">
-                            •
-                          </span>
-
-                          <span className="text-zinc-500 flex items-center gap-1">
-                            <FaMapMarkerAlt />
-                            {p.ubicacion}
-                          </span>
-                        </>
                       )}
 
                     </div>
 
-                    <h3 className="text-xl font-bold mt-3">
-                      {p.nombre}
-                    </h3>
 
-                    <p className="text-zinc-400 text-sm line-clamp-3 mt-3 min-h-[63px]">
-                      {p.descripcion}
-                    </p>
+                    {/* INFO */}
 
-                    {/* BOTONES MODERNOS */}
+                    <div className="p-6">
 
-                    <div className="grid grid-cols-2 gap-3 mt-6">
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleEdit(p)
-                        }
-                        className={`${botonBase(modoOscuro)} border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500`}
+                      <h3
+                        className="
+                          text-xl
+                          font-bold
+                        "
                       >
-                        <FaEdit />
 
-                        Editar
-                      </button>
+                        {proyecto.nombre}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleDelete(
-                            p.id
-                          )
-                        }
-                        className={`${botonBase(modoOscuro)} border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-500`}
+                      </h3>
+
+
+                      {proyecto.cliente && (
+
+                        <p
+                          className="
+                            text-xs
+                            text-sky-500
+
+                            mt-2
+                          "
+                        >
+
+                          {proyecto.cliente}
+
+                        </p>
+
+                      )}
+
+
+                      <p
+                        className="
+                          text-sm
+                          text-slate-500
+
+                          line-clamp-3
+
+                          mt-3
+
+                          min-h-[63px]
+                        "
                       >
-                        <FaTrash />
 
-                        Eliminar
-                      </button>
+                        {proyecto.descripcion}
+
+                      </p>
+
+
+                      {Array.isArray(
+                        proyecto.tecnologias
+                      ) &&
+                        proyecto
+                          .tecnologias
+                          .length > 0 && (
+
+                          <div
+                            className="
+                              flex
+                              flex-wrap
+
+                              gap-2
+
+                              mt-4
+                            "
+                          >
+
+                            {proyecto.tecnologias
+                              .slice(
+                                0,
+                                4
+                              )
+                              .map(
+                                (
+                                  tecnologia
+                                ) => (
+
+                                  <span
+                                    key={
+                                      tecnologia
+                                    }
+                                    className="
+                                      bg-sky-50
+                                      text-sky-600
+
+                                      px-2.5
+                                      py-1
+
+                                      rounded-full
+
+                                      text-[10px]
+                                      font-semibold
+                                    "
+                                  >
+
+                                    {tecnologia}
+
+                                  </span>
+
+                                )
+                              )}
+
+                          </div>
+
+                        )}
+
+
+                      {proyecto.urlProyecto && (
+
+                        <a
+                          href={
+                            proyecto.urlProyecto
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="
+                            text-sm
+                            text-sky-500
+
+                            flex
+                            items-center
+                            gap-2
+
+                            mt-4
+
+                            hover:text-sky-600
+                          "
+                        >
+
+                          <FaExternalLinkAlt />
+
+                          Abrir proyecto
+
+                        </a>
+
+                      )}
+
+
+                      <div
+                        className="
+                          grid
+                          grid-cols-2
+
+                          gap-3
+
+                          mt-6
+                        "
+                      >
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEdit(
+                              proyecto
+                            )
+                          }
+                          className="
+                            border
+                            border-blue-200
+
+                            bg-blue-50
+
+                            text-blue-600
+
+                            px-4
+                            py-3
+
+                            rounded-xl
+
+                            font-semibold
+
+                            flex
+                            items-center
+                            justify-center
+                            gap-2
+
+                            hover:bg-blue-100
+
+                            transition
+                          "
+                        >
+
+                          <FaEdit />
+
+                          Editar
+
+                        </button>
+
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDelete(
+                              proyecto.id
+                            )
+                          }
+                          className="
+                            border
+                            border-red-200
+
+                            bg-red-50
+
+                            text-red-500
+
+                            px-4
+                            py-3
+
+                            rounded-xl
+
+                            font-semibold
+
+                            flex
+                            items-center
+                            justify-center
+                            gap-2
+
+                            hover:bg-red-100
+
+                            transition
+                          "
+                        >
+
+                          <FaTrash />
+
+                          Eliminar
+
+                        </button>
+
+                      </div>
 
                     </div>
 
-                  </div>
+                  </article>
 
-                </article>
-              )
-            )}
+                )
+              )}
 
-          </div>
+            </div>
+
+          )}
 
         </section>
 
@@ -2537,71 +4540,80 @@ function SubirProyecto() {
   );
 }
 
-// ======================================================
-// ESTILOS
-// ======================================================
 
-const inputClass = (modoOscuro) => `
-  w-full
-  border
-  rounded-2xl
-  p-4
-  outline-none
-  focus:border-yellow-500/70
-  focus:ring-2
-  focus:ring-yellow-500/10
-  transition
-  ${
-    modoOscuro
-      ? "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-600"
-      : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
-  }
-`;
-
-const botonBase = (modoOscuro) => `
-  border
-  px-5
-  py-3.5
-  rounded-2xl
-  font-semibold
-  flex
-  items-center
-  justify-center
-  gap-2
-  transition-all
-  duration-200
-  hover:-translate-y-[1px]
-  active:translate-y-0
-  ${
-    modoOscuro ? "bg-black" : "bg-white"
-  }
-`;
-
-// ======================================================
-// COMPONENTES
-// ======================================================
+/* ======================================================
+   TITULO SECCIÓN
+====================================================== */
 
 function TituloSeccion({
   numero,
   titulo,
   descripcion,
 }) {
-  const { modoOscuro } = useOutletContext() || {};
   return (
-    <div className="flex items-start gap-4">
+    <div
+      className="
+        flex
+        items-start
 
-      <div className="shrink-0 w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 text-xs font-bold">
+        gap-4
+      "
+    >
+
+      <div
+        className="
+          shrink-0
+
+          w-10
+          h-10
+
+          rounded-xl
+
+          bg-sky-50
+          border
+          border-sky-100
+
+          flex
+          items-center
+          justify-center
+
+          text-sky-500
+
+          text-xs
+          font-bold
+        "
+      >
+
         {numero}
+
       </div>
+
 
       <div>
 
-        <h3 className="text-xl font-bold">
+        <h3
+          className="
+            text-xl
+            font-bold
+          "
+        >
+
           {titulo}
+
         </h3>
 
-        <p className={`text-sm mt-1 ${modoOscuro ? "text-zinc-500" : "text-gray-500"}`}>
+
+        <p
+          className="
+            text-sm
+            text-slate-500
+
+            mt-1
+          "
+        >
+
           {descripcion}
+
         </p>
 
       </div>
@@ -2610,31 +4622,60 @@ function TituloSeccion({
   );
 }
 
+
+/* ======================================================
+   CAMPO
+====================================================== */
+
 function Campo({
   titulo,
   icon,
   children,
   opcional = false,
 }) {
-  const { modoOscuro } = useOutletContext() || {};
   return (
     <div>
 
-      <label className={`flex items-center gap-2 text-sm mb-2 ${modoOscuro ? "text-zinc-400" : "text-gray-600"}`}>
+      <label
+        className="
+          flex
+          items-center
+          gap-2
 
-        <span className="text-yellow-500">
+          text-sm
+          text-slate-600
+
+          mb-2
+        "
+      >
+
+        <span className="text-sky-500">
+
           {icon}
+
         </span>
+
 
         {titulo}
 
+
         {opcional && (
-          <span className={`text-xs ${modoOscuro ? "text-zinc-600" : "text-gray-400"}`}>
+
+          <span
+            className="
+              text-xs
+              text-slate-400
+            "
+          >
+
             (opcional)
+
           </span>
+
         )}
 
       </label>
+
 
       {children}
 
@@ -2642,101 +4683,488 @@ function Campo({
   );
 }
 
+
+/* ======================================================
+   CONTADOR
+====================================================== */
+
 function ContadorTexto({
   actual,
   max,
 }) {
-  const { modoOscuro } = useOutletContext() || {};
   return (
-    <div className="text-right mt-2">
-      <span className={`text-xs ${modoOscuro ? "text-zinc-600" : "text-gray-400"}`}>
+    <div
+      className="
+        text-right
+        mt-2
+      "
+    >
+
+      <span
+        className="
+          text-xs
+          text-slate-400
+        "
+      >
+
         {actual}/{max}
+
       </span>
+
     </div>
   );
 }
+
+
+/* ======================================================
+   CONTADOR IMÁGENES
+====================================================== */
+
+function ContadorImagenes({
+  actual,
+  max,
+  modoOscuro,
+}) {
+  return (
+    <span
+      className={`
+        text-xs
+
+        border
+
+        px-3
+        py-1.5
+
+        rounded-full
+
+        ${
+          modoOscuro
+            ? `
+              bg-slate-950
+              border-slate-700
+              text-slate-400
+            `
+            : `
+              bg-sky-50
+              border-sky-100
+              text-sky-600
+            `
+        }
+      `}
+    >
+
+      {actual}/{max}
+
+    </span>
+  );
+}
+
+
+/* ======================================================
+   SELECTOR IMÁGENES
+====================================================== */
+
+function SelectorImagenes({
+  titulo,
+  descripcion,
+  onChange,
+  loading,
+}) {
+  return (
+    <label
+      className={`
+        block
+
+        border-2
+        border-dashed
+
+        border-sky-200
+
+        hover:border-sky-400
+        hover:bg-sky-50
+
+        rounded-3xl
+
+        p-8
+        md:p-10
+
+        text-center
+
+        cursor-pointer
+
+        transition-all
+
+        ${
+          loading
+            ? "opacity-60 pointer-events-none"
+            : ""
+        }
+      `}
+    >
+
+      <div
+        className="
+          w-14
+          h-14
+
+          rounded-2xl
+
+          bg-sky-50
+          border
+          border-sky-100
+
+          flex
+          items-center
+          justify-center
+
+          mx-auto
+        "
+      >
+
+        <FaCloudUploadAlt
+          className="
+            text-sky-500
+            text-2xl
+          "
+        />
+
+      </div>
+
+
+      <p
+        className="
+          font-bold
+          text-slate-900
+
+          mt-4
+        "
+      >
+
+        {loading
+          ? "Preparando imágenes..."
+          : titulo
+        }
+
+      </p>
+
+
+      <p
+        className="
+          text-sm
+          text-slate-500
+
+          mt-2
+        "
+      >
+
+        {descripcion}
+
+      </p>
+
+
+      <p
+        className="
+          text-xs
+          text-slate-400
+
+          mt-1
+        "
+      >
+
+        Las fotografías grandes se comprimen automáticamente.
+
+      </p>
+
+
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        className="hidden"
+        disabled={
+          loading
+        }
+        onChange={async (e) => {
+          const files =
+            e.target.files;
+
+          await onChange(
+            files
+          );
+
+          e.target.value =
+            "";
+        }}
+      />
+
+    </label>
+  );
+}
+
+
+/* ======================================================
+   GRUPO DE IMÁGENES
+====================================================== */
+
+function GrupoImagenes({
+  titulo,
+  children,
+}) {
+  return (
+    <div className="mt-5">
+
+      <p
+        className="
+          text-xs
+
+          uppercase
+          tracking-wider
+
+          text-slate-400
+
+          mb-3
+        "
+      >
+
+        {titulo}
+
+      </p>
+
+
+      <div
+        className="
+          grid
+          grid-cols-2
+          sm:grid-cols-3
+          lg:grid-cols-4
+
+          gap-3
+        "
+      >
+
+        {children}
+
+      </div>
+
+    </div>
+  );
+}
+
+
+/* ======================================================
+   PREVIEW
+====================================================== */
 
 function ImagenPreview({
   src,
   etiqueta,
   onDelete,
-  color = "yellow",
 }) {
-  const etiquetaClass =
-    color === "blue"
-      ? "text-blue-300 border-blue-500/30"
-      : "text-yellow-400 border-yellow-500/30";
-
   return (
     <div
       className="
         relative
+
         aspect-square
-        bg-black
+
+        bg-slate-900
+
         rounded-2xl
+
         overflow-hidden
+
         border
-        border-zinc-700
+        border-slate-200
+
         group
       "
     >
 
       <img
-        src={src}
+        src={
+          src
+        }
         alt="Vista previa"
-        className="w-full h-full object-cover"
+        className="
+          w-full
+          h-full
+
+          object-cover
+        "
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+
+      <div
+        className="
+          absolute
+          inset-0
+
+          bg-gradient-to-t
+          from-black/60
+          via-transparent
+          to-black/10
+
+          pointer-events-none
+        "
+      />
+
 
       <span
-        className={`
+        className="
           absolute
           bottom-2
           left-2
-          bg-black/80
+
+          bg-black/70
+
           backdrop-blur
+
           border
+          border-white/20
+
           px-2
           py-1
+
           rounded-lg
+
           text-[9px]
+          text-white
+
           font-bold
-          ${etiquetaClass}
-        `}
+        "
       >
+
         {etiqueta}
+
       </span>
+
 
       <button
         type="button"
-        onClick={onDelete}
+        onClick={
+          onDelete
+        }
         aria-label="Eliminar imagen"
         className="
           absolute
           top-2
           right-2
+
           w-9
           h-9
+
           rounded-xl
-          bg-black/80
+
+          bg-black/75
+
           backdrop-blur
+
           border
-          border-red-500/30
-          text-red-400
-          hover:bg-red-500/20
-          hover:border-red-500
+          border-red-400/40
+
+          text-red-300
+
+          hover:bg-red-500
+          hover:text-white
+
           flex
           items-center
           justify-center
+
           transition
         "
       >
-        <FaTrash size={13} />
+
+        <FaTrash
+          size={13}
+        />
+
       </button>
 
     </div>
   );
 }
+
+
+/* ======================================================
+   ESTILOS
+====================================================== */
+
+const inputClass =
+  (modoOscuro) => `
+    w-full
+
+    border
+
+    rounded-2xl
+
+    px-4
+    py-3.5
+
+    outline-none
+
+    transition
+
+    focus:border-sky-400
+    focus:ring-4
+    focus:ring-sky-100
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-950
+          border-slate-700
+          text-white
+          placeholder:text-slate-500
+        `
+        : `
+          bg-white
+          border-slate-200
+          text-slate-900
+          placeholder:text-slate-400
+        `
+    }
+  `;
+
+
+const botonSecundario =
+  (modoOscuro) => `
+    border
+
+    px-5
+    py-3.5
+
+    rounded-xl
+
+    font-semibold
+
+    flex
+    items-center
+    justify-center
+    gap-2
+
+    transition
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-900
+          border-slate-700
+          text-slate-300
+
+          hover:border-sky-400
+          hover:text-sky-400
+        `
+        : `
+          bg-white
+          border-slate-200
+          text-slate-600
+
+          hover:border-sky-300
+          hover:text-sky-600
+        `
+    }
+  `;
+
 
 export default SubirProyecto;

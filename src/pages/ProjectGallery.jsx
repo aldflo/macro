@@ -1,453 +1,774 @@
 import {
+  useMemo,
+} from "react";
+
+import {
   useNavigate,
-  useOutletContext,
 } from "react-router-dom";
 
 import {
-  auth,
-} from "../firebase.config";
+  FaArrowRight,
+  FaBullhorn,
+  FaCamera,
+  FaCode,
+  FaGlobe,
+  FaLaptopCode,
+  FaMobileAlt,
+  FaStar,
+  FaTools,
+} from "react-icons/fa";
 
-export default function ProjectGallery({
-  projects = [],
+
+function ProjectGallery({
+  proyectos = [],
+  limite = 6,
+  titulo = "Proyectos de Macro",
+  descripcion = "Explora algunos de nuestros proyectos y soluciones tecnológicas.",
+  modoOscuro = false,
+  onSelectProject = null,
 }) {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const {
-    modoOscuro,
-  } = useOutletContext() || {};
 
-  if (!projects.length) {
-    return null;
-  }
+  /* ======================================================
+     NORMALIZAR PROYECTOS
+  ====================================================== */
 
-  const verElemento = (project) => {
-    if (project.type === "proyecto") {
-      navigate(
-        project.route ||
-          `/proyecto/${project.id}`
+  const proyectosVisibles =
+    useMemo(() => {
+      if (
+        !Array.isArray(
+          proyectos
+        )
+      ) {
+        return [];
+      }
+
+
+      return proyectos
+        .filter(Boolean)
+        .slice(
+          0,
+          limite
+        );
+
+    }, [
+      proyectos,
+      limite,
+    ]);
+
+
+  /* ======================================================
+     ICONO SEGÚN TIPO
+  ====================================================== */
+
+  const obtenerIcono =
+    (tipo = "") => {
+      const valor =
+        String(
+          tipo
+        ).toLowerCase();
+
+
+      if (
+        valor.includes(
+          "web"
+        ) ||
+        valor.includes(
+          "pagina"
+        ) ||
+        valor.includes(
+          "página"
+        )
+      ) {
+        return <FaGlobe />;
+      }
+
+
+      if (
+        valor.includes(
+          "app"
+        ) ||
+        valor.includes(
+          "movil"
+        ) ||
+        valor.includes(
+          "móvil"
+        )
+      ) {
+        return <FaMobileAlt />;
+      }
+
+
+      if (
+        valor.includes(
+          "camara"
+        ) ||
+        valor.includes(
+          "cámara"
+        ) ||
+        valor.includes(
+          "seguridad"
+        )
+      ) {
+        return <FaCamera />;
+      }
+
+
+      if (
+        valor.includes(
+          "publicidad"
+        ) ||
+        valor.includes(
+          "marketing"
+        )
+      ) {
+        return <FaBullhorn />;
+      }
+
+
+      if (
+        valor.includes(
+          "software"
+        ) ||
+        valor.includes(
+          "sistema"
+        )
+      ) {
+        return <FaLaptopCode />;
+      }
+
+
+      return <FaTools />;
+    };
+
+
+  /* ======================================================
+     NOMBRE TIPO
+  ====================================================== */
+
+  const obtenerTipo =
+    (proyecto) => {
+      return (
+        proyecto.categoria ||
+        proyecto.tipo ||
+        "Proyecto"
       );
-      return;
-    }
+    };
 
-    navigate("/galeria", {
-      state: {
-        categoria:
-          project.categoria || "",
-        subcategoria:
-          project.subcategoria ||
-          project.title ||
-          "",
-      },
-    });
-  };
 
-  const irACotizacion = (state = {}) => {
-    const usuario = auth.currentUser;
+  /* ======================================================
+     ABRIR PROYECTO
+  ====================================================== */
 
-    if (!usuario) {
-      navigate("/login", {
-        state: {
-          desdeIA: true,
-          redirectTo:
-            "/crear-cotizacion",
-          ...state,
-        },
-      });
-      return;
-    }
+  const abrirProyecto =
+    (proyecto) => {
+      if (
+        typeof onSelectProject ===
+        "function"
+      ) {
+        onSelectProject(
+          proyecto
+        );
 
-    navigate("/crear-cotizacion", {
-      state: {
-        desdeIA: true,
-        ...state,
-      },
-    });
-  };
+        return;
+      }
 
-  const cotizarElemento = (project) => {
-    irACotizacion({
-      proyecto: {
-        id: project.id,
-        nombre:
-          project.title ||
-          "Referencia Wealth",
-        descripcion:
-          project.descripcion ||
-          `Me interesa un trabajo similar a "${project.title}".`,
-        categoria:
-          project.categoria || "",
-        subcategoria:
-          project.subcategoria || "",
-        imagen:
-          project.img || "",
-        imagenes:
-          project.img
-            ? [project.img]
-            : [],
-      },
-    });
-  };
 
-  const tieneProyectos = projects.some(
-    (item) => item.type === "proyecto"
-  );
+      navigate(
+        `/proyecto/${proyecto.id}`
+      );
+    };
 
-  const tieneGaleria = projects.some(
-    (item) => item.type === "galeria"
-  );
 
-  const titulo =
-    tieneProyectos && tieneGaleria
-      ? "Resultados relacionados"
-      : tieneProyectos
-      ? "Proyectos relacionados"
-      : "Referencias de galería";
+  /* ======================================================
+     VACÍO
+  ====================================================== */
 
-  const subtitulo =
-    tieneProyectos && tieneGaleria
-      ? "Los proyectos son trabajos publicados por Wealth; las imágenes de galería son referencias e inspiración."
-      : tieneProyectos
-      ? "Proyectos reales publicados por Wealth."
-      : "Referencias reales disponibles en nuestra galería.";
-
-  return (
-    <div className="mt-5">
-      <div className="mb-3">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[#c89b3c] font-bold">
-          WEALTH
-        </p>
-
-        <h3
-          className={`
-            text-lg
-            font-bold
-            mt-1
-            ${
-              modoOscuro
-                ? "text-white"
-                : "text-gray-900"
-            }
-          `}
-        >
-          {titulo}
-        </h3>
-
-        <p
-          className={`
-            text-xs
-            mt-1
-            max-w-2xl
-            ${
-              modoOscuro
-                ? "text-zinc-500"
-                : "text-gray-500"
-            }
-          `}
-        >
-          {subtitulo}
-        </p>
-      </div>
-
-      <div
-        className="
-          grid
-          grid-cols-1
-          sm:grid-cols-2
-          md:grid-cols-3
-          gap-3
-        "
-      >
-        {projects.map((project, index) => {
-          const esProyecto =
-            project.type === "proyecto";
-
-          return (
-            <article
-              key={project.id || index}
-              className={`
-                group
-                overflow-hidden
-                rounded-2xl
-                border
-                hover:border-[#c89b3c]/60
-                transition
-                ${
-                  modoOscuro
-                    ? `
-                      bg-[#151517]
-                      border-zinc-800
-                    `
-                    : `
-                      bg-white
-                      border-gray-200
-                      shadow-sm
-                    `
-                }
-              `}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  verElemento(project)
-                }
-                className={`
-                  relative
-                  w-full
-                  aspect-[4/3]
-                  overflow-hidden
-                  ${
-                    modoOscuro
-                      ? "bg-zinc-900"
-                      : "bg-gray-100"
-                  }
-                `}
-              >
-                {project.img ? (
-                  <img
-                    src={project.img}
-                    alt={
-                      project.title ||
-                      "Wealth"
-                    }
-                    loading="lazy"
-                    className="
-                      w-full
-                      h-full
-                      object-cover
-                      transition-transform
-                      duration-500
-                      group-hover:scale-105
-                    "
-                  />
-                ) : (
-                  <div
-                    className={`
-                      w-full
-                      h-full
-                      flex
-                      items-center
-                      justify-center
-                      text-sm
-                      ${
-                        modoOscuro
-                          ? "text-zinc-600"
-                          : "text-gray-400"
-                      }
-                    `}
-                  >
-                    Sin imagen
-                  </div>
-                )}
-
-                <span
-                  className={`
-                    absolute
-                    top-2.5
-                    left-2.5
-                    px-2.5
-                    py-1
-                    rounded-full
-                    text-[10px]
-                    font-bold
-                    tracking-wide
-                    backdrop-blur-md
-                    border
-                    ${
-                      esProyecto
-                        ? "bg-black/75 border-[#c89b3c]/40 text-[#e2bd67]"
-                        : "bg-black/70 border-white/20 text-white"
-                    }
-                  `}
-                >
-                  {esProyecto
-                    ? "PROYECTO REAL"
-                    : "REFERENCIA"}
-                </span>
-              </button>
-
-              <div className="p-3">
-                <h4
-                  className={`
-                    font-bold
-                    text-sm
-                    sm:text-base
-                    line-clamp-2
-                    ${
-                      modoOscuro
-                        ? "text-white"
-                        : "text-gray-900"
-                    }
-                  `}
-                >
-                  {project.title}
-                </h4>
-
-                {project.descripcion && (
-                  <p
-                    className={`
-                      text-xs
-                      mt-1
-                      line-clamp-2
-                      ${
-                        modoOscuro
-                          ? "text-zinc-500"
-                          : "text-gray-500"
-                      }
-                    `}
-                  >
-                    {project.descripcion}
-                  </p>
-                )}
-
-                {project.ubicacion && (
-                  <p
-                    className={`
-                      text-[11px]
-                      mt-2
-                      ${
-                        modoOscuro
-                          ? "text-zinc-600"
-                          : "text-gray-400"
-                      }
-                    `}
-                  >
-                    📍 {project.ubicacion}
-                  </p>
-                )}
-
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      verElemento(project)
-                    }
-                    className={`
-                      py-2
-                      rounded-xl
-                      border
-                      text-sm
-                      transition
-                      hover:border-[#c89b3c]
-                      ${
-                        modoOscuro
-                          ? `
-                            border-zinc-700
-                            text-zinc-300
-                          `
-                          : `
-                            border-gray-300
-                            text-gray-700
-                            hover:bg-gray-50
-                          `
-                      }
-                    `}
-                  >
-                    Ver
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      cotizarElemento(project)
-                    }
-                    className="
-                      py-2
-                      rounded-xl
-                      border
-                      border-[#c89b3c]/50
-                      text-sm
-                      text-[#d6ab4c]
-                      hover:bg-[#c89b3c]/10
-                      transition
-                    "
-                  >
-                    Cotizar
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
+  if (
+    proyectosVisibles.length ===
+    0
+  ) {
+    return (
       <div
         className={`
-          mt-4
-          p-4
-          rounded-2xl
+          w-full
+
+          rounded-3xl
+
           border
-          flex
-          flex-col
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-          gap-3
+          border-dashed
+
+          p-8
+
+          text-center
+
           ${
             modoOscuro
               ? `
-                border-zinc-800
-                bg-[#0d0d0f]
+                bg-slate-900
+                border-slate-700
               `
               : `
-                border-gray-200
-                bg-white
-                shadow-sm
+                bg-sky-50
+                border-sky-200
               `
           }
         `}
       >
-        <div>
-          <p
-            className={`
-              text-sm
-              font-semibold
-              ${
-                modoOscuro
-                  ? "text-white"
-                  : "text-gray-900"
-              }
-            `}
-          >
-            ¿Buscas algo diferente?
-          </p>
 
-          <p
-            className={`
-              text-xs
-              mt-1
-              ${
-                modoOscuro
-                  ? "text-zinc-500"
-                  : "text-gray-500"
-              }
-            `}
-          >
-            Puedes solicitar un diseño completamente personalizado.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            irACotizacion()
-          }
+        <div
           className="
-            shrink-0
-            px-4
-            py-2.5
-            rounded-xl
-            border
-            border-[#c89b3c]/60
-            text-[#d6ab4c]
-            text-sm
-            font-semibold
-            hover:bg-[#c89b3c]/10
-            transition
+            w-14
+            h-14
+
+            mx-auto
+
+            rounded-2xl
+
+            bg-sky-100
+            text-sky-500
+
+            flex
+            items-center
+            justify-center
+
+            text-xl
           "
         >
-          📋 Crear otra cotización
-        </button>
+
+          <FaCode />
+
+        </div>
+
+
+        <h3
+          className="
+            text-lg
+            font-bold
+
+            mt-4
+          "
+        >
+
+          Aún no hay proyectos
+
+        </h3>
+
+
+        <p
+          className="
+            text-sm
+            text-slate-500
+
+            mt-2
+          "
+        >
+
+          Cuando Macro publique proyectos,
+          aparecerán aquí.
+
+        </p>
+
       </div>
+    );
+  }
+
+
+  /* ======================================================
+     RENDER
+  ====================================================== */
+
+  return (
+    <div
+      className="
+        w-full
+      "
+    >
+
+      {/* HEADER */}
+
+      <div
+        className="
+          mb-4
+        "
+      >
+
+        <p
+          className="
+            text-xs
+
+            uppercase
+            tracking-[0.2em]
+
+            text-sky-500
+
+            font-bold
+          "
+        >
+
+          Portafolio Macro
+
+        </p>
+
+
+        <h3
+          className="
+            text-xl
+            font-black
+
+            mt-1
+          "
+        >
+
+          {titulo}
+
+        </h3>
+
+
+        {descripcion && (
+
+          <p
+            className="
+              text-sm
+              text-slate-500
+
+              mt-1
+            "
+          >
+
+            {descripcion}
+
+          </p>
+
+        )}
+
+      </div>
+
+
+      {/* GRID */}
+
+      <div
+        className="
+          grid
+          sm:grid-cols-2
+
+          gap-4
+        "
+      >
+
+        {proyectosVisibles.map(
+          (proyecto) => {
+
+            const tipo =
+              obtenerTipo(
+                proyecto
+              );
+
+
+            const imagen =
+              proyecto.imagen ||
+              (
+                Array.isArray(
+                  proyecto.imagenes
+                )
+                  ? proyecto.imagenes[0]
+                  : ""
+              ) ||
+              (
+                Array.isArray(
+                  proyecto.galeria
+                )
+                  ? proyecto.galeria[0]
+                  : ""
+              );
+
+
+            return (
+              <button
+                key={
+                  proyecto.id ||
+                  proyecto.nombre
+                }
+                type="button"
+                onClick={() =>
+                  abrirProyecto(
+                    proyecto
+                  )
+                }
+                className={`
+                  group
+
+                  text-left
+
+                  rounded-2xl
+
+                  overflow-hidden
+
+                  border
+
+                  transition-all
+                  duration-300
+
+                  hover:-translate-y-1
+                  hover:shadow-xl
+
+                  ${
+                    modoOscuro
+                      ? `
+                        bg-slate-900
+                        border-slate-800
+
+                        hover:border-sky-500/40
+                      `
+                      : `
+                        bg-white
+                        border-sky-100
+
+                        hover:border-sky-300
+                      `
+                  }
+                `}
+              >
+
+                {/* IMAGEN */}
+
+                <div
+                  className="
+                    relative
+
+                    aspect-[16/10]
+
+                    bg-gradient-to-br
+                    from-sky-100
+                    to-blue-100
+
+                    overflow-hidden
+                  "
+                >
+
+                  {imagen ? (
+
+                    <img
+                      src={
+                        imagen
+                      }
+                      alt={
+                        proyecto.nombre ||
+                        "Proyecto Macro"
+                      }
+                      loading="lazy"
+                      className="
+                        w-full
+                        h-full
+
+                        object-cover
+
+                        transition-transform
+                        duration-500
+
+                        group-hover:scale-105
+                      "
+                    />
+
+                  ) : (
+
+                    <div
+                      className="
+                        w-full
+                        h-full
+
+                        flex
+                        items-center
+                        justify-center
+
+                        text-4xl
+                        text-sky-400
+                      "
+                    >
+
+                      {obtenerIcono(
+                        tipo
+                      )}
+
+                    </div>
+
+                  )}
+
+
+                  <div
+                    className="
+                      absolute
+                      inset-0
+
+                      bg-gradient-to-t
+                      from-black/65
+                      via-black/5
+                      to-transparent
+                    "
+                  />
+
+
+                  {/* TIPO */}
+
+                  <span
+                    className="
+                      absolute
+                      top-3
+                      left-3
+
+                      bg-black/70
+
+                      backdrop-blur-md
+
+                      border
+                      border-white/10
+
+                      text-white
+
+                      px-3
+                      py-1.5
+
+                      rounded-full
+
+                      text-[10px]
+                      font-semibold
+
+                      flex
+                      items-center
+                      gap-1.5
+                    "
+                  >
+
+                    {obtenerIcono(
+                      tipo
+                    )}
+
+                    {tipo}
+
+                  </span>
+
+
+                  {/* DESTACADO */}
+
+                  {proyecto.destacado && (
+
+                    <span
+                      className="
+                        absolute
+                        top-3
+                        right-3
+
+                        bg-sky-500
+                        text-white
+
+                        w-8
+                        h-8
+
+                        rounded-full
+
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+
+                      <FaStar
+                        size={12}
+                      />
+
+                    </span>
+
+                  )}
+
+                </div>
+
+
+                {/* INFORMACIÓN */}
+
+                <div
+                  className="
+                    p-4
+                  "
+                >
+
+                  <h4
+                    className="
+                      text-base
+                      font-bold
+
+                      line-clamp-1
+                    "
+                  >
+
+                    {proyecto.nombre ||
+                      "Proyecto Macro"
+                    }
+
+                  </h4>
+
+
+                  {proyecto.descripcion && (
+
+                    <p
+                      className="
+                        text-sm
+                        text-slate-500
+
+                        mt-2
+
+                        line-clamp-2
+                      "
+                    >
+
+                      {
+                        proyecto.descripcion
+                      }
+
+                    </p>
+
+                  )}
+
+
+                  {/* TECNOLOGÍAS */}
+
+                  {Array.isArray(
+                    proyecto.tecnologias
+                  ) &&
+                    proyecto
+                      .tecnologias
+                      .length >
+                      0 && (
+
+                      <div
+                        className="
+                          flex
+                          flex-wrap
+
+                          gap-1.5
+
+                          mt-3
+                        "
+                      >
+
+                        {proyecto.tecnologias
+                          .slice(
+                            0,
+                            3
+                          )
+                          .map(
+                            (
+                              tecnologia
+                            ) => (
+
+                              <span
+                                key={
+                                  tecnologia
+                                }
+                                className="
+                                  bg-sky-50
+                                  text-sky-600
+
+                                  px-2
+                                  py-1
+
+                                  rounded-full
+
+                                  text-[9px]
+                                  font-semibold
+                                "
+                              >
+
+                                {tecnologia}
+
+                              </span>
+
+                            )
+                          )}
+
+                      </div>
+
+                    )}
+
+
+                  {/* FOOTER */}
+
+                  <div
+                    className="
+                      mt-4
+
+                      flex
+                      items-center
+                      justify-between
+                      gap-3
+                    "
+                  >
+
+                    {proyecto.estado ? (
+
+                      <span
+                        className="
+                          text-[10px]
+
+                          uppercase
+                          tracking-wide
+
+                          text-slate-400
+                        "
+                      >
+
+                        {proyecto.estado}
+
+                      </span>
+
+                    ) : (
+
+                      <span />
+
+                    )}
+
+
+                    <span
+                      className="
+                        text-sky-500
+
+                        text-xs
+                        font-semibold
+
+                        flex
+                        items-center
+                        gap-1.5
+                      "
+                    >
+
+                      Ver proyecto
+
+
+                      <FaArrowRight
+                        className="
+                          transition-transform
+
+                          group-hover:translate-x-1
+                        "
+                      />
+
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </button>
+            );
+          }
+        )}
+
+      </div>
+
     </div>
   );
 }
+
+
+export default ProjectGallery;

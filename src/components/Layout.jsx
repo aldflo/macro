@@ -7,6 +7,7 @@ import Navbar from "./Navbar";
 
 import {
   Outlet,
+  useLocation,
 } from "react-router-dom";
 
 import {
@@ -25,6 +26,7 @@ import {
 
 
 function Layout() {
+  const location = useLocation();
 
   const [
     modoOscuro,
@@ -38,33 +40,18 @@ function Layout() {
 
 
   /* =========================================
-     CARGAR TEMA DEL USUARIO
+     CARGAR TEMA
   ========================================= */
 
   useEffect(() => {
-
     const unsubscribe =
       onAuthStateChanged(
         auth,
-        async (
-          user
-        ) => {
-
-          setTemaListo(
-            false
-          );
-
-
-          /* =====================================
-             SIN SESIÓN
-             → CLARO POR DEFECTO
-          ===================================== */
+        async (user) => {
+          setTemaListo(false);
 
           if (!user) {
-
-            setModoOscuro(
-              false
-            );
+            setModoOscuro(false);
 
             document.documentElement.setAttribute(
               "data-theme",
@@ -74,77 +61,44 @@ function Layout() {
             document.documentElement.style.colorScheme =
               "light";
 
-
-            setTemaListo(
-              true
-            );
+            setTemaListo(true);
 
             return;
           }
 
-
-          /* =====================================
-             CLAVE ÚNICA POR USUARIO + DISPOSITIVO
-          ===================================== */
-
           const claveTema =
             `tema_${user.uid}`;
-
-
-          /* =====================================
-             1. BUSCAR TEMA EN ESTE DISPOSITIVO
-          ===================================== */
 
           const temaLocal =
             localStorage.getItem(
               claveTema
             );
 
-
           if (
-            temaLocal ===
-              "oscuro" ||
-            temaLocal ===
-              "claro"
+            temaLocal === "oscuro" ||
+            temaLocal === "claro"
           ) {
-
             const oscuro =
-              temaLocal ===
-              "oscuro";
+              temaLocal === "oscuro";
 
-
-            setModoOscuro(
-              oscuro
-            );
-
+            setModoOscuro(oscuro);
 
             document.documentElement.setAttribute(
               "data-theme",
               temaLocal
             );
 
-
             document.documentElement.style.colorScheme =
               oscuro
                 ? "dark"
                 : "light";
 
-
-            setTemaListo(
-              true
-            );
+            setTemaListo(true);
 
             return;
           }
 
-
-          /* =====================================
-             2. SI ES PRIMERA VEZ EN ESTE EQUIPO,
-                BUSCAR PREFERENCIA EN FIRESTORE
-          ===================================== */
-
           try {
-
             const usuarioRef =
               doc(
                 db,
@@ -152,12 +106,10 @@ function Layout() {
                 user.uid
               );
 
-
             const snapshot =
               await getDoc(
                 usuarioRef
               );
-
 
             const temaFirestore =
               snapshot.exists()
@@ -165,39 +117,25 @@ function Layout() {
                     ?.temaPreferido
                 : null;
 
-
             const temaInicial =
-              temaFirestore ===
-                "oscuro"
+              temaFirestore === "oscuro"
                 ? "oscuro"
                 : "claro";
 
-
             const oscuro =
-              temaInicial ===
-              "oscuro";
-
-
-            /* =====================================
-               GUARDARLO EN ESTE DISPOSITIVO
-            ===================================== */
+              temaInicial === "oscuro";
 
             localStorage.setItem(
               claveTema,
               temaInicial
             );
 
-
-            setModoOscuro(
-              oscuro
-            );
-
+            setModoOscuro(oscuro);
 
             document.documentElement.setAttribute(
               "data-theme",
               temaInicial
             );
-
 
             document.documentElement.style.colorScheme =
               oscuro
@@ -205,49 +143,31 @@ function Layout() {
                 : "light";
 
           } catch (error) {
-
             console.error(
-              "Error cargando tema del usuario:",
+              "Error cargando tema:",
               error
             );
-
-
-            /* =====================================
-               FALLBACK
-               → CLARO
-            ===================================== */
 
             localStorage.setItem(
               claveTema,
               "claro"
             );
 
-
-            setModoOscuro(
-              false
-            );
-
+            setModoOscuro(false);
 
             document.documentElement.setAttribute(
               "data-theme",
               "claro"
             );
 
-
             document.documentElement.style.colorScheme =
               "light";
 
           } finally {
-
-            setTemaListo(
-              true
-            );
-
+            setTemaListo(true);
           }
-
         }
       );
-
 
     return () =>
       unsubscribe();
@@ -256,154 +176,123 @@ function Layout() {
 
 
   /* =========================================
-     ACTUALIZAR TEMA DESDE PERFIL
+     ACTUALIZAR TEMA
   ========================================= */
 
   const actualizarTema =
-    (
-      nuevoTema
-    ) => {
-
+    (nuevoTema) => {
       const user =
         auth.currentUser;
 
-
       const tema =
-        nuevoTema ===
-          "oscuro"
+        nuevoTema === "oscuro"
           ? "oscuro"
           : "claro";
 
-
       const oscuro =
-        tema ===
-        "oscuro";
-
+        tema === "oscuro";
 
       if (user) {
-
         localStorage.setItem(
           `tema_${user.uid}`,
           tema
         );
-
       }
 
-
-      setModoOscuro(
-        oscuro
-      );
-
+      setModoOscuro(oscuro);
 
       document.documentElement.setAttribute(
         "data-theme",
         tema
       );
 
-
       document.documentElement.style.colorScheme =
         oscuro
           ? "dark"
           : "light";
-
     };
 
 
   /* =========================================
-     ESPERAR TEMA
+     LOADING
   ========================================= */
 
-  if (
-    !temaListo
-  ) {
-
+  if (!temaListo) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-sky-50 flex items-center justify-center">
 
         <div className="text-center">
 
           <div
             className="
-              w-10
-              h-10
-
+              w-11
+              h-11
               border-4
-              border-gray-200
-              border-t-yellow-500
-
+              border-sky-100
+              border-t-sky-500
               rounded-full
-
               animate-spin
-
               mx-auto
             "
           />
 
-          <p className="text-gray-500 mt-4">
-            Cargando...
+          <p className="text-slate-500 mt-4">
+            Cargando Macro...
           </p>
 
         </div>
 
       </div>
     );
-
   }
 
 
   /* =========================================
-     RENDER
+     HOME DEBAJO DEL NAVBAR
+     En "/" dejamos que el hero pase por debajo
+     del navbar transparente.
   ========================================= */
+
+  const esHome =
+    location.pathname === "/";
+
 
   return (
     <div
       className={`
         min-h-screen
-
         transition-colors
         duration-300
 
         ${
           modoOscuro
-            ? `
-              bg-black
-              text-white
-            `
-            : `
-              bg-gray-50
-              text-gray-900
-            `
+            ? "bg-slate-950 text-white"
+            : "bg-[#f7fcff] text-slate-900"
         }
       `}
     >
 
-      {/* ================================= */}
-      {/* NAVBAR */}
-      {/* ================================= */}
-
       <Navbar
-        modoOscuro={
-          modoOscuro
-        }
+        modoOscuro={modoOscuro}
       />
 
 
-      {/* ================================= */}
-      {/* CONTENIDO */}
-      {/* ================================= */}
-
       <main
         className={`
-          pt-20
           min-h-screen
-
           transition-colors
           duration-300
 
           ${
+            esHome
+              ? "pt-0"
+              : "pt-20"
+          }
+
+          ${
             modoOscuro
-              ? "bg-black"
-              : "bg-gray-50"
+              ? "bg-slate-950"
+              : "bg-[#f7fcff]"
           }
         `}
       >

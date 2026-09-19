@@ -10,11 +10,6 @@ import {
 } from "react-router-dom";
 
 import {
-  auth,
-  db,
-} from "../firebase.config";
-
-import {
   collection,
   onSnapshot,
   orderBy,
@@ -22,71 +17,89 @@ import {
 } from "firebase/firestore";
 
 import {
+  auth,
+  db,
+} from "../firebase.config";
+
+import PublicacionesFeed
+  from "../components/PublicacionesFeed";
+
+import {
   FaArrowRight,
   FaBars,
-  FaBuilding,
   FaCheckCircle,
+  FaClipboardList,
   FaClock,
-  FaFileInvoiceDollar,
+  FaCode,
   FaHeart,
   FaHome,
+  FaLaptopCode,
+  FaPlusCircle,
   FaRobot,
   FaSearch,
+  FaShoppingBag,
+  FaStore,
   FaTimes,
   FaUser,
   FaEye,
 } from "react-icons/fa";
 
-/* ======================================================
-   MENU CLIENTE
-====================================================== */
 
 function MenuCliente() {
-  const { modoOscuro = false } = useOutletContext() || {};
-
   const navigate =
     useNavigate();
+
+
+  const {
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
+
 
   const [
     open,
     setOpen,
   ] = useState(false);
 
+
   const [
-    cotizaciones,
-    setCotizaciones,
+    solicitudes,
+    setSolicitudes,
   ] = useState([]);
+
 
   const [
     proyectosCliente,
     setProyectosCliente,
   ] = useState([]);
 
+
   const [
     favoritos,
     setFavoritos,
   ] = useState([]);
+
 
   const [
     cargando,
     setCargando,
   ] = useState(true);
 
-  /* ======================================================
-     USUARIO
-  ====================================================== */
 
   const usuario =
     auth.currentUser;
 
+
   const userEmail =
     usuario?.email || "";
+
 
   const userUid =
     usuario?.uid || "";
 
+
   /* ======================================================
-     COTIZACIONES
+     SOLICITUDES
   ====================================================== */
 
   useEffect(() => {
@@ -94,9 +107,13 @@ function MenuCliente() {
       !userUid &&
       !userEmail
     ) {
-      setCargando(false);
+      setCargando(
+        false
+      );
+
       return;
     }
+
 
     const consulta =
       query(
@@ -109,6 +126,7 @@ function MenuCliente() {
           "desc"
         )
       );
+
 
     const unsub =
       onSnapshot(
@@ -125,48 +143,35 @@ function MenuCliente() {
                   ...documento.data(),
                 })
               )
-              .filter((cotizacion) => {
-                const pertenece =
-                  cotizacion.uid === userUid ||
-                  cotizacion.usuario === userEmail;
+              .filter(
+                (item) =>
+                  (
+                    item.uid ===
+                      userUid ||
+                    item.usuario ===
+                      userEmail
+                  ) &&
+                  item.ocultoPorCliente !==
+                    true
+              );
 
-                const visible =
-                  cotizacion.ocultoPorCliente !== true;
 
-                const noFinalizada =
-                  ![
-                    "finalizada",
-                    "terminada",
-                    "terminado",
-                  ].includes(cotizacion.estado);
-
-                return (
-                  pertenece &&
-                  visible &&
-                  noFinalizada
-                );
-              });
-
-          setCotizaciones(
+          setSolicitudes(
             data
           );
+
 
           setCargando(
             false
           );
         },
 
-        (error) => {
-          console.error(
-            "Error cargando cotizaciones:",
-            error
-          );
-
+        () =>
           setCargando(
             false
-          );
-        }
+          )
       );
+
 
     return () =>
       unsub();
@@ -176,17 +181,16 @@ function MenuCliente() {
     userEmail,
   ]);
 
+
   /* ======================================================
-     PROYECTOS DEL CLIENTE
+     PROYECTOS CLIENTE
   ====================================================== */
 
   useEffect(() => {
-    if (
-      !userUid &&
-      !userEmail
-    ) {
+    if (!userUid) {
       return;
     }
+
 
     const unsub =
       onSnapshot(
@@ -207,25 +211,20 @@ function MenuCliente() {
                 })
               )
               .filter(
-                (proyecto) =>
-                  proyecto.uid ===
+                (item) =>
+                  item.uid ===
                     userUid ||
-                  proyecto.usuario ===
+                  item.usuario ===
                     userEmail
               );
+
 
           setProyectosCliente(
             data
           );
-        },
-
-        (error) => {
-          console.error(
-            "Error cargando proyectos del cliente:",
-            error
-          );
         }
       );
+
 
     return () =>
       unsub();
@@ -235,17 +234,16 @@ function MenuCliente() {
     userEmail,
   ]);
 
+
   /* ======================================================
      FAVORITOS
   ====================================================== */
 
   useEffect(() => {
-    if (
-      !userUid &&
-      !userEmail
-    ) {
+    if (!userUid) {
       return;
     }
+
 
     const unsub =
       onSnapshot(
@@ -266,25 +264,20 @@ function MenuCliente() {
                 })
               )
               .filter(
-                (favorito) =>
-                  favorito.uid ===
+                (item) =>
+                  item.uid ===
                     userUid ||
-                  favorito.usuario ===
+                  item.usuario ===
                     userEmail
               );
+
 
           setFavoritos(
             data
           );
-        },
-
-        (error) => {
-          console.error(
-            "Error cargando favoritos:",
-            error
-          );
         }
       );
+
 
     return () =>
       unsub();
@@ -294,89 +287,48 @@ function MenuCliente() {
     userEmail,
   ]);
 
+
   /* ======================================================
      ESTADÍSTICAS
   ====================================================== */
 
   const estadisticas =
     useMemo(() => {
-      const nuevas =
-        cotizaciones.filter(
-          (cotizacion) =>
-            cotizacion.vistoPorCliente ===
-              false &&
-            [
-              "cotizada",
-              "propuesta_enviada",
-              "propuesta_modificada",
-              "confirmada_admin",
-              "anticipo_pendiente",
-              "anticipo_pagado",
-              "anticipo_recibido",
-              "en_proceso",
-              "proceso",
-              "instalacion_programada",
-              "instalacion",
-            ].includes(
-              cotizacion.estado
-            )
-        );
-
-      const activas =
-        cotizaciones.filter(
-          (cotizacion) =>
-            ![
-              "rechazada",
-              "cancelada",
-              "finalizada",
-              "terminada",
-              "terminado",
-            ].includes(
-              cotizacion.estado
-            )
-        );
-
-      const esperando =
-        cotizaciones.filter(
-          (cotizacion) =>
-            [
-              "pendiente",
-              "solicitada",
-              "revision",
-              "en_revision",
-            ].includes(
-              cotizacion.estado
-            )
-        );
-
       const enProceso =
-        cotizaciones.filter(
-          (cotizacion) =>
+        solicitudes.filter(
+          (item) =>
             [
               "confirmada_admin",
               "anticipo_pendiente",
               "anticipo_pagado",
               "en_proceso",
               "proceso",
-              "instalacion_programada",
+              "desarrollo",
+              "desarrollo_activo",
               "instalacion",
             ].includes(
-              cotizacion.estado
+              String(
+                item.estado ||
+                ""
+              ).toLowerCase()
             )
         );
+
+
+      const nuevas =
+        solicitudes.filter(
+          (item) =>
+            item.vistoPorCliente ===
+            false
+        );
+
 
       return {
+        total:
+          solicitudes.length,
+
         nuevas:
           nuevas.length,
-
-        total:
-          cotizaciones.length,
-
-        activas:
-          activas.length,
-
-        esperando:
-          esperando.length,
 
         enProceso:
           enProceso.length,
@@ -389,30 +341,26 @@ function MenuCliente() {
       };
 
     }, [
-      cotizaciones,
+      solicitudes,
       proyectosCliente,
       favoritos,
     ]);
 
-  /* ======================================================
-     LOADING
-  ====================================================== */
 
-  if (
-    cargando
-  ) {
+  if (cargando) {
     return (
       <div
-        className={`
+        className="
           min-h-screen
+
           flex
           items-center
           justify-center
-          transition-colors
-          duration-300
-          ${modoOscuro ? "bg-black text-white" : "wealth-light bg-gray-50 text-gray-900"}
-        `}
+
+          bg-[#f5fbff]
+        "
       >
+
         <div className="text-center">
 
           <div
@@ -421,8 +369,8 @@ function MenuCliente() {
               h-11
 
               border-4
-              border-zinc-800
-              border-t-yellow-500
+              border-sky-100
+              border-t-sky-500
 
               rounded-full
 
@@ -432,41 +380,45 @@ function MenuCliente() {
             "
           />
 
-          <p className="text-zinc-500 mt-4">
-            Cargando tu panel Wealth...
+
+          <p className="mt-4 text-slate-500">
+
+            Cargando Macro...
+
           </p>
 
         </div>
+
       </div>
     );
   }
 
-  /* ======================================================
-     RENDER
-  ====================================================== */
 
   return (
     <div
       className={`
         min-h-screen
+
         flex
-        transition-colors
-        duration-300
-        ${modoOscuro ? "bg-black text-white" : "wealth-light bg-gray-50 text-gray-900"}
+
+        ${
+          modoOscuro
+            ? "bg-slate-950 text-white"
+            : "bg-[#f5fbff] text-slate-900"
+        }
       `}
     >
-      <style>{temaClaroCss}</style>
 
-      {/* =================================================
-          HEADER MOBILE
-      ================================================= */}
+      {/* ================================================= */}
+      {/* MOBILE */}
+      {/* ================================================= */}
 
       <div
         className="
           lg:hidden
 
           fixed
-          top-0
+          top-20
           left-0
           right-0
 
@@ -474,11 +426,10 @@ function MenuCliente() {
 
           h-16
 
-          bg-black/95
-          backdrop-blur-xl
+          bg-white
 
           border-b
-          border-zinc-800
+          border-sky-100
 
           flex
           items-center
@@ -488,117 +439,174 @@ function MenuCliente() {
         "
       >
 
-        <div>
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
 
-          <p className="font-black tracking-wide">
-            WEALTH
-          </p>
-
-          <p
+          <div
             className="
-              text-[9px]
-              uppercase
-              tracking-[0.25em]
-              text-yellow-500
+              w-10
+              h-10
+
+              bg-sky-500
+              text-white
+
+              rounded-xl
+
+              flex
+              items-center
+              justify-center
             "
           >
-            Panel Cliente
-          </p>
+
+            <FaCode />
+
+          </div>
+
+
+          <strong>
+            Macro
+          </strong>
 
         </div>
 
+
         <button
-          type="button"
           onClick={() =>
-            setOpen(true)
+            setOpen(
+              true
+            )
           }
           className="
             w-10
             h-10
 
+            bg-sky-50
+            text-sky-600
+
             rounded-xl
-
-            bg-zinc-900
-
-            border
-            border-zinc-800
 
             flex
             items-center
             justify-center
-
-            text-zinc-300
           "
         >
+
           <FaBars />
+
         </button>
 
       </div>
 
-      {/* =================================================
-          SIDEBAR DESKTOP
-      ================================================= */}
+
+      {/* ================================================= */}
+      {/* SIDEBAR */}
+      {/* ================================================= */}
 
       <aside
-        className="
+        className={`
           hidden
           lg:flex
 
           w-72
-          min-h-screen
 
           shrink-0
 
-          bg-zinc-950
+          min-h-screen
 
           border-r
-          border-zinc-800
 
           p-6
 
           flex-col
-        "
+
+          ${
+            modoOscuro
+              ? "bg-slate-950 border-slate-800"
+              : "bg-white border-sky-100"
+          }
+        `}
       >
 
-        {/* TÍTULO */}
-
         <div className="mb-7">
+
+          <div
+            className="
+              w-12
+              h-12
+
+              rounded-2xl
+
+              bg-sky-500
+              text-white
+
+              flex
+              items-center
+              justify-center
+            "
+          >
+
+            <FaCode />
+
+          </div>
+
 
           <p
             className="
               text-xs
+              text-sky-500
+
               uppercase
-              tracking-[0.25em]
-              text-yellow-500
-              font-semibold
+              tracking-[0.2em]
+
+              font-bold
+
+              mt-5
             "
           >
+
             Área de clientes
+
           </p>
 
-          <p className="text-zinc-500 text-sm mt-1">
-            Wealth Grupo Empresarial
-          </p>
+
+          <h2
+            className="
+              text-2xl
+              font-black
+
+              mt-1
+            "
+          >
+
+            Macro
+
+          </h2>
 
         </div>
 
-        {/* NAVEGACIÓN */}
 
-        <nav className="space-y-3">
+        <nav className="space-y-2">
 
-          <BotonMenuCliente
-            activo
-            icon={
-              <FaHome />
+          <MenuButton
+            icon={<FaHome />}
+            text="Inicio"
+            active
+            onClick={() =>
+              navigate(
+                "/cliente"
+              )
             }
-            texto="Inicio"
           />
 
-          <BotonMenuCliente
-            icon={
-              <FaSearch />
-            }
-            texto="Proyectos"
+
+          <MenuButton
+            icon={<FaSearch />}
+            text="Proyectos"
             onClick={() =>
               navigate(
                 "/proyectos"
@@ -606,12 +614,13 @@ function MenuCliente() {
             }
           />
 
-          <BotonMenuCliente
-            especial
+
+          <MenuButton
             icon={
-              <FaFileInvoiceDollar />
+              <FaPlusCircle />
             }
-            texto="Solicitar cotización"
+            text="Solicitar servicio"
+            special
             onClick={() =>
               navigate(
                 "/crear-cotizacion"
@@ -619,11 +628,12 @@ function MenuCliente() {
             }
           />
 
-          <BotonMenuCliente
+
+          <MenuButton
             icon={
-              <FaFileInvoiceDollar />
+              <FaClipboardList />
             }
-            texto="Mis cotizaciones"
+            text="Mis solicitudes"
             badge={
               estadisticas.nuevas
             }
@@ -634,11 +644,12 @@ function MenuCliente() {
             }
           />
 
-          <BotonMenuCliente
+
+          <MenuButton
             icon={
-              <FaBuilding />
+              <FaLaptopCode />
             }
-            texto="Mis proyectos"
+            text="Mis proyectos"
             onClick={() =>
               navigate(
                 "/cliente/mis-proyectos"
@@ -646,11 +657,12 @@ function MenuCliente() {
             }
           />
 
-          <BotonMenuCliente
+
+          <MenuButton
             icon={
               <FaHeart />
             }
-            texto="Favoritos"
+            text="Favoritos"
             onClick={() =>
               navigate(
                 "/favoritos"
@@ -658,11 +670,36 @@ function MenuCliente() {
             }
           />
 
-          <BotonMenuCliente
+
+          <MenuButton
             icon={
-              <FaUser />
+              <FaShoppingBag />
             }
-            texto="Perfil"
+            text="Tienda Macro"
+            onClick={() =>
+              navigate(
+                "/tienda"
+              )
+            }
+          />
+
+
+          <MenuButton
+            icon={
+              <FaRobot />
+            }
+            text="Macro IA"
+            onClick={() =>
+              navigate(
+                "/chat-ia"
+              )
+            }
+          />
+
+
+          <MenuButton
+            icon={<FaUser />}
+            text="Perfil"
             onClick={() =>
               navigate(
                 "/perfil"
@@ -672,172 +709,21 @@ function MenuCliente() {
 
         </nav>
 
-        {/* =================================================
-            WEALTH IA
-        ================================================= */}
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              "/chat-ia"
-            )
-          }
-          className="
-            mt-7
-
-            w-full
-
-            text-left
-
-            relative
-            overflow-hidden
-
-            bg-gradient-to-br
-            from-yellow-500/10
-            via-yellow-500/5
-            to-transparent
-
-            border
-            border-yellow-500/25
-
-            hover:border-yellow-500/60
-
-            rounded-2xl
-
-            p-4
-
-            transition-all
-            duration-300
-
-            group
-          "
-        >
-
-          <div
-            className="
-              absolute
-              top-0
-              left-0
-              right-0
-
-              h-[1px]
-
-              bg-gradient-to-r
-              from-transparent
-              via-yellow-500
-              to-transparent
-            "
-          />
-
-          <div className="flex items-center gap-3">
-
-            <div
-              className="
-                w-11
-                h-11
-
-                rounded-xl
-
-                bg-yellow-500
-
-                flex
-                items-center
-                justify-center
-
-                text-black
-
-                shrink-0
-              "
-            >
-              <FaRobot />
-            </div>
-
-            <div className="flex-1">
-
-              <p className="font-bold text-sm">
-                WEALTH IA
-              </p>
-
-              <p className="text-[11px] text-zinc-500 mt-1">
-                Asistente virtual
-              </p>
-
-            </div>
-
-            <FaArrowRight
-              className="
-                text-yellow-500
-
-                transition-transform
-                duration-300
-
-                group-hover:translate-x-1
-              "
-            />
-
-          </div>
-
-        </button>
-
-        {/* ESTADO */}
-
-        <div
-          className="
-            mt-auto
-
-            bg-black
-
-            border
-            border-zinc-800
-
-            rounded-2xl
-
-            p-4
-          "
-        >
-
-          <div className="flex items-center gap-2">
-
-            <div
-              className="
-                w-2.5
-                h-2.5
-
-                rounded-full
-
-                bg-green-500
-              "
-            />
-
-            <p className="text-sm font-medium">
-              Cuenta activa
-            </p>
-
-          </div>
-
-          <p className="text-xs text-zinc-600 mt-2">
-            Cotizaciones y proyectos sincronizados.
-          </p>
-
-        </div>
-
       </aside>
 
-      {/* =================================================
-          MENU MOBILE
-      ================================================= */}
+
+      {/* MOBILE DRAWER */}
 
       {open && (
+
         <div
           className="
             fixed
             inset-0
 
-            z-50
+            z-[100]
 
-            bg-black/80
-            backdrop-blur-md
+            bg-black/60
 
             lg:hidden
           "
@@ -846,7 +732,6 @@ function MenuCliente() {
           <div
             className="
               absolute
-
               right-0
               top-0
               bottom-0
@@ -854,83 +739,49 @@ function MenuCliente() {
               w-[85%]
               max-w-sm
 
-              bg-zinc-950
-
-              border-l
-              border-zinc-800
+              bg-white
 
               p-6
-
-              overflow-y-auto
             "
           >
-
-            {/* CABECERA */}
 
             <div
               className="
                 flex
-                items-center
                 justify-between
+                items-center
 
-                mb-8
+                mb-7
               "
             >
 
-              <div>
+              <strong className="text-xl">
 
-                <p className="font-black text-xl">
-                  WEALTH
-                </p>
+                Macro
 
-                <p
-                  className="
-                    text-[10px]
-                    text-yellow-500
-                    uppercase
-                    tracking-[0.25em]
-                  "
-                >
-                  Cliente
-                </p>
+              </strong>
 
-              </div>
 
               <button
-                type="button"
                 onClick={() =>
-                  setOpen(false)
+                  setOpen(
+                    false
+                  )
                 }
-                className="
-                  w-10
-                  h-10
-
-                  bg-zinc-900
-
-                  rounded-xl
-
-                  flex
-                  items-center
-                  justify-center
-
-                  text-zinc-400
-                "
               >
+
                 <FaTimes />
+
               </button>
 
             </div>
 
-            {/* LINKS */}
 
-            <div className="space-y-3">
+            <div className="space-y-2">
 
-              <BotonMobile
-                icon={
-                  <FaHome />
-                }
-                texto="Inicio"
-                activo
+              <MenuButton
+                icon={<FaHome />}
+                text="Inicio"
                 onClick={() => {
                   navigate(
                     "/cliente"
@@ -942,28 +793,13 @@ function MenuCliente() {
                 }}
               />
 
-              <BotonMobile
-                icon={
-                  <FaSearch />
-                }
-                texto="Proyectos"
-                onClick={() => {
-                  navigate(
-                    "/proyectos"
-                  );
 
-                  setOpen(
-                    false
-                  );
-                }}
-              />
-
-              <BotonMobile
+              <MenuButton
                 icon={
-                  <FaFileInvoiceDollar />
+                  <FaPlusCircle />
                 }
-                texto="Solicitar cotización"
-                especial
+                text="Solicitar servicio"
+                special
                 onClick={() => {
                   navigate(
                     "/crear-cotizacion"
@@ -975,14 +811,12 @@ function MenuCliente() {
                 }}
               />
 
-              <BotonMobile
+
+              <MenuButton
                 icon={
-                  <FaFileInvoiceDollar />
+                  <FaClipboardList />
                 }
-                texto="Mis cotizaciones"
-                badge={
-                  estadisticas.nuevas
-                }
+                text="Solicitudes"
                 onClick={() => {
                   navigate(
                     "/cliente/cotizaciones"
@@ -994,11 +828,12 @@ function MenuCliente() {
                 }}
               />
 
-              <BotonMobile
+
+              <MenuButton
                 icon={
-                  <FaBuilding />
+                  <FaLaptopCode />
                 }
-                texto="Mis proyectos"
+                text="Mis proyectos"
                 onClick={() => {
                   navigate(
                     "/cliente/mis-proyectos"
@@ -1010,14 +845,15 @@ function MenuCliente() {
                 }}
               />
 
-              <BotonMobile
+
+              <MenuButton
                 icon={
-                  <FaHeart />
+                  <FaShoppingBag />
                 }
-                texto="Favoritos"
+                text="Tienda"
                 onClick={() => {
                   navigate(
-                    "/favoritos"
+                    "/tienda"
                   );
 
                   setOpen(
@@ -1026,11 +862,10 @@ function MenuCliente() {
                 }}
               />
 
-              <BotonMobile
-                icon={
-                  <FaUser />
-                }
-                texto="Perfil"
+
+              <MenuButton
+                icon={<FaUser />}
+                text="Perfil"
                 onClick={() => {
                   navigate(
                     "/perfil"
@@ -1042,933 +877,334 @@ function MenuCliente() {
                 }}
               />
 
-              {/* WEALTH IA MOBILE */}
-
-              <BotonMobile
-                icon={
-                  <FaRobot />
-                }
-                texto="WEALTH IA"
-                especial
-                onClick={() => {
-                  navigate(
-                    "/chat-ia"
-                  );
-
-                  setOpen(
-                    false
-                  );
-                }}
-              />
-
             </div>
 
           </div>
 
         </div>
+
       )}
 
-      {/* =================================================
-          CONTENIDO
-      ================================================= */}
+
+      {/* ================================================= */}
+      {/* MAIN */}
+      {/* ================================================= */}
 
       <main
         className="
           flex-1
           min-w-0
 
-          bg-black
-
           px-5
-          pb-10
-          pt-24
-
           md:px-7
+          lg:px-9
 
-          lg:p-10
+          pb-12
+          pt-24
+          lg:pt-10
         "
       >
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HERO */}
 
-        <section className="mb-9">
+        <section
+          className={`
+            rounded-[30px]
+
+            border
+
+            p-7
+
+            ${
+              modoOscuro
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-sky-100"
+            }
+          `}
+        >
+
+          <p
+            className="
+              text-xs
+              text-sky-500
+
+              uppercase
+              tracking-[0.2em]
+
+              font-bold
+            "
+          >
+
+            Panel del cliente
+
+          </p>
+
+
+          <h1
+            className="
+              text-4xl
+              md:text-5xl
+
+              font-black
+
+              mt-3
+            "
+          >
+
+            Bienvenido a
+
+            <span className="text-sky-500">
+
+              {" "}Macro
+
+            </span>
+
+          </h1>
+
+
+          <p
+            className="
+              text-slate-500
+
+              text-lg
+
+              mt-4
+
+              max-w-3xl
+            "
+          >
+
+            Solicita servicios, consulta tus proyectos
+            y descubre las últimas novedades de Macro.
+
+          </p>
+
 
           <div
             className="
               flex
-              flex-col
+              flex-wrap
+              gap-3
 
-              xl:flex-row
-              xl:items-end
-              xl:justify-between
-
-              gap-5
+              mt-6
             "
           >
 
-            <div>
+            <button
+              onClick={() =>
+                navigate(
+                  "/crear-cotizacion"
+                )
+              }
+              className="
+                bg-sky-500
+                text-white
 
-              <p
-                className="
-                  text-xs
-                  uppercase
-                  tracking-[0.3em]
+                px-6
+                py-3
 
-                  text-yellow-500
+                rounded-xl
 
-                  font-semibold
-                "
-              >
-                Wealth Grupo Empresarial
-              </p>
+                font-bold
 
-              <h1
-                className="
-                  text-3xl
-                  md:text-5xl
+                flex
+                items-center
+                gap-2
+              "
+            >
 
-                  font-bold
+              <FaPlusCircle />
 
-                  mt-3
+              Solicitar servicio
 
-                  tracking-tight
-                "
-              >
-                Bienvenido a{" "}
+            </button>
 
-                <span className="text-yellow-500">
-                  Wealth
-                </span>
 
-              </h1>
+            <button
+              onClick={() =>
+                navigate(
+                  "/cliente/cotizaciones"
+                )
+              }
+              className="
+                bg-sky-50
 
-              <p
-                className="
-                  text-zinc-400
+                border
+                border-sky-100
 
-                  mt-3
+                text-sky-600
 
-                  text-base
-                  md:text-lg
+                px-6
+                py-3
 
-                  max-w-2xl
-                "
-              >
-                Consulta tus solicitudes, revisa avances y encuentra
-                inspiración para tu próximo proyecto.
-              </p>
+                rounded-xl
 
-            </div>
+                font-semibold
 
-            {/* NOVEDADES */}
+                flex
+                items-center
+                gap-2
+              "
+            >
 
-            {estadisticas.nuevas >
-            0 ? (
+              <FaEye />
 
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(
-                    "/cliente/cotizaciones"
-                  )
-                }
-                className="
-                  bg-zinc-900
+              Ver solicitudes
 
-                  border
-                  border-yellow-500/40
-
-                  hover:border-yellow-500/70
-
-                  rounded-2xl
-
-                  px-5
-                  py-4
-
-                  flex
-                  items-center
-                  gap-4
-
-                  text-left
-
-                  transition
-                "
-              >
-
-                <div
-                  className="
-                    relative
-
-                    w-11
-                    h-11
-
-                    rounded-xl
-
-                    bg-yellow-500/10
-
-                    flex
-                    items-center
-                    justify-center
-
-                    text-yellow-500
-                  "
-                >
-
-                  <FaFileInvoiceDollar />
-
-                  <span
-                    className="
-                      absolute
-
-                      -top-2
-                      -right-2
-
-                      bg-red-500
-
-                      text-white
-
-                      text-[10px]
-                      font-bold
-
-                      min-w-[20px]
-                      h-5
-
-                      px-1
-
-                      rounded-full
-
-                      flex
-                      items-center
-                      justify-center
-                    "
-                  >
-                    {
-                      estadisticas.nuevas
-                    }
-                  </span>
-
-                </div>
-
-                <div>
-
-                  <p className="font-bold">
-                    {estadisticas.nuevas ===
-                    1
-                      ? "1 actualización nueva"
-                      : `${estadisticas.nuevas} actualizaciones nuevas`}
-                  </p>
-
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Revisar mis cotizaciones
-                  </p>
-
-                </div>
-
-              </button>
-
-            ) : (
-
-              <div
-                className="
-                  bg-zinc-900
-
-                  border
-                  border-green-500/20
-
-                  rounded-2xl
-
-                  px-5
-                  py-4
-
-                  flex
-                  items-center
-                  gap-3
-                "
-              >
-
-                <FaCheckCircle className="text-green-500" />
-
-                <div>
-
-                  <p className="font-semibold text-green-400">
-                    Todo actualizado
-                  </p>
-
-                  <p className="text-xs text-zinc-500">
-                    No tienes novedades pendientes.
-                  </p>
-
-                </div>
-
-              </div>
-
-            )}
+            </button>
 
           </div>
 
         </section>
 
-        {/* =================================================
-            ESTADÍSTICAS
-        ================================================= */}
+
+        {/* STATS */}
 
         <section
           className="
             grid
-
             grid-cols-2
             xl:grid-cols-4
 
             gap-4
-            md:gap-5
 
-            mb-9
+            my-8
           "
         >
 
-          <TarjetaDato
-            titulo="Cotizaciones"
-            valor={
+          <Stat
+            title="Solicitudes"
+            value={
               estadisticas.total
             }
-            descripcion="Cotizaciones visibles"
             icon={
-              <FaFileInvoiceDollar />
-            }
-            color="yellow"
-            onClick={() =>
-              navigate(
-                "/cliente/cotizaciones"
-              )
+              <FaClipboardList />
             }
           />
 
-          <TarjetaDato
-            titulo="En proceso"
-            valor={
+
+          <Stat
+            title="En proceso"
+            value={
               estadisticas.enProceso
             }
-            descripcion="Trabajos activos"
-            icon={
-              <FaClock />
-            }
-            color="purple"
-            onClick={() =>
-              navigate(
-                "/cliente/cotizaciones"
-              )
-            }
+            icon={<FaClock />}
           />
 
-          <TarjetaDato
-            titulo="Mis proyectos"
-            valor={
+
+          <Stat
+            title="Proyectos"
+            value={
               estadisticas.proyectos
             }
-            descripcion="Proyectos registrados"
             icon={
-              <FaBuilding />
-            }
-            color="green"
-            onClick={() =>
-              navigate(
-                "/cliente/mis-proyectos"
-              )
+              <FaLaptopCode />
             }
           />
 
-          <TarjetaDato
-            titulo="Favoritos"
-            valor={
+
+          <Stat
+            title="Favoritos"
+            value={
               estadisticas.favoritos
             }
-            descripcion="Ideas guardadas"
-            icon={
-              <FaHeart />
-            }
-            color="pink"
-            onClick={() =>
-              navigate(
-                "/favoritos"
-              )
-            }
+            icon={<FaHeart />}
           />
 
         </section>
 
-        {/* =================================================
-            TARJETA COTIZACIÓN
-        ================================================= */}
 
-        <section className="mb-9">
+        {/* PUBLICACIONES */}
 
-          <div
-            className="
-              relative
-              overflow-hidden
+        <section className="mb-10">
 
-              bg-zinc-900
-
-              border
-              border-zinc-700
-
-              hover:border-yellow-500/50
-
-              rounded-[30px]
-
-              p-6
-              md:p-8
-
-              transition-all
-              duration-300
-            "
-          >
-
-            {/* LÍNEA SUPERIOR */}
-
-            <div
-              className="
-                absolute
-                top-0
-                left-8
-                right-8
-
-                h-[2px]
-
-                bg-gradient-to-r
-                from-transparent
-                via-yellow-500
-                to-transparent
-              "
-            />
-
-            <div
-              className="
-                flex
-                flex-col
-
-                xl:flex-row
-                xl:items-center
-                xl:justify-between
-
-                gap-7
-              "
-            >
-
-              <div className="flex items-start gap-5">
-
-                <div
-                  className="
-                    relative
-
-                    w-16
-                    h-16
-
-                    rounded-2xl
-
-                    bg-yellow-500/10
-
-                    border
-                    border-yellow-500/20
-
-                    flex
-                    items-center
-                    justify-center
-
-                    text-yellow-500
-
-                    shrink-0
-                  "
-                >
-                  <FaFileInvoiceDollar size={28} />
-                </div>
-
-                <div>
-
-                  <h2
-                    className="
-                      text-2xl
-                      md:text-3xl
-
-                      font-bold
-                    "
-                  >
-                    ¿Tienes un nuevo proyecto?
-                  </h2>
-
-                  <p
-                    className="
-                      text-zinc-400
-
-                      mt-2
-
-                      max-w-2xl
-
-                      leading-relaxed
-                    "
-                  >
-                    Cuéntanos qué necesitas, agrega medidas,
-                    fotografías o referencias y recibe una
-                    propuesta personalizada de Wealth.
-                  </p>
-
-                  {/* MINI DATOS */}
-
-                  <div
-                    className="
-                      flex
-                      flex-wrap
-                      gap-3
-
-                      mt-5
-                    "
-                  >
-
-                    <MiniDatoCliente
-                      icon={
-                        <FaFileInvoiceDollar />
-                      }
-                      valor={
-                        estadisticas.activas
-                      }
-                      texto="activas"
-                    />
-
-                    <MiniDatoCliente
-                      icon={
-                        <FaClock />
-                      }
-                      valor={
-                        estadisticas.esperando
-                      }
-                      texto="en revisión"
-                    />
-
-                    <MiniDatoCliente
-                      icon={
-                        <FaBuilding />
-                      }
-                      valor={
-                        estadisticas.enProceso
-                      }
-                      texto="en proceso"
-                    />
-
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* BOTONES */}
-
-              <div
-                className="
-                  flex
-                  flex-col
-
-                  sm:flex-row
-                  xl:flex-col
-
-                  gap-3
-
-                  shrink-0
-                "
-              >
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(
-                      "/crear-cotizacion"
-                    )
-                  }
-                  className="
-                    bg-yellow-500
-                    hover:bg-yellow-400
-
-                    text-black
-
-                    px-6
-                    py-4
-
-                    rounded-2xl
-
-                    font-bold
-
-                    flex
-                    items-center
-                    justify-center
-                    gap-3
-
-                    transition-all
-                    duration-300
-
-                    group
-                  "
-                >
-
-                  <FaFileInvoiceDollar />
-
-                  Solicitar cotización
-
-                  <FaArrowRight
-                    className="
-                      transition-transform
-                      duration-300
-
-                      group-hover:translate-x-1
-                    "
-                  />
-
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(
-                      "/cotizaciones"
-                    )
-                  }
-                  className="
-                    bg-black
-
-                    border
-                    border-zinc-700
-
-                    hover:border-yellow-500/50
-
-                    text-zinc-300
-
-                    px-6
-                    py-4
-
-                    rounded-2xl
-
-                    font-medium
-
-                    flex
-                    items-center
-                    justify-center
-                    gap-3
-
-                    transition
-                  "
-                >
-
-                  <FaEye />
-
-                  Ver solicitudes
-
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
+          <PublicacionesFeed
+            modoOscuro={
+              modoOscuro
+            }
+            titulo="Publicaciones de Macro"
+            descripcion="Dale Me gusta y participa en las novedades comentando."
+          />
 
         </section>
 
-        {/* =================================================
-            WEALTH IA DESTACADO
-        ================================================= */}
 
-        <section className="mb-9">
+        {/* TIENDA */}
+
+        <section
+          className="
+            bg-gradient-to-r
+            from-sky-500
+            to-blue-600
+
+            rounded-[30px]
+
+            p-7
+
+            text-white
+          "
+        >
+
+          <FaStore className="text-3xl" />
+
+
+          <h2
+            className="
+              text-3xl
+              font-black
+
+              mt-4
+            "
+          >
+
+            Tienda Macro
+
+          </h2>
+
+
+          <p
+            className="
+              text-white/80
+
+              mt-2
+            "
+          >
+
+            Explora productos, tecnología y accesorios.
+
+          </p>
+
 
           <button
-            type="button"
             onClick={() =>
               navigate(
-                "/chat-ia"
+                "/tienda"
               )
             }
             className="
-              group
+              mt-5
 
-              relative
-              overflow-hidden
+              bg-white
+              text-sky-600
 
-              w-full
+              px-5
+              py-3
 
-              text-left
+              rounded-xl
 
-              bg-gradient-to-r
-              from-yellow-500/10
-              via-zinc-900
-              to-zinc-900
+              font-bold
 
-              border
-              border-yellow-500/30
-
-              hover:border-yellow-500/60
-
-              rounded-[30px]
-
-              p-6
-              md:p-7
-
-              transition-all
-              duration-300
+              flex
+              items-center
+              gap-2
             "
           >
 
-            <div
-              className="
-                absolute
-                inset-0
+            Explorar tienda
 
-                opacity-0
-
-                group-hover:opacity-100
-
-                bg-gradient-to-r
-                from-yellow-500/5
-                to-transparent
-
-                transition-opacity
-              "
-            />
-
-            <div
-              className="
-                relative
-
-                flex
-                flex-col
-
-                sm:flex-row
-                sm:items-center
-                sm:justify-between
-
-                gap-5
-              "
-            >
-
-              <div className="flex items-center gap-5">
-
-                <div
-                  className="
-                    w-16
-                    h-16
-
-                    rounded-2xl
-
-                    bg-yellow-500
-
-                    text-black
-
-                    flex
-                    items-center
-                    justify-center
-
-                    text-2xl
-
-                    shrink-0
-                  "
-                >
-                  <FaRobot />
-                </div>
-
-                <div>
-
-                  <p
-                    className="
-                      text-xs
-                      uppercase
-                      tracking-[0.25em]
-
-                      text-yellow-500
-
-                      font-semibold
-                    "
-                  >
-                    Asistente virtual
-                  </p>
-
-                  <h2
-                    className="
-                      text-2xl
-                      md:text-3xl
-
-                      font-bold
-
-                      mt-1
-                    "
-                  >
-                    Habla con WEALTH IA
-                  </h2>
-
-                  <p
-                    className="
-                      text-zinc-400
-
-                      mt-2
-
-                      max-w-2xl
-                    "
-                  >
-                    Consulta proyectos, construcción, inmobiliaria,
-                    aluminio, vidrio o recibe ayuda para iniciar
-                    una cotización.
-                  </p>
-
-                </div>
-
-              </div>
-
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-3
-
-                  text-yellow-500
-
-                  font-semibold
-
-                  shrink-0
-                "
-              >
-
-                Abrir asistente
-
-                <FaArrowRight
-                  className="
-                    transition-transform
-                    duration-300
-
-                    group-hover:translate-x-1
-                  "
-                />
-
-              </div>
-
-            </div>
+            <FaArrowRight />
 
           </button>
-
-        </section>
-
-        {/* =================================================
-            ACCESOS RÁPIDOS
-        ================================================= */}
-
-        <section>
-
-          <div className="mb-5">
-
-            <p className="text-xl font-bold">
-              Accesos rápidos
-            </p>
-
-            <p className="text-sm text-zinc-500 mt-1">
-              Administra tus proyectos y solicitudes desde un solo lugar.
-            </p>
-
-          </div>
-
-          <div
-            className="
-              grid
-
-              md:grid-cols-2
-              xl:grid-cols-3
-
-              gap-5
-            "
-          >
-
-            <AccesoCliente
-              icon={
-                <FaSearch />
-              }
-              titulo="Explorar proyectos"
-              descripcion="Consulta proyectos reales y encuentra inspiración."
-              color="cyan"
-              onClick={() =>
-                navigate(
-                  "/proyectos"
-                )
-              }
-            />
-
-            <AccesoCliente
-              icon={
-                <FaRobot />
-              }
-              titulo="WEALTH IA"
-              descripcion="Pregunta sobre proyectos, construcción, inmobiliaria, vidrio o aluminio."
-              color="yellow"
-              onClick={() =>
-                navigate(
-                  "/chat-ia"
-                )
-              }
-            />
-
-            <AccesoCliente
-              icon={
-                <FaHeart />
-              }
-              titulo="Mis favoritos"
-              descripcion="Vuelve rápidamente a las ideas y proyectos que guardaste."
-              color="pink"
-              onClick={() =>
-                navigate(
-                  "/favoritos"
-                )
-              }
-            />
-
-            <AccesoCliente
-              icon={
-                <FaBuilding />
-              }
-              titulo="Mis proyectos"
-              descripcion="Consulta trabajos contratados y su seguimiento."
-              color="green"
-              onClick={() =>
-                navigate(
-                  "/mis-proyectos"
-                )
-              }
-            />
-
-            <AccesoCliente
-              icon={
-                <FaFileInvoiceDollar />
-              }
-              titulo="Mis cotizaciones"
-              descripcion="Revisa propuestas y actualizaciones de Wealth."
-              color="blue"
-              badge={
-                estadisticas.nuevas
-              }
-              onClick={() =>
-                navigate(
-                  "/cotizaciones"
-                )
-              }
-            />
-
-            <AccesoCliente
-              icon={
-                <FaUser />
-              }
-              titulo="Mi perfil"
-              descripcion="Consulta y administra la información de tu cuenta."
-              color="purple"
-              onClick={() =>
-                navigate(
-                  "/perfil"
-                )
-              }
-            />
-
-          </div>
 
         </section>
 
@@ -1978,16 +1214,13 @@ function MenuCliente() {
   );
 }
 
-/* ======================================================
-   BOTÓN SIDEBAR
-====================================================== */
 
-function BotonMenuCliente({
+function MenuButton({
   icon,
-  texto,
+  text,
   onClick,
-  activo = false,
-  especial = false,
+  active = false,
+  special = false,
   badge = 0,
 }) {
   return (
@@ -1997,545 +1230,151 @@ function BotonMenuCliente({
         onClick
       }
       className={`
-        relative
-
         w-full
 
-        flex
-        items-center
-        gap-4
+        px-4
+        py-3.5
 
-        px-5
-        py-4
-
-        rounded-2xl
-
-        border
-
-        transition-all
-        duration-200
-
-        ${
-          activo
-            ? `
-              bg-yellow-500/10
-              border-yellow-500/50
-              text-yellow-400
-            `
-            : especial
-            ? `
-              bg-zinc-900
-              border-yellow-500/30
-              hover:bg-yellow-500/5
-              hover:border-yellow-500/60
-              text-white
-            `
-            : `
-              bg-zinc-900
-              border-zinc-800
-              hover:bg-zinc-800
-              hover:border-zinc-600
-              text-zinc-300
-            `
-        }
-      `}
-    >
-
-      <span
-        className={
-          activo ||
-          especial
-            ? "text-yellow-500"
-            : "text-zinc-400"
-        }
-      >
-        {icon}
-      </span>
-
-      <span className="font-medium">
-        {texto}
-      </span>
-
-      {badge >
-      0 && (
-        <span
-          className="
-            ml-auto
-
-            bg-red-500
-
-            text-white
-
-            min-w-[23px]
-            h-[23px]
-
-            px-1.5
-
-            rounded-full
-
-            flex
-            items-center
-            justify-center
-
-            text-[10px]
-            font-bold
-          "
-        >
-          {badge}
-        </span>
-      )}
-
-    </button>
-  );
-}
-
-/* ======================================================
-   BOTÓN MOBILE
-====================================================== */
-
-function BotonMobile({
-  icon,
-  texto,
-  onClick,
-  activo = false,
-  especial = false,
-  badge = 0,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={
-        onClick
-      }
-      className={`
-        relative
-
-        w-full
+        rounded-xl
 
         flex
         items-center
         gap-3
 
-        px-5
-        py-4
-
-        rounded-2xl
-
-        border
+        text-left
 
         ${
-          activo
-            ? "bg-yellow-500 text-black border-yellow-500"
-            : especial
-            ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
-            : "bg-zinc-900 text-zinc-300 border-zinc-800"
+          special
+            ? "bg-sky-500 text-white"
+            : active
+            ? "bg-sky-50 text-sky-600 border border-sky-200"
+            : "text-slate-600 hover:bg-sky-50"
         }
       `}
     >
 
       {icon}
 
+
       <span className="font-medium">
-        {texto}
+
+        {text}
+
       </span>
 
-      {badge >
-      0 && (
+
+      {badge > 0 && (
+
         <span
           className="
             ml-auto
 
-            bg-red-500
+            min-w-[22px]
+            h-[22px]
 
+            px-1
+
+            bg-red-500
             text-white
 
-            min-w-[23px]
-            h-[23px]
-
-            px-1.5
-
             rounded-full
+
+            text-[10px]
 
             flex
             items-center
             justify-center
-
-            text-[10px]
-            font-bold
           "
         >
+
           {badge}
+
         </span>
+
       )}
 
     </button>
   );
 }
 
-/* ======================================================
-   TARJETA ESTADÍSTICA
-====================================================== */
 
-function TarjetaDato({
-  titulo,
-  valor,
-  descripcion,
+function Stat({
+  title,
+  value,
   icon,
-  color,
-  onClick,
-}) {
-  const colores = {
-    yellow:
-      "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
-
-    green:
-      "text-green-400 bg-green-500/10 border-green-500/20",
-
-    pink:
-      "text-pink-400 bg-pink-500/10 border-pink-500/20",
-
-    purple:
-      "text-purple-400 bg-purple-500/10 border-purple-500/20",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={
-        onClick
-      }
-      className="
-        text-left
-
-        bg-zinc-900
-
-        border
-        border-zinc-700
-
-        rounded-2xl
-
-        p-4
-        md:p-5
-
-        transition-all
-        duration-300
-
-        hover:border-zinc-500
-        hover:-translate-y-[2px]
-      "
-    >
-
-      <div className="flex items-center justify-between gap-4">
-
-        <div>
-
-          <p className="text-xs md:text-sm text-zinc-500">
-            {titulo}
-          </p>
-
-          <p className="text-2xl md:text-3xl font-bold text-white mt-1">
-            {valor}
-          </p>
-
-          <p className="text-[11px] md:text-xs text-zinc-600 mt-1">
-            {descripcion}
-          </p>
-
-        </div>
-
-        <div
-          className={`
-            w-11
-            h-11
-
-            md:w-12
-            md:h-12
-
-            rounded-xl
-
-            border
-
-            flex
-            items-center
-            justify-center
-
-            text-lg
-
-            ${colores[color]}
-          `}
-        >
-          {icon}
-        </div>
-
-      </div>
-
-    </button>
-  );
-}
-
-/* ======================================================
-   MINI DATO
-====================================================== */
-
-function MiniDatoCliente({
-  icon,
-  valor,
-  texto,
 }) {
   return (
     <div
       className="
-        bg-black
+        bg-white
 
         border
-        border-zinc-700
+        border-sky-100
 
-        rounded-xl
+        rounded-2xl
 
-        px-3.5
-        py-2
-
-        flex
-        items-center
-        gap-2
-
-        text-sm
+        p-5
       "
     >
 
-      <span className="text-yellow-500">
-        {icon}
-      </span>
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+        "
+      >
 
-      <strong className="text-white">
-        {valor}
-      </strong>
+        <div>
 
-      <span className="text-zinc-500">
-        {texto}
-      </span>
+          <p className="text-sm text-slate-500">
+
+            {title}
+
+          </p>
+
+
+          <p
+            className="
+              text-3xl
+              font-black
+
+              mt-2
+            "
+          >
+
+            {value}
+
+          </p>
+
+        </div>
+
+
+        <div
+          className="
+            w-12
+            h-12
+
+            rounded-xl
+
+            bg-sky-50
+            text-sky-500
+
+            flex
+            items-center
+            justify-center
+          "
+        >
+
+          {icon}
+
+        </div>
+
+      </div>
 
     </div>
   );
 }
 
-/* ======================================================
-   ACCESO RÁPIDO
-====================================================== */
-
-function AccesoCliente({
-  icon,
-  titulo,
-  descripcion,
-  color,
-  onClick,
-  badge = 0,
-}) {
-  const colores = {
-    yellow:
-      "text-yellow-500 border-yellow-500/20 bg-yellow-500/10",
-
-    cyan:
-      "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
-
-    pink:
-      "text-pink-400 border-pink-500/20 bg-pink-500/10",
-
-    green:
-      "text-green-400 border-green-500/20 bg-green-500/10",
-
-    blue:
-      "text-blue-400 border-blue-500/20 bg-blue-500/10",
-
-    purple:
-      "text-purple-400 border-purple-500/20 bg-purple-500/10",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={
-        onClick
-      }
-      className="
-        group
-
-        relative
-
-        text-left
-
-        bg-zinc-900
-
-        border
-        border-zinc-700
-
-        hover:border-yellow-500/40
-
-        rounded-3xl
-
-        p-6
-
-        transition-all
-        duration-300
-
-        hover:-translate-y-1
-      "
-    >
-
-      {badge >
-      0 && (
-        <span
-          className="
-            absolute
-
-            top-5
-            right-5
-
-            min-w-[24px]
-            h-6
-
-            px-2
-
-            rounded-full
-
-            bg-red-500
-
-            text-white
-
-            text-xs
-            font-bold
-
-            flex
-            items-center
-            justify-center
-          "
-        >
-          {badge}
-        </span>
-      )}
-
-      <div
-        className={`
-          w-12
-          h-12
-
-          rounded-xl
-
-          border
-
-          flex
-          items-center
-          justify-center
-
-          text-xl
-
-          ${colores[color]}
-        `}
-      >
-        {icon}
-      </div>
-
-      <h3 className="font-bold text-xl mt-5">
-        {titulo}
-      </h3>
-
-      <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
-        {descripcion}
-      </p>
-
-      <div
-        className="
-          mt-5
-
-          flex
-          items-center
-          gap-2
-
-          text-yellow-500
-
-          text-sm
-          font-medium
-        "
-      >
-
-        Abrir
-
-        <FaArrowRight
-          className="
-            transition-transform
-            duration-300
-
-            group-hover:translate-x-1
-          "
-        />
-
-      </div>
-
-    </button>
-  );
-}
-
-
-const temaClaroCss = `
-  .wealth-light .bg-black { background-color: #ffffff !important; }
-  .wealth-light .bg-zinc-950 { background-color: #ffffff !important; }
-  .wealth-light .bg-zinc-900 { background-color: #f9fafb !important; }
-  .wealth-light .bg-zinc-800 { background-color: #f3f4f6 !important; }
-  .wealth-light .bg-zinc-700 { background-color: #e5e7eb !important; }
-
-  .wealth-light .bg-zinc-950\\/95 { background-color: rgba(255,255,255,.95) !important; }
-  .wealth-light .bg-zinc-950\\/70 { background-color: rgba(255,255,255,.92) !important; }
-  .wealth-light .bg-zinc-950\\/60 { background-color: rgba(255,255,255,.88) !important; }
-  .wealth-light .bg-zinc-900\\/90 { background-color: rgba(249,250,251,.95) !important; }
-  .wealth-light .bg-zinc-900\\/70 { background-color: rgba(249,250,251,.90) !important; }
-  .wealth-light .bg-zinc-900\\/60 { background-color: rgba(249,250,251,.88) !important; }
-  .wealth-light .bg-zinc-800\\/70 { background-color: rgba(243,244,246,.90) !important; }
-  .wealth-light .bg-zinc-800\\/40 { background-color: rgba(243,244,246,.75) !important; }
-
-  .wealth-light .text-white { color: #111827 !important; }
-  .wealth-light .text-zinc-100 { color: #111827 !important; }
-  .wealth-light .text-zinc-200 { color: #1f2937 !important; }
-  .wealth-light .text-zinc-300 { color: #374151 !important; }
-  .wealth-light .text-zinc-400 { color: #4b5563 !important; }
-  .wealth-light .text-zinc-500 { color: #6b7280 !important; }
-  .wealth-light .text-zinc-600 { color: #9ca3af !important; }
-  .wealth-light .text-zinc-700 { color: #9ca3af !important; }
-  .wealth-light .text-zinc-800 { color: #6b7280 !important; }
-
-  .wealth-light .border-zinc-900 { border-color: #e5e7eb !important; }
-  .wealth-light .border-zinc-800 { border-color: #e5e7eb !important; }
-  .wealth-light .border-zinc-700 { border-color: #d1d5db !important; }
-  .wealth-light .border-zinc-600 { border-color: #d1d5db !important; }
-  .wealth-light .border-white\\/10 { border-color: rgba(17,24,39,.10) !important; }
-  .wealth-light .border-white\\/20 { border-color: rgba(17,24,39,.15) !important; }
-  .wealth-light .border-white\\/30 { border-color: rgba(17,24,39,.20) !important; }
-
-  .wealth-light .hover\\:bg-zinc-900:hover { background-color: #f3f4f6 !important; }
-  .wealth-light .hover\\:bg-zinc-800:hover { background-color: #e5e7eb !important; }
-  .wealth-light .hover\\:bg-zinc-700:hover { background-color: #d1d5db !important; }
-  .wealth-light .hover\\:text-white:hover { color: #111827 !important; }
-  .wealth-light .hover\\:border-zinc-500:hover { border-color: #9ca3af !important; }
-  .wealth-light .hover\\:border-zinc-600:hover { border-color: #9ca3af !important; }
-
-  .wealth-light input,
-  .wealth-light textarea,
-  .wealth-light select {
-    color: #111827;
-    color-scheme: light;
-  }
-
-  .wealth-light input::placeholder,
-  .wealth-light textarea::placeholder {
-    color: #9ca3af !important;
-  }
-
-  .wealth-light option {
-    background-color: #ffffff;
-    color: #111827;
-  }
-
-  /* Los visores de imágenes y overlays con transparencia se mantienen oscuros
-     intencionalmente para conservar contraste sobre fotografías. */
-`;
 
 export default MenuCliente;

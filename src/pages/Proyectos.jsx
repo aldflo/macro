@@ -1,271 +1,481 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import { db, auth } from "../firebase.config";
+import {
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
+
+import {
+  auth,
+  db,
+} from "../firebase.config";
 
 import {
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
   orderBy,
   query,
-  where,
-  doc,
-  setDoc,
-  deleteDoc,
   serverTimestamp,
+  setDoc,
+  where,
 } from "firebase/firestore";
 
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  onAuthStateChanged,
+} from "firebase/auth";
 
 import {
-  FaSearch,
-  FaHeart,
-  FaRegHeart,
   FaArrowRight,
-  FaFileInvoiceDollar,
-  FaTimes,
-  FaStar,
+  FaCamera,
   FaClock,
-  FaLayerGroup,
+  FaCode,
+  FaExternalLinkAlt,
+  FaFileInvoiceDollar,
+  FaGlobe,
+  FaHeart,
   FaImages,
+  FaLayerGroup,
+  FaLaptopCode,
+  FaRegHeart,
+  FaRocket,
+  FaSearch,
+  FaStar,
+  FaTimes,
 } from "react-icons/fa";
 
+
 function Proyectos() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const { modoOscuro } = useOutletContext() || {};
 
-  // ======================================================
-  // PROYECTOS
-  // ======================================================
+  const {
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
 
-  const [proyectos, setProyectos] = useState([]);
-  const [cargando, setCargando] = useState(true);
 
-  // ======================================================
-  // FILTROS
-  // ======================================================
+  /* ======================================================
+     PROYECTOS
+  ====================================================== */
 
-  const [busqueda, setBusqueda] = useState("");
-  const [categoria, setCategoria] = useState("Todos");
+  const [
+    proyectos,
+    setProyectos,
+  ] = useState([]);
 
-  // ======================================================
-  // USUARIO
-  // ======================================================
 
-  const [usuario, setUsuario] = useState(null);
+  const [
+    cargando,
+    setCargando,
+  ] = useState(true);
 
-  // ======================================================
-  // FAVORITOS
-  // ======================================================
 
-  const [favoritos, setFavoritos] = useState([]);
+  /* ======================================================
+     FILTROS
+  ====================================================== */
 
-  const [guardandoFavorito, setGuardandoFavorito] =
-    useState(null);
+  const [
+    busqueda,
+    setBusqueda,
+  ] = useState("");
 
-  // ======================================================
-  // MODAL LOGIN
-  // ======================================================
 
-  const [mostrarLoginModal, setMostrarLoginModal] =
-    useState(false);
+  const [
+    categoria,
+    setCategoria,
+  ] = useState("Todos");
 
-  // ======================================================
-  // NORMALIZAR IMÁGENES DEL PROYECTO
-  // ======================================================
 
-  const obtenerImagenesProyecto = (proyecto) => {
-    if (!proyecto) {
-      return [];
-    }
+  /* ======================================================
+     USUARIO
+  ====================================================== */
 
-    const lista = [];
+  const [
+    usuario,
+    setUsuario,
+  ] = useState(null);
 
-    // ================================================
-    // ARRAY imagenes[]
-    // ================================================
 
-    if (Array.isArray(proyecto.imagenes)) {
-      proyecto.imagenes.forEach((item) => {
-        if (typeof item === "string" && item.trim()) {
-          lista.push(item.trim());
-          return;
-        }
+  /* ======================================================
+     FAVORITOS
+  ====================================================== */
 
-        // Compatibilidad si alguna imagen se guardó
-        // como objeto.
-        if (item && typeof item === "object") {
-          const url =
-            item.url ||
-            item.secure_url ||
-            item.src ||
-            item.imagen;
+  const [
+    favoritos,
+    setFavoritos,
+  ] = useState([]);
 
-          if (url) {
-            lista.push(url);
+
+  const [
+    guardandoFavorito,
+    setGuardandoFavorito,
+  ] = useState(null);
+
+
+  /* ======================================================
+     MODAL LOGIN
+  ====================================================== */
+
+  const [
+    mostrarLoginModal,
+    setMostrarLoginModal,
+  ] = useState(false);
+
+
+  /* ======================================================
+     NORMALIZAR IMÁGENES
+  ====================================================== */
+
+  const obtenerImagenesProyecto =
+    (proyecto) => {
+      if (!proyecto) {
+        return [];
+      }
+
+
+      const lista =
+        [];
+
+
+      if (
+        Array.isArray(
+          proyecto.imagenes
+        )
+      ) {
+        proyecto.imagenes.forEach(
+          (item) => {
+            if (
+              typeof item ===
+                "string" &&
+              item.trim()
+            ) {
+              lista.push(
+                item.trim()
+              );
+
+              return;
+            }
+
+
+            if (
+              item &&
+              typeof item ===
+                "object"
+            ) {
+              const url =
+                item.url ||
+                item.secure_url ||
+                item.src ||
+                item.imagen;
+
+
+              if (url) {
+                lista.push(
+                  url
+                );
+              }
+            }
           }
-        }
-      });
-    }
+        );
+      }
 
-    // ================================================
-    // IMAGEN PRINCIPAL
-    // ================================================
 
-    if (
-      proyecto.imagen &&
-      typeof proyecto.imagen === "string"
-    ) {
-      lista.push(proyecto.imagen);
-    }
+      if (
+        proyecto.imagen &&
+        typeof proyecto.imagen ===
+          "string"
+      ) {
+        lista.push(
+          proyecto.imagen
+        );
+      }
 
-    // ================================================
-    // ELIMINAR DUPLICADOS
-    // ================================================
 
-    return [
-      ...new Set(
-        lista.filter(Boolean)
-      ),
-    ];
-  };
+      return [
+        ...new Set(
+          lista.filter(
+            Boolean
+          )
+        ),
+      ];
+    };
 
-  // ======================================================
-  // IMAGEN DE PORTADA
-  // ======================================================
 
-  const obtenerPortada = (proyecto) => {
-    const imagenes =
-      obtenerImagenesProyecto(proyecto);
+  /* ======================================================
+     PORTADA
+  ====================================================== */
 
-    return imagenes[0] || "";
-  };
+  const obtenerPortada =
+    (proyecto) => {
+      const imagenes =
+        obtenerImagenesProyecto(
+          proyecto
+        );
 
-  // ======================================================
-  // ESCUCHAR LOGIN
-  // ======================================================
+
+      return (
+        imagenes[0] ||
+        ""
+      );
+    };
+
+
+  /* ======================================================
+     URL PROYECTO
+  ====================================================== */
+
+  const obtenerUrlProyecto =
+    (proyecto) => {
+      return String(
+        proyecto?.url ||
+        proyecto?.urlProyecto ||
+        proyecto?.enlace ||
+        proyecto?.sitioWeb ||
+        proyecto?.link ||
+        ""
+      ).trim();
+    };
+
+
+  const normalizarUrl =
+    (url) => {
+      if (!url) {
+        return "";
+      }
+
+
+      if (
+        /^https?:\/\//i.test(
+          url
+        )
+      ) {
+        return url;
+      }
+
+
+      return `https://${url}`;
+    };
+
+
+  const visitarProyecto =
+    (
+      e,
+      proyecto
+    ) => {
+      e.stopPropagation();
+
+
+      const url =
+        obtenerUrlProyecto(
+          proyecto
+        );
+
+
+      if (!url) {
+        return;
+      }
+
+
+      window.open(
+        normalizarUrl(
+          url
+        ),
+        "_blank",
+        "noopener,noreferrer"
+      );
+    };
+
+
+  /* ======================================================
+     LOGIN
+  ====================================================== */
 
   useEffect(() => {
     const unsub =
       onAuthStateChanged(
         auth,
         (user) => {
-          setUsuario(user || null);
+          setUsuario(
+            user || null
+          );
         }
       );
 
-    return () => unsub();
+
+    return () =>
+      unsub();
+
   }, []);
 
-  // ======================================================
-  // CARGAR PROYECTOS FIREBASE
-  // ======================================================
+
+  /* ======================================================
+     CARGAR PROYECTOS
+  ====================================================== */
 
   useEffect(() => {
-    const q = query(
-      collection(db, "proyectos"),
-      orderBy("fecha", "desc")
-    );
+    const q =
+      query(
+        collection(
+          db,
+          "proyectos"
+        ),
 
-    const unsub = onSnapshot(
-      q,
+        orderBy(
+          "fecha",
+          "desc"
+        )
+      );
 
-      (snap) => {
-        const data =
-          snap.docs.map(
-            (documento) => ({
-              id: documento.id,
-              ...documento.data(),
-            })
+
+    const unsub =
+      onSnapshot(
+        q,
+
+        (snap) => {
+          const data =
+            snap.docs.map(
+              (documento) => ({
+                id:
+                  documento.id,
+
+                ...documento.data(),
+              })
+            );
+
+
+          setProyectos(
+            data
           );
 
-        setProyectos(data);
-        setCargando(false);
-      },
 
-      (error) => {
-        console.error(
-          "Error cargando proyectos:",
-          error
-        );
+          setCargando(
+            false
+          );
+        },
 
-        setCargando(false);
-      }
-    );
+        (error) => {
+          console.error(
+            "Error cargando proyectos:",
+            error
+          );
 
-    return () => unsub();
+
+          setCargando(
+            false
+          );
+        }
+      );
+
+
+    return () =>
+      unsub();
+
   }, []);
 
-  // ======================================================
-  // FAVORITOS FIREBASE
-  // ======================================================
+
+  /* ======================================================
+     FAVORITOS
+  ====================================================== */
 
   useEffect(() => {
-    // Sin sesión no mostramos favoritos de ningún navegador
-    // ni reutilizamos información de otra cuenta.
     if (!usuario) {
-      setFavoritos([]);
+      setFavoritos(
+        []
+      );
+
       return;
     }
 
-    const q = query(
-      collection(db, "favoritos"),
-      where(
-        "uid",
-        "==",
-        usuario.uid
-      )
-    );
 
-    const unsub = onSnapshot(
-      q,
+    const q =
+      query(
+        collection(
+          db,
+          "favoritos"
+        ),
 
-      (snap) => {
-        const data =
-          snap.docs.map(
-            (documento) => ({
-              firebaseId:
-                documento.id,
+        where(
+          "uid",
+          "==",
+          usuario.uid
+        )
+      );
 
-              ...documento.data(),
-            })
+
+    const unsub =
+      onSnapshot(
+        q,
+
+        (snap) => {
+          const data =
+            snap.docs.map(
+              (documento) => ({
+                firebaseId:
+                  documento.id,
+
+                ...documento.data(),
+              })
+            );
+
+
+          setFavoritos(
+            data
+          );
+        },
+
+        (error) => {
+          console.error(
+            "Error cargando favoritos:",
+            error
           );
 
-        setFavoritos(data);
-      },
 
-      (error) => {
-        console.error(
-          "Error cargando favoritos:",
-          error
-        );
+          setFavoritos(
+            []
+          );
+        }
+      );
 
-        setFavoritos([]);
-      }
-    );
 
-    return () => unsub();
+    return () =>
+      unsub();
 
-  }, [usuario]);
+  }, [
+    usuario,
+  ]);
 
-  // ======================================================
-  // CATEGORÍAS AUTOMÁTICAS
-  // ======================================================
+
+  /* ======================================================
+     CATEGORÍAS
+  ====================================================== */
 
   const categorias =
     useMemo(() => {
-      const categoriasEncontradas =
+      const encontradas =
         proyectos
-          .map((p) => p.categoria)
-          .filter(Boolean);
+          .map(
+            (proyecto) =>
+              proyecto.categoria ||
+              proyecto.tipo
+          )
+          .filter(
+            Boolean
+          );
+
 
       return [
         "Todos",
 
         ...Array.from(
           new Set(
-            categoriasEncontradas
+            encontradas
           )
         ).sort(
           (a, b) =>
@@ -276,11 +486,14 @@ function Proyectos() {
         ),
       ];
 
-    }, [proyectos]);
+    }, [
+      proyectos,
+    ]);
 
-  // ======================================================
-  // BUSCADOR + FILTRO
-  // ======================================================
+
+  /* ======================================================
+     BUSCADOR
+  ====================================================== */
 
   const filtrados =
     useMemo(() => {
@@ -289,18 +502,28 @@ function Proyectos() {
           .trim()
           .toLowerCase();
 
+
       return proyectos.filter(
-        (p) => {
-          const contenido = [
-            p.nombre,
-            p.descripcion,
-            p.categoria,
-            p.tipo,
-            p.ubicacion,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+        (proyecto) => {
+          const contenido =
+            [
+              proyecto.nombre,
+              proyecto.descripcion,
+              proyecto.categoria,
+              proyecto.tipo,
+              proyecto.ubicacion,
+              ...(Array.isArray(
+                proyecto.tecnologias
+              )
+                ? proyecto.tecnologias
+                : []),
+            ]
+              .filter(
+                Boolean
+              )
+              .join(" ")
+              .toLowerCase();
+
 
           const coincideBusqueda =
             !texto ||
@@ -308,9 +531,19 @@ function Proyectos() {
               texto
             );
 
+
+          const categoriaProyecto =
+            proyecto.categoria ||
+            proyecto.tipo ||
+            "";
+
+
           const coincideCategoria =
-            categoria === "Todos" ||
-            p.categoria === categoria;
+            categoria ===
+              "Todos" ||
+            categoriaProyecto ===
+              categoria;
+
 
           return (
             coincideBusqueda &&
@@ -325,33 +558,41 @@ function Proyectos() {
       categoria,
     ]);
 
-  // ======================================================
-  // FAVORITO
-  // ======================================================
+
+  /* ======================================================
+     FAVORITO
+  ====================================================== */
 
   const toggleFavorito =
     async (proyecto) => {
       if (!usuario) {
-        setMostrarLoginModal(true);
+        setMostrarLoginModal(
+          true
+        );
+
         return;
       }
 
+
       const yaExiste =
         favoritos.some(
-          (f) =>
-            f.proyectoId ===
+          (favorito) =>
+            favorito.proyectoId ===
               proyecto.id ||
-            f.id ===
+            favorito.id ===
               proyecto.id
         );
 
+
       const documentoId =
         `${usuario.uid}_${proyecto.id}`;
+
 
       try {
         setGuardandoFavorito(
           proyecto.id
         );
+
 
         if (yaExiste) {
           await deleteDoc(
@@ -362,13 +603,16 @@ function Proyectos() {
             )
           );
 
+
           return;
         }
+
 
         const imagenesProyecto =
           obtenerImagenesProyecto(
             proyecto
           );
+
 
         await setDoc(
           doc(
@@ -407,11 +651,17 @@ function Proyectos() {
 
             categoria:
               proyecto.categoria ||
+              proyecto.tipo ||
               "",
 
             descripcion:
               proyecto.descripcion ||
               "",
+
+            url:
+              obtenerUrlProyecto(
+                proyecto
+              ),
 
             fechaGuardado:
               serverTimestamp(),
@@ -424,6 +674,7 @@ function Proyectos() {
           error
         );
 
+
         alert(
           "No se pudo actualizar el favorito."
         );
@@ -435,9 +686,10 @@ function Proyectos() {
       }
     };
 
-  // ======================================================
-  // VER PROYECTO
-  // ======================================================
+
+  /* ======================================================
+     VER PROYECTO
+  ====================================================== */
 
   const verProyecto =
     (proyecto) => {
@@ -446,238 +698,622 @@ function Proyectos() {
       );
     };
 
-  // ======================================================
-  // SOLICITAR COTIZACIÓN
-  // ======================================================
 
-  const solicitarCotizacion = (
-    e,
-    proyecto
-  ) => {
-    e.stopPropagation();
+  /* ======================================================
+     SOLICITAR SERVICIO
+  ====================================================== */
 
-    if (!usuario) {
-      setMostrarLoginModal(
-        true
-      );
+  const solicitarCotizacion =
+    (
+      e,
+      proyecto
+    ) => {
+      e.stopPropagation();
 
-      return;
-    }
 
-    // ================================================
-    // OBTENER TODAS LAS IMÁGENES DEL PROYECTO
-    // ================================================
+      if (!usuario) {
+        setMostrarLoginModal(
+          true
+        );
 
-    const imagenesProyecto =
-      obtenerImagenesProyecto(
-        proyecto
-      );
-
-    console.log(
-      "📸 Imágenes enviadas a cotización:",
-      imagenesProyecto
-    );
-
-    // ================================================
-    // ENVIAR PROYECTO COMPLETO
-    // ================================================
-
-    navigate(
-      "/crear-cotizacion",
-      {
-        state: {
-          proyecto: {
-            ...proyecto,
-
-            id:
-              proyecto.id,
-
-            nombre:
-              proyecto.nombre ||
-              "",
-
-            descripcion:
-              proyecto.descripcion ||
-              "",
-
-            categoria:
-              proyecto.categoria ||
-              "",
-
-            ubicacion:
-              proyecto.ubicacion ||
-              "",
-
-            // PRIMERA IMAGEN
-            imagen:
-              imagenesProyecto[0] ||
-              proyecto.imagen ||
-              "",
-
-            // TODAS LAS IMÁGENES
-            imagenes:
-              imagenesProyecto,
-          },
-        },
+        return;
       }
-    );
-  };
 
-  // ======================================================
-  // DETERMINAR SI ES NUEVO
-  // ======================================================
+
+      const imagenesProyecto =
+        obtenerImagenesProyecto(
+          proyecto
+        );
+
+
+      navigate(
+        "/crear-cotizacion",
+        {
+          state: {
+            proyecto: {
+              ...proyecto,
+
+              id:
+                proyecto.id,
+
+              nombre:
+                proyecto.nombre ||
+                "",
+
+              descripcion:
+                proyecto.descripcion ||
+                "",
+
+              categoria:
+                proyecto.categoria ||
+                proyecto.tipo ||
+                "",
+
+              ubicacion:
+                proyecto.ubicacion ||
+                "",
+
+              imagen:
+                imagenesProyecto[0] ||
+                proyecto.imagen ||
+                "",
+
+              imagenes:
+                imagenesProyecto,
+            },
+          },
+        }
+      );
+    };
+
+
+  /* ======================================================
+     NUEVO
+  ====================================================== */
 
   const esNuevo =
     (proyecto) => {
       const fechaBase =
-        proyecto.fechaActualizacion?.toDate
-          ? proyecto.fechaActualizacion.toDate()
-          : proyecto.fecha?.toDate
+        proyecto
+          .fechaActualizacion
+          ?.toDate
+          ? proyecto
+              .fechaActualizacion
+              .toDate()
+          : proyecto
+              .fecha
+              ?.toDate
           ? proyecto.fecha.toDate()
+          : proyecto
+              .fechaCreacion
+              ?.toDate
+          ? proyecto
+              .fechaCreacion
+              .toDate()
           : null;
+
 
       if (!fechaBase) {
         return false;
       }
 
+
       const ahora =
         new Date();
 
-      const diferenciaMs =
+
+      const diferencia =
         ahora.getTime() -
         fechaBase.getTime();
 
-      const VEINTICUATRO_HORAS =
+
+      const horas24 =
         24 *
         60 *
         60 *
         1000;
 
+
       return (
-        diferenciaMs >= 0 &&
-        diferenciaMs <=
-          VEINTICUATRO_HORAS
+        diferencia >=
+          0 &&
+        diferencia <=
+          horas24
       );
     };
 
-  // ======================================================
-  // LIMPIAR BÚSQUEDA
-  // ======================================================
+
+  /* ======================================================
+     FECHA
+  ====================================================== */
+
+  const obtenerFecha =
+    (proyecto) => {
+      const fecha =
+        proyecto.fecha?.toDate
+          ? proyecto.fecha.toDate()
+          : proyecto
+              .fechaActualizacion
+              ?.toDate
+          ? proyecto
+              .fechaActualizacion
+              .toDate()
+          : proyecto
+              .fechaCreacion
+              ?.toDate
+          ? proyecto
+              .fechaCreacion
+              .toDate()
+          : null;
+
+
+      if (!fecha) {
+        return "";
+      }
+
+
+      return fecha.toLocaleDateString(
+        "es-MX",
+        {
+          month:
+            "short",
+
+          year:
+            "numeric",
+        }
+      );
+    };
+
+
+  /* ======================================================
+     LIMPIAR
+  ====================================================== */
 
   const limpiarFiltros =
     () => {
-      setBusqueda("");
-      setCategoria("Todos");
+      setBusqueda(
+        ""
+      );
+
+
+      setCategoria(
+        "Todos"
+      );
     };
+
+
+  /* ======================================================
+     RENDER
+  ====================================================== */
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        modoOscuro
-          ? "bg-black text-white"
-          : "bg-gray-50 text-gray-900"
-      }`}
+      className={`
+        min-h-screen
+
+        transition-colors
+        duration-300
+
+        ${
+          modoOscuro
+            ? "bg-[#050b18] text-white"
+            : "bg-[#f6f9fc] text-slate-950"
+        }
+      `}
     >
 
       {/* ================================================= */}
-      {/* CONTENIDO */}
+      {/* HERO */}
       {/* ================================================= */}
 
-      <main className="max-w-7xl mx-auto px-5 md:px-6 py-10 md:py-14">
+      <section
+        className="
+          relative
+          overflow-hidden
+
+          bg-[#071221]
+
+          text-white
+
+          border-b
+          border-white/10
+        "
+      >
+
+        <div
+          className="
+            absolute
+            inset-0
+
+            bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.25),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_40%)]
+          "
+        />
+
+
+        <div
+          className="
+            relative
+            z-10
+
+            max-w-7xl
+            mx-auto
+
+            px-5
+            md:px-8
+
+            py-16
+            md:py-20
+          "
+        >
+
+          <div
+            className="
+              flex
+              flex-col
+
+              lg:flex-row
+              lg:items-end
+              lg:justify-between
+
+              gap-8
+            "
+          >
+
+            <div>
+
+              <div
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+
+                  bg-sky-400/10
+
+                  border
+                  border-sky-400/20
+
+                  px-4
+                  py-2
+
+                  rounded-full
+
+                  text-xs
+                  text-sky-300
+
+                  font-bold
+
+                  uppercase
+                  tracking-[0.22em]
+                "
+              >
+
+                <FaCode />
+
+                Portafolio Macro
+
+              </div>
+
+
+              <h1
+                className="
+                  text-4xl
+                  md:text-6xl
+
+                  font-black
+
+                  tracking-[-0.05em]
+
+                  mt-6
+                "
+              >
+
+                Proyectos que
+
+                <span
+                  className="
+                    block
+
+                    bg-gradient-to-r
+                    from-cyan-300
+                    via-sky-400
+                    to-blue-500
+
+                    bg-clip-text
+                    text-transparent
+                  "
+                >
+
+                  convierten ideas en realidad.
+
+                </span>
+
+              </h1>
+
+
+              <p
+                className="
+                  max-w-2xl
+
+                  text-slate-300
+
+                  text-lg
+
+                  leading-relaxed
+
+                  mt-5
+                "
+              >
+
+                Explora páginas web, aplicaciones,
+                software, instalaciones, seguridad,
+                publicidad y soluciones desarrolladas
+                dentro del ecosistema Macro.
+
+              </p>
+
+            </div>
+
+
+            <div
+              className="
+                grid
+                grid-cols-2
+
+                gap-3
+
+                min-w-[280px]
+              "
+            >
+
+              <MiniDato
+                numero={
+                  proyectos.length
+                }
+                texto="Proyectos"
+              />
+
+
+              <MiniDato
+                numero={
+                  categorias.length -
+                  1
+                }
+                texto="Categorías"
+              />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* ================================================= */}
+      {/* MAIN */}
+      {/* ================================================= */}
+
+      <main
+        className="
+          max-w-7xl
+          mx-auto
+
+          px-5
+          md:px-8
+
+          py-12
+          md:py-16
+        "
+      >
 
         {/* ================================================= */}
-        {/* CONTROLES */}
+        {/* FILTROS */}
         {/* ================================================= */}
 
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
+        <div
+          className={`
+            rounded-[26px]
+
+            border
+
+            p-4
+
+            flex
+            flex-col
+
+            lg:flex-row
+
+            gap-3
+
+            ${
+              modoOscuro
+                ? `
+                  bg-[#0b1424]
+                  border-slate-800
+                `
+                : `
+                  bg-white
+                  border-slate-200
+                  shadow-sm
+                `
+            }
+          `}
+        >
 
           {/* BUSCADOR */}
 
-          <div className="relative flex-1">
+          <div
+            className="
+              relative
 
-            <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
+              flex-1
+            "
+          >
+
+            <FaSearch
+              className="
+                absolute
+                left-5
+                top-1/2
+
+                -translate-y-1/2
+
+                text-sky-500
+              "
+            />
+
 
             <input
               type="text"
-              value={busqueda}
+              value={
+                busqueda
+              }
               onChange={(e) =>
                 setBusqueda(
                   e.target.value
                 )
               }
-              placeholder="Buscar por proyecto, categoría, descripción..."
+              placeholder="Buscar proyecto, tecnología o categoría..."
               className={`
                 w-full
-                border
+
                 rounded-2xl
-                pr-12
+
+                border
+
                 py-4
+
+                pr-12
+
                 outline-none
-                focus:border-yellow-500/60
-                focus:ring-2
-                focus:ring-yellow-500/10
+
                 transition
+
+                focus:border-sky-400
+                focus:ring-4
+                focus:ring-sky-500/10
+
                 ${
                   modoOscuro
-                    ? "bg-zinc-900/70 border-white/10 text-white placeholder:text-zinc-600"
-                    : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                    ? `
+                      bg-[#071221]
+                      border-slate-700
+                      text-white
+                      placeholder:text-slate-500
+                    `
+                    : `
+                      bg-[#f8fafc]
+                      border-slate-200
+                      text-slate-900
+                      placeholder:text-slate-400
+                    `
                 }
               `}
               style={{
                 paddingLeft:
-                  "3.2rem",
+                  "3.25rem",
               }}
             />
 
+
             {busqueda && (
+
               <button
                 type="button"
                 onClick={() =>
-                  setBusqueda("")
+                  setBusqueda(
+                    ""
+                  )
                 }
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition"
-                aria-label="Limpiar búsqueda"
+                className="
+                  absolute
+                  right-4
+                  top-1/2
+
+                  -translate-y-1/2
+
+                  w-8
+                  h-8
+
+                  rounded-full
+
+                  flex
+                  items-center
+                  justify-center
+
+                  text-slate-400
+
+                  hover:bg-slate-200/40
+                "
               >
+
                 <FaTimes />
+
               </button>
+
             )}
 
           </div>
 
-          {/* CATEGORÍAS */}
+
+          {/* CATEGORÍA */}
 
           <select
-            value={categoria}
+            value={
+              categoria
+            }
             onChange={(e) =>
               setCategoria(
                 e.target.value
               )
             }
             className={`
-              min-w-[220px]
-              border
+              min-w-[230px]
+
               rounded-2xl
+
+              border
+
               px-5
               py-4
+
               outline-none
-              focus:border-yellow-500/60
-              transition
+
+              focus:border-sky-400
+
               ${
                 modoOscuro
-                  ? "bg-zinc-900/70 border-white/10 text-white"
-                  : "bg-white border-gray-300 text-gray-900"
+                  ? `
+                    bg-[#071221]
+                    border-slate-700
+                    text-white
+                  `
+                  : `
+                    bg-[#f8fafc]
+                    border-slate-200
+                    text-slate-900
+                  `
               }
             `}
           >
 
             {categorias.map(
               (cat) => (
+
                 <option
-                  key={cat}
-                  value={cat}
+                  key={
+                    cat
+                  }
+                  value={
+                    cat
+                  }
                 >
+
                   {cat}
+
                 </option>
+
               )
             )}
 
@@ -685,73 +1321,161 @@ function Proyectos() {
 
         </div>
 
+
         {/* ================================================= */}
         {/* RESULTADOS */}
         {/* ================================================= */}
 
         {!cargando &&
-          proyectos.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          proyectos.length >
+            0 && (
 
-              <p className="text-sm text-zinc-500">
+          <div
+            className="
+              flex
+              flex-wrap
 
-                Mostrando{" "}
+              items-center
+              justify-between
 
-                <span className="text-white font-medium">
-                  {filtrados.length}
-                </span>
+              gap-3
 
-                {" "}
+              mt-8
+              mb-7
+            "
+          >
 
-                {filtrados.length === 1
-                  ? "proyecto"
-                  : "proyectos"}
+            <p
+              className="
+                text-sm
+                text-slate-500
+              "
+            >
 
-                {categoria !==
-                  "Todos" && (
-                  <>
-                    {" "}en{" "}
+              Mostrando{" "}
 
-                    <span className="text-yellow-500">
-                      {categoria}
-                    </span>
-                  </>
-                )}
+              <strong
+                className={
+                  modoOscuro
+                    ? "text-white"
+                    : "text-slate-900"
+                }
+              >
 
-              </p>
+                {filtrados.length}
 
-              {(busqueda ||
-                categoria !==
-                  "Todos") && (
-                <button
-                  type="button"
-                  onClick={
-                    limpiarFiltros
-                  }
-                  className="text-sm text-zinc-400 hover:text-yellow-500 transition"
-                >
-                  Limpiar filtros
-                </button>
+              </strong>
+
+              {" "}
+
+              {filtrados.length ===
+              1
+                ? "proyecto"
+                : "proyectos"
+              }
+
+
+              {categoria !==
+                "Todos" && (
+
+                <>
+
+                  {" "}en{" "}
+
+                  <span
+                    className="
+                      text-sky-500
+                      font-semibold
+                    "
+                  >
+
+                    {categoria}
+
+                  </span>
+
+                </>
+
               )}
 
-            </div>
-          )}
+            </p>
+
+
+            {(busqueda ||
+              categoria !==
+                "Todos") && (
+
+              <button
+                type="button"
+                onClick={
+                  limpiarFiltros
+                }
+                className="
+                  text-sm
+                  text-sky-500
+
+                  font-semibold
+                "
+              >
+
+                Limpiar filtros
+
+              </button>
+
+            )}
+
+          </div>
+
+        )}
+
 
         {/* ================================================= */}
-        {/* CARGANDO */}
+        {/* LOADING */}
         {/* ================================================= */}
 
         {cargando && (
-          <div className="py-24 text-center">
 
-            <div className="w-11 h-11 border-4 border-zinc-800 border-t-yellow-500 rounded-full animate-spin mx-auto" />
+          <div
+            className="
+              py-24
 
-            <p className="text-zinc-500 mt-5">
+              text-center
+            "
+          >
+
+            <div
+              className="
+                w-11
+                h-11
+
+                border-4
+                border-sky-100
+                border-t-sky-500
+
+                rounded-full
+
+                animate-spin
+
+                mx-auto
+              "
+            />
+
+
+            <p
+              className="
+                text-slate-500
+
+                mt-5
+              "
+            >
+
               Cargando proyectos...
+
             </p>
 
           </div>
+
         )}
+
 
         {/* ================================================= */}
         {/* SIN PROYECTOS */}
@@ -760,24 +1484,20 @@ function Proyectos() {
         {!cargando &&
           proyectos.length ===
             0 && (
-            <div className={`border rounded-3xl py-20 px-6 text-center ${
-                modoOscuro
-                  ? "border-zinc-800 bg-zinc-950"
-                  : "border-gray-200 bg-white shadow-sm"
-              }`}>
 
-              <FaLayerGroup className="text-zinc-700 text-5xl mx-auto" />
+          <EstadoVacio
+            modoOscuro={
+              modoOscuro
+            }
+            icon={
+              <FaLayerGroup />
+            }
+            titulo="Próximamente"
+            texto="Estamos preparando el portafolio de proyectos de Macro."
+          />
 
-              <h2 className="text-2xl font-semibold mt-5">
-                Próximamente
-              </h2>
+        )}
 
-              <p className="text-zinc-500 mt-2">
-                Estamos preparando nuestro portafolio de proyectos.
-              </p>
-
-            </div>
-          )}
 
         {/* ================================================= */}
         {/* SIN RESULTADOS */}
@@ -788,38 +1508,118 @@ function Proyectos() {
             0 &&
           filtrados.length ===
             0 && (
-            <div className={`border rounded-3xl py-20 px-6 text-center ${
+
+          <div
+            className={`
+              rounded-[30px]
+
+              border
+
+              py-20
+              px-6
+
+              text-center
+
+              ${
                 modoOscuro
-                  ? "border-zinc-800 bg-zinc-950"
-                  : "border-gray-200 bg-white shadow-sm"
-              }`}>
+                  ? `
+                    bg-[#0b1424]
+                    border-slate-800
+                  `
+                  : `
+                    bg-white
+                    border-slate-200
+                  `
+              }
+            `}
+          >
 
-              <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mx-auto">
+            <div
+              className="
+                w-16
+                h-16
 
-                <FaSearch className="text-zinc-600 text-2xl" />
+                rounded-2xl
 
-              </div>
+                bg-sky-500/10
+                text-sky-500
 
-              <h2 className="text-2xl font-semibold mt-5">
-                No encontramos proyectos
-              </h2>
+                flex
+                items-center
+                justify-center
 
-              <p className="text-zinc-500 mt-2 max-w-md mx-auto">
-                Prueba con otro término de búsqueda o selecciona una categoría diferente.
-              </p>
+                mx-auto
 
-              <button
-                type="button"
-                onClick={
-                  limpiarFiltros
-                }
-                className="mt-6 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl transition"
-              >
-                Ver todos los proyectos
-              </button>
+                text-2xl
+              "
+            >
+
+              <FaSearch />
 
             </div>
-          )}
+
+
+            <h2
+              className="
+                text-2xl
+                font-black
+
+                mt-5
+              "
+            >
+
+              No encontramos proyectos
+
+            </h2>
+
+
+            <p
+              className="
+                text-slate-500
+
+                mt-2
+
+                max-w-md
+                mx-auto
+              "
+            >
+
+              Prueba otro término de búsqueda
+              o selecciona una categoría diferente.
+
+            </p>
+
+
+            <button
+              type="button"
+              onClick={
+                limpiarFiltros
+              }
+              className="
+                mt-6
+
+                bg-sky-500
+                hover:bg-sky-600
+
+                text-white
+
+                px-6
+                py-3
+
+                rounded-xl
+
+                font-bold
+              "
+            >
+
+              Ver todos los proyectos
+
+            </button>
+
+          </div>
+
+        )}
+
 
         {/* ================================================= */}
         {/* GRID */}
@@ -828,381 +1628,994 @@ function Proyectos() {
         {!cargando &&
           filtrados.length >
             0 && (
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-7 lg:gap-8">
 
-              {filtrados.map(
-                (p) => {
-                  const isFav =
-                    favoritos.some(
-                      (f) =>
-                        f.proyectoId ===
-                          p.id ||
-                        f.id === p.id
-                    );
+          <div
+            className="
+              grid
+              grid-cols-1
+              md:grid-cols-2
+              xl:grid-cols-3
 
-                  const nuevo =
-                    esNuevo(p);
+              gap-6
 
-                  const imagenesProyecto =
-                    obtenerImagenesProyecto(
-                      p
-                    );
+              items-stretch
+            "
+          >
 
-                  const portada =
-                    obtenerPortada(
-                      p
-                    );
+            {filtrados.map(
+              (proyecto) => {
+                const isFav =
+                  favoritos.some(
+                    (favorito) =>
+                      favorito.proyectoId ===
+                        proyecto.id ||
+                      favorito.id ===
+                        proyecto.id
+                  );
 
-                  return (
-                    <article
-                      key={p.id}
-                      onClick={() =>
-                        verProyecto(
-                          p
-                        )
+
+                const nuevo =
+                  esNuevo(
+                    proyecto
+                  );
+
+
+                const imagenesProyecto =
+                  obtenerImagenesProyecto(
+                    proyecto
+                  );
+
+
+                const portada =
+                  obtenerPortada(
+                    proyecto
+                  );
+
+
+                const urlProyecto =
+                  obtenerUrlProyecto(
+                    proyecto
+                  );
+
+
+                const fecha =
+                  obtenerFecha(
+                    proyecto
+                  );
+
+
+                return (
+                  <article
+                    key={
+                      proyecto.id
+                    }
+                    onClick={() =>
+                      verProyecto(
+                        proyecto
+                      )
+                    }
+                    className={`
+                      group
+
+                      h-full
+
+                      flex
+                      flex-col
+
+                      relative
+
+                      overflow-hidden
+
+                      rounded-[28px]
+
+                      border
+
+                      cursor-pointer
+
+                      transition-all
+                      duration-300
+
+                      hover:-translate-y-1
+                      hover:shadow-xl
+
+                      ${
+                        modoOscuro
+                          ? `
+                            bg-[#0b1424]
+                            border-slate-800
+
+                            hover:border-sky-500/40
+                          `
+                          : `
+                            bg-white
+                            border-slate-200
+
+                            hover:border-sky-300
+                          `
                       }
-                      className={`
+                    `}
+                  >
+
+                    {/* ================================= */}
+                    {/* IMAGEN */}
+                    {/* ================================= */}
+
+                    <div
+                      className="
                         relative
-                        group
-                        border
-                        rounded-[28px]
+
+                        h-[270px]
+
+                        bg-[#071221]
+
                         overflow-hidden
-                        cursor-pointer
-                        transition-all
-                        duration-300
-                        hover:border-yellow-500/30
-                        hover:-translate-y-1
-                        hover:shadow-2xl
-                        ${
-                          modoOscuro
-                            ? "bg-zinc-950 border-white/10 hover:shadow-black/40"
-                            : "bg-white border-gray-200 shadow-sm hover:shadow-gray-200/70"
-                        }
-                      `}
+
+                        shrink-0
+                      "
                     >
 
-                      {/* ================================= */}
-                      {/* IMAGEN */}
-                      {/* ================================= */}
+                      {portada ? (
 
-                      <div className="relative h-[280px] bg-zinc-900 overflow-hidden">
-
-                        {portada ? (
-                          <img
-                            src={portada}
-                            alt={
-                              p.nombre ||
-                              "Proyecto Wealth"
-                            }
-                            loading="lazy"
-                            className="
-                              w-full
-                              h-full
-                              object-cover
-                              transition-transform
-                              duration-500
-                              group-hover:scale-[1.04]
-                            "
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                            Sin imagen
-                          </div>
-                        )}
-
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
-
-                        {/* ETIQUETAS */}
-
-                        <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-
-                          {nuevo && (
-                            <span className="bg-yellow-500 text-black px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                              NUEVO
-                            </span>
-                          )}
-
-                          {p.destacado && (
-                            <span className="bg-black/75 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
-
-                              <FaStar className="text-yellow-500" />
-
-                              Destacado
-
-                            </span>
-                          )}
-
-                        </div>
-
-                        {/* NÚMERO DE FOTOS */}
-
-                        {imagenesProyecto.length >
-                          1 && (
-                          <div className="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md border border-white/15 text-white px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2">
-
-                            <FaImages className="text-yellow-500" />
-
-                            {imagenesProyecto.length} fotos
-
-                          </div>
-                        )}
-
-                        {/* FAVORITO */}
-
-                        <button
-                          type="button"
-                          aria-label={
-                            isFav
-                              ? "Quitar de favoritos"
-                              : "Guardar en favoritos"
+                        <img
+                          src={
+                            portada
                           }
-                          onClick={(e) => {
-                            e.stopPropagation();
-
-                            toggleFavorito(
-                              p
-                            );
-                          }}
-                          disabled={
-                            guardandoFavorito ===
-                            p.id
+                          alt={
+                            proyecto.nombre ||
+                            "Proyecto Macro"
                           }
+                          loading="lazy"
                           className="
-                            absolute
-                            top-4
-                            right-4
-                            w-11
-                            h-11
-                            rounded-full
-                            bg-black/70
-                            backdrop-blur-md
-                            border
-                            border-white/15
+                            w-full
+                            h-full
+
+                            object-cover
+
+                            transition-transform
+                            duration-700
+
+                            group-hover:scale-[1.04]
+                          "
+                        />
+
+                      ) : (
+
+                        <div
+                          className="
+                            w-full
+                            h-full
+
                             flex
+                            flex-col
                             items-center
                             justify-center
-                            hover:scale-110
-                            transition
-                            disabled:opacity-50
+
+                            gap-3
+
+                            text-sky-400
                           "
                         >
 
-                          {isFav ? (
-                            <FaHeart className="text-red-500 text-lg" />
-                          ) : (
-                            <FaRegHeart className="text-white text-lg" />
-                          )}
+                          <FaLaptopCode
+                            size={45}
+                          />
 
-                        </button>
+
+                          <span
+                            className="
+                              text-sm
+                              text-slate-500
+                            "
+                          >
+
+                            Proyecto Macro
+
+                          </span>
+
+                        </div>
+
+                      )}
+
+
+                      <div
+                        className="
+                          absolute
+                          inset-0
+
+                          bg-gradient-to-t
+                          from-[#071221]/80
+                          via-transparent
+                          to-black/5
+
+                          pointer-events-none
+                        "
+                      />
+
+
+                      {/* ETIQUETAS */}
+
+                      <div
+                        className="
+                          absolute
+                          top-4
+                          left-4
+
+                          flex
+                          flex-wrap
+
+                          gap-2
+                        "
+                      >
+
+                        {nuevo && (
+
+                          <span
+                            className="
+                              bg-sky-500
+
+                              text-white
+
+                              px-3
+                              py-1.5
+
+                              rounded-full
+
+                              text-[10px]
+                              font-bold
+
+                              uppercase
+                              tracking-[0.15em]
+                            "
+                          >
+
+                            Nuevo
+
+                          </span>
+
+                        )}
+
+
+                        {proyecto.destacado && (
+
+                          <span
+                            className="
+                              bg-black/60
+                              backdrop-blur-md
+
+                              border
+                              border-white/15
+
+                              text-white
+
+                              px-3
+                              py-1.5
+
+                              rounded-full
+
+                              text-[10px]
+                              font-semibold
+
+                              flex
+                              items-center
+                              gap-1.5
+                            "
+                          >
+
+                            <FaStar className="text-sky-400" />
+
+                            Destacado
+
+                          </span>
+
+                        )}
 
                       </div>
 
-                      {/* ================================= */}
-                      {/* INFORMACIÓN */}
-                      {/* ================================= */}
 
-                      <div className="p-6">
+                      {/* FOTOS */}
 
-                        <div className="flex items-center justify-between gap-3">
+                      {imagenesProyecto.length >
+                        1 && (
 
-                          <p className="text-xs text-yellow-500/90 uppercase tracking-[0.18em] font-medium">
-                            {p.categoria ||
-                              "Proyecto Wealth"}
-                          </p>
+                        <div
+                          className="
+                            absolute
+                            bottom-4
+                            left-4
 
-                          {p.fecha?.toDate && (
-                            <div className="text-[11px] text-zinc-600 flex items-center gap-1.5">
+                            bg-black/65
+                            backdrop-blur-md
 
-                              <FaClock />
+                            border
+                            border-white/15
 
-                              {p.fecha
-                                .toDate()
-                                .toLocaleDateString(
-                                  "es-MX",
-                                  {
-                                    month:
-                                      "short",
+                            text-white
 
-                                    year:
-                                      "numeric",
-                                  }
-                                )}
+                            px-3
+                            py-2
 
-                            </div>
-                          )}
+                            rounded-xl
+
+                            text-xs
+                            font-medium
+
+                            flex
+                            items-center
+                            gap-2
+                          "
+                        >
+
+                          <FaImages className="text-sky-400" />
+
+                          {imagenesProyecto.length}
+
+                          {" fotos"}
 
                         </div>
 
-                        <h2 className={`text-xl md:text-2xl font-semibold mt-3 leading-tight transition ${
-                          modoOscuro
-                            ? "group-hover:text-yellow-50"
-                            : "text-gray-900 group-hover:text-[#9b7429]"
-                        }`}>
-                          {p.nombre ||
-                            "Proyecto Wealth"}
-                        </h2>
+                      )}
 
-                        <p className={`mt-3 text-sm leading-relaxed line-clamp-3 min-h-[63px] ${
-                          modoOscuro ? "text-zinc-400" : "text-gray-600"
-                        }`}>
-                          {p.descripcion ||
-                            "Conoce los detalles de este proyecto realizado por Wealth."}
+
+                      {/* FAVORITO */}
+
+                      <button
+                        type="button"
+                        aria-label={
+                          isFav
+                            ? "Quitar de favoritos"
+                            : "Guardar en favoritos"
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+
+                          toggleFavorito(
+                            proyecto
+                          );
+                        }}
+                        disabled={
+                          guardandoFavorito ===
+                          proyecto.id
+                        }
+                        className="
+                          absolute
+                          top-4
+                          right-4
+
+                          w-11
+                          h-11
+
+                          rounded-full
+
+                          bg-black/60
+                          backdrop-blur-md
+
+                          border
+                          border-white/15
+
+                          flex
+                          items-center
+                          justify-center
+
+                          hover:scale-110
+
+                          transition
+
+                          disabled:opacity-50
+                        "
+                      >
+
+                        {isFav ? (
+
+                          <FaHeart
+                            className="
+                              text-pink-500
+                              text-lg
+                            "
+                          />
+
+                        ) : (
+
+                          <FaRegHeart
+                            className="
+                              text-white
+                              text-lg
+                            "
+                          />
+
+                        )}
+
+                      </button>
+
+                    </div>
+
+
+                    {/* ================================= */}
+                    {/* INFORMACIÓN */}
+                    {/* ================================= */}
+
+                    <div
+                      className="
+                        p-6
+
+                        flex
+                        flex-col
+
+                        flex-1
+                      "
+                    >
+
+                      {/* META */}
+
+                      <div
+                        className="
+                          flex
+                          items-center
+                          justify-between
+
+                          gap-3
+
+                          min-h-[24px]
+                        "
+                      >
+
+                        <p
+                          className="
+                            text-[11px]
+                            text-sky-500
+
+                            uppercase
+                            tracking-[0.18em]
+
+                            font-bold
+
+                            line-clamp-1
+                          "
+                        >
+
+                          {
+                            proyecto.categoria ||
+                            proyecto.tipo ||
+                            "Proyecto Macro"
+                          }
+
                         </p>
 
-                        <div className={`mt-6 flex items-center gap-2 text-sm font-medium transition ${
-                          modoOscuro
-                            ? "text-zinc-300 group-hover:text-white"
-                            : "text-gray-600 group-hover:text-gray-900"
-                        }`}>
 
-                          Ver proyecto
+                        {fecha && (
 
-                          <FaArrowRight className="text-xs transition-transform duration-300 group-hover:translate-x-1" />
+                          <div
+                            className="
+                              text-[11px]
+                              text-slate-400
 
-                        </div>
+                              flex
+                              items-center
+                              gap-1.5
 
-                        {/* BOTÓN COTIZAR */}
+                              shrink-0
+                            "
+                          >
+
+                            <FaClock />
+
+                            {fecha}
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+
+                      {/* TÍTULO */}
+
+                      <h2
+                        className="
+                          text-2xl
+
+                          font-black
+
+                          mt-3
+
+                          leading-tight
+
+                          tracking-[-0.025em]
+
+                          line-clamp-2
+
+                          min-h-[58px]
+
+                          group-hover:text-sky-500
+
+                          transition
+                        "
+                      >
+
+                        {
+                          proyecto.nombre ||
+                          "Proyecto Macro"
+                        }
+
+                      </h2>
+
+
+                      {/* DESCRIPCIÓN */}
+
+                      <p
+                        className="
+                          mt-3
+
+                          text-sm
+                          text-slate-500
+
+                          leading-relaxed
+
+                          line-clamp-3
+
+                          min-h-[63px]
+                        "
+                      >
+
+                        {
+                          proyecto.descripcion ||
+                          "Conoce los detalles de esta solución desarrollada por Macro."
+                        }
+
+                      </p>
+
+
+                      {/* TECNOLOGÍAS */}
+
+                      <div
+                        className="
+                          min-h-[42px]
+
+                          mt-5
+                        "
+                      >
+
+                        {Array.isArray(
+                          proyecto.tecnologias
+                        ) &&
+                          proyecto
+                            .tecnologias
+                            .length >
+                            0 && (
+
+                          <div
+                            className="
+                              flex
+                              flex-wrap
+
+                              gap-2
+                            "
+                          >
+
+                            {proyecto
+                              .tecnologias
+                              .slice(
+                                0,
+                                3
+                              )
+                              .map(
+                                (
+                                  tecnologia
+                                ) => (
+
+                                  <span
+                                    key={
+                                      tecnologia
+                                    }
+                                    className={`
+                                      px-2.5
+                                      py-1.5
+
+                                      rounded-full
+
+                                      border
+
+                                      text-[10px]
+                                      font-semibold
+
+                                      ${
+                                        modoOscuro
+                                          ? `
+                                            bg-[#071221]
+                                            border-slate-700
+                                            text-slate-300
+                                          `
+                                          : `
+                                            bg-slate-50
+                                            border-slate-200
+                                            text-slate-600
+                                          `
+                                      }
+                                    `}
+                                  >
+
+                                    {tecnologia}
+
+                                  </span>
+
+                                )
+                              )}
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+
+                      {/* VER */}
+
+                      <div
+                        className="
+                          mt-5
+
+                          flex
+                          items-center
+                          gap-2
+
+                          text-sm
+                          text-slate-500
+
+                          font-semibold
+
+                          group-hover:text-sky-500
+
+                          transition
+                        "
+                      >
+
+                        Ver proyecto
+
+                        <FaArrowRight
+                          className="
+                            text-xs
+
+                            transition-transform
+
+                            group-hover:translate-x-1
+                          "
+                        />
+
+                      </div>
+
+
+                      {/* BOTONES */}
+
+                      <div
+                        className={`
+                          grid
+
+                          ${
+                            urlProyecto
+                              ? "grid-cols-2"
+                              : "grid-cols-1"
+                          }
+
+                          gap-2
+
+                          mt-auto
+                          pt-6
+                        `}
+                      >
 
                         <button
                           type="button"
                           onClick={(e) =>
                             solicitarCotizacion(
                               e,
-                              p
+                              proyecto
                             )
                           }
                           className="
-                            w-full
-                            mt-5
-                            bg-white
-                            hover:bg-yellow-500
-                            text-black
-                            font-semibold
+                            bg-sky-500
+                            hover:bg-sky-600
+
+                            text-white
+
+                            font-bold
+
+                            px-3
                             py-3.5
-                            rounded-2xl
+
+                            rounded-xl
+
                             flex
                             items-center
                             justify-center
                             gap-2
+
                             transition
                           "
                         >
 
                           <FaFileInvoiceDollar />
 
-                          Solicitar cotización
+                          <span>
+                            Solicitar
+                          </span>
 
                         </button>
 
+
+                        {urlProyecto && (
+
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              visitarProyecto(
+                                e,
+                                proyecto
+                              )
+                            }
+                            className={`
+                              border
+
+                              px-3
+                              py-3.5
+
+                              rounded-xl
+
+                              font-bold
+
+                              flex
+                              items-center
+                              justify-center
+                              gap-2
+
+                              transition
+
+                              ${
+                                modoOscuro
+                                  ? `
+                                    border-slate-700
+                                    text-sky-400
+
+                                    hover:border-sky-500
+                                  `
+                                  : `
+                                    border-sky-200
+                                    text-sky-500
+
+                                    hover:bg-sky-50
+                                  `
+                              }
+                            `}
+                          >
+
+                            <FaExternalLinkAlt />
+
+                            Visitar
+
+                          </button>
+
+                        )}
+
                       </div>
 
-                    </article>
-                  );
-                }
-              )}
+                    </div>
 
-            </div>
-          )}
+                  </article>
+                );
+              }
+            )}
+
+          </div>
+
+        )}
 
       </main>
 
+
       {/* ================================================= */}
-      {/* CTA INFERIOR */}
+      {/* CTA */}
       {/* ================================================= */}
 
       {!cargando &&
         proyectos.length >
           0 && (
-          <section className="max-w-7xl mx-auto px-5 md:px-6 pb-16">
 
-            <div className={`relative overflow-hidden border rounded-[32px] px-6 py-12 md:px-12 md:py-14 ${
-              modoOscuro
-                ? "bg-zinc-950 border-white/10"
-                : "bg-white border-gray-200 shadow-sm"
-            }`}>
+        <section
+          className="
+            max-w-7xl
+            mx-auto
 
-              <div className="absolute right-0 top-0 w-64 h-64 bg-yellow-500/5 blur-3xl rounded-full pointer-events-none" />
+            px-5
+            md:px-8
 
-              <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-7">
+            pb-20
+          "
+        >
 
-                <div>
+          <div
+            className="
+              relative
+              overflow-hidden
 
-                  <p className="text-yellow-500 text-xs uppercase tracking-[0.2em] font-semibold">
-                    ¿Tienes una idea?
-                  </p>
+              bg-[#071221]
 
-                  <h2 className="text-2xl md:text-4xl font-semibold mt-3">
-                    Hagamos realidad tu próximo proyecto.
-                  </h2>
+              rounded-[34px]
 
-                  <p className={`mt-3 max-w-2xl ${
-                    modoOscuro ? "text-zinc-400" : "text-gray-600"
-                  }`}>
-                    Cuéntanos qué necesitas y nuestro equipo podrá preparar una propuesta personalizada.
-                  </p>
+              text-white
 
-                </div>
+              p-8
+              md:p-12
+            "
+          >
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!usuario) {
-                      setMostrarLoginModal(
-                        true
-                      );
+            <div
+              className="
+                absolute
+                -right-20
+                -top-20
 
-                      return;
-                    }
+                w-80
+                h-80
 
-                    navigate(
-                      "/crear-cotizacion"
-                    );
-                  }}
+                rounded-full
+
+                bg-sky-500/20
+
+                blur-3xl
+              "
+            />
+
+
+            <div
+              className="
+                relative
+                z-10
+
+                flex
+                flex-col
+
+                lg:flex-row
+                lg:items-center
+                lg:justify-between
+
+                gap-8
+              "
+            >
+
+              <div>
+
+                <p
                   className="
-                    shrink-0
-                    bg-yellow-500
-                    hover:bg-yellow-400
-                    text-black
+                    text-sky-300
+
+                    text-xs
+
+                    uppercase
+                    tracking-[0.22em]
+
                     font-bold
-                    px-7
-                    py-4
-                    rounded-2xl
-                    flex
-                    items-center
-                    justify-center
-                    gap-2
-                    transition
                   "
                 >
 
-                  <FaFileInvoiceDollar />
+                  ¿Tienes una idea?
 
-                  Solicitar cotización
+                </p>
 
-                </button>
+
+                <h2
+                  className="
+                    text-3xl
+                    md:text-5xl
+
+                    font-black
+
+                    tracking-[-0.04em]
+
+                    mt-3
+                  "
+                >
+
+                  Construyamos tu próximo proyecto.
+
+                </h2>
+
+
+                <p
+                  className="
+                    text-slate-300
+
+                    mt-4
+
+                    max-w-2xl
+
+                    leading-relaxed
+                  "
+                >
+
+                  Desarrollo web, apps, sistemas,
+                  cámaras, publicidad y soluciones
+                  tecnológicas adaptadas a tus necesidades.
+
+                </p>
 
               </div>
 
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!usuario) {
+                    setMostrarLoginModal(
+                      true
+                    );
+
+
+                    return;
+                  }
+
+
+                  navigate(
+                    "/crear-cotizacion"
+                  );
+                }}
+                className="
+                  shrink-0
+
+                  bg-sky-500
+                  hover:bg-sky-400
+
+                  text-white
+
+                  font-bold
+
+                  px-7
+                  py-4
+
+                  rounded-2xl
+
+                  flex
+                  items-center
+                  justify-center
+                  gap-3
+                "
+              >
+
+                <FaRocket />
+
+                Solicitar proyecto
+
+                <FaArrowRight />
+
+              </button>
+
             </div>
 
-          </section>
-        )}
+          </div>
+
+        </section>
+
+      )}
+
 
       {/* ================================================= */}
       {/* MODAL LOGIN */}
       {/* ================================================= */}
 
       {mostrarLoginModal && (
+
         <div
           className="
             fixed
             inset-0
-            z-[100]
-            bg-black/85
+
+            z-[200]
+
+            bg-[#050b18]/90
             backdrop-blur-md
+
             flex
             items-center
             justify-center
+
             p-4
           "
           onClick={() =>
@@ -1213,24 +2626,37 @@ function Proyectos() {
         >
 
           <div
-            className={`
-              relative
-              w-full
-              max-w-md
-              border
-              border-yellow-500/20
-              rounded-3xl
-              p-8
-              shadow-2xl
-              ${
-                modoOscuro
-                  ? "bg-zinc-950 text-white"
-                  : "bg-white text-gray-900"
-              }
-            `}
             onClick={(e) =>
               e.stopPropagation()
             }
+            className={`
+              relative
+
+              w-full
+              max-w-md
+
+              rounded-[30px]
+
+              border
+
+              p-8
+
+              shadow-2xl
+
+              ${
+                modoOscuro
+                  ? `
+                    bg-[#0b1424]
+                    border-slate-700
+                    text-white
+                  `
+                  : `
+                    bg-white
+                    border-slate-200
+                    text-slate-950
+                  `
+              }
+            `}
           >
 
             <button
@@ -1240,35 +2666,124 @@ function Proyectos() {
                   false
                 )
               }
-              className="absolute top-5 right-5 text-zinc-500 hover:text-white text-xl transition"
+              className="
+                absolute
+                top-5
+                right-5
+
+                w-10
+                h-10
+
+                rounded-full
+
+                bg-slate-100/10
+
+                text-slate-400
+
+                flex
+                items-center
+                justify-center
+
+                hover:text-sky-500
+              "
             >
+
               <FaTimes />
+
             </button>
 
-            <div className="flex justify-center mb-5">
 
-              <div className="w-16 h-16 rounded-full bg-pink-500/10 flex items-center justify-center">
+            <div
+              className="
+                w-16
+                h-16
 
-                <FaHeart
-                  size={28}
-                  className="text-pink-500"
-                />
+                rounded-2xl
 
-              </div>
+                bg-gradient-to-br
+                from-cyan-400
+                to-blue-600
+
+                text-white
+
+                flex
+                items-center
+                justify-center
+
+                mx-auto
+
+                text-2xl
+              "
+            >
+
+              <FaCode />
 
             </div>
 
-            <h2 className="text-3xl font-semibold text-center mb-3">
-              Accede a Wealth
-            </h2>
 
-            <p className={`text-center mb-8 leading-relaxed ${
-              modoOscuro ? "text-zinc-400" : "text-gray-600"
-            }`}>
-              Inicia sesión para guardar proyectos y solicitar cotizaciones personalizadas.
+            <p
+              className="
+                text-xs
+                text-sky-500
+
+                uppercase
+                tracking-[0.22em]
+
+                font-bold
+
+                text-center
+
+                mt-6
+              "
+            >
+
+              Cuenta Macro
+
             </p>
 
-            <div className="space-y-3">
+
+            <h2
+              className="
+                text-3xl
+                font-black
+
+                text-center
+
+                mt-2
+              "
+            >
+
+              Inicia sesión para continuar
+
+            </h2>
+
+
+            <p
+              className="
+                text-slate-500
+
+                text-center
+
+                mt-3
+
+                leading-relaxed
+              "
+            >
+
+              Guarda tus proyectos favoritos,
+              solicita servicios y administra tus
+              proyectos desde tu cuenta.
+
+            </p>
+
+
+            <div
+              className="
+                space-y-3
+
+                mt-8
+              "
+            >
 
               <button
                 type="button"
@@ -1276,6 +2791,7 @@ function Proyectos() {
                   setMostrarLoginModal(
                     false
                   );
+
 
                   navigate(
                     "/login"
@@ -1283,17 +2799,24 @@ function Proyectos() {
                 }}
                 className="
                   w-full
-                  bg-yellow-500
-                  hover:bg-yellow-400
-                  text-black
-                  font-semibold
+
+                  bg-sky-500
+                  hover:bg-sky-600
+
+                  text-white
+
+                  font-bold
+
                   py-4
+
                   rounded-2xl
-                  transition
                 "
               >
+
                 Iniciar sesión
+
               </button>
+
 
               <button
                 type="button"
@@ -1302,24 +2825,42 @@ function Proyectos() {
                     false
                   );
 
+
                   navigate(
                     "/register"
                   );
                 }}
                 className={`
                   w-full
+
                   py-4
+
                   rounded-2xl
-                  transition
+
+                  font-semibold
+
                   ${
                     modoOscuro
-                      ? "bg-zinc-800 hover:bg-zinc-700 text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+                      ? `
+                        bg-slate-800
+                        hover:bg-slate-700
+
+                        text-white
+                      `
+                      : `
+                        bg-slate-100
+                        hover:bg-slate-200
+
+                        text-slate-900
+                      `
                   }
                 `}
               >
+
                 Crear cuenta
+
               </button>
+
 
               <button
                 type="button"
@@ -1330,13 +2871,17 @@ function Proyectos() {
                 }
                 className="
                   w-full
+
                   py-3
-                  text-zinc-500
-                  hover:text-white
-                  transition
+
+                  text-slate-500
+
+                  hover:text-sky-500
                 "
               >
+
                 Continuar explorando
+
               </button>
 
             </div>
@@ -1344,10 +2889,161 @@ function Proyectos() {
           </div>
 
         </div>
+
       )}
 
     </div>
   );
 }
+
+
+/* ======================================================
+   MINI DATO
+====================================================== */
+
+function MiniDato({
+  numero,
+  texto,
+}) {
+  return (
+    <div
+      className="
+        rounded-2xl
+
+        border
+        border-white/10
+
+        bg-white/[0.055]
+
+        p-5
+
+        backdrop-blur-md
+      "
+    >
+
+      <p
+        className="
+          text-3xl
+
+          font-black
+
+          text-white
+        "
+      >
+
+        {numero}
+
+      </p>
+
+
+      <p
+        className="
+          text-xs
+          text-slate-400
+
+          mt-1
+        "
+      >
+
+        {texto}
+
+      </p>
+
+    </div>
+  );
+}
+
+
+/* ======================================================
+   ESTADO VACÍO
+====================================================== */
+
+function EstadoVacio({
+  icon,
+  titulo,
+  texto,
+  modoOscuro,
+}) {
+  return (
+    <div
+      className={`
+        rounded-[30px]
+
+        border
+
+        py-20
+        px-6
+
+        text-center
+
+        ${
+          modoOscuro
+            ? `
+              bg-[#0b1424]
+              border-slate-800
+            `
+            : `
+              bg-white
+              border-slate-200
+            `
+        }
+      `}
+    >
+
+      <div
+        className="
+          w-16
+          h-16
+
+          rounded-2xl
+
+          bg-sky-500/10
+          text-sky-500
+
+          flex
+          items-center
+          justify-center
+
+          mx-auto
+
+          text-3xl
+        "
+      >
+
+        {icon}
+
+      </div>
+
+
+      <h2
+        className="
+          text-2xl
+          font-black
+
+          mt-5
+        "
+      >
+
+        {titulo}
+
+      </h2>
+
+
+      <p
+        className="
+          text-slate-500
+
+          mt-2
+        "
+      >
+
+        {texto}
+
+      </p>
+
+    </div>
+  );
+}
+
 
 export default Proyectos;

@@ -44,13 +44,17 @@ import {
   FaExclamationTriangle,
   FaEye,
   FaEyeSlash,
+  FaGlobe,
   FaLock,
+  FaMobileAlt,
   FaPhone,
   FaRedo,
   FaShieldAlt,
+  FaShoppingBag,
   FaSms,
   FaUser,
   FaUserPlus,
+  FaVideo,
 } from "react-icons/fa";
 
 
@@ -58,59 +62,98 @@ import {
    CONFIGURACIÓN
 ====================================================== */
 
-const DOMINIO_INTERNO = "wealth.local";
+const DOMINIO_INTERNO =
+  "macro.local";
 
-const SEGUNDOS_REENVIO = 60;
+const SEGUNDOS_REENVIO =
+  60;
 
 
 /* ======================================================
-   HELPERS TELÉFONO
+   TELÉFONO
 ====================================================== */
 
-const normalizarTelefonoMexico = (valor) => {
+const normalizarTelefonoMexico =
+  (valor) => {
+    const limpio =
+      String(
+        valor || ""
+      )
+        .trim()
+        .replace(
+          /[\s()-]/g,
+          ""
+        );
 
-  const limpio = String(valor || "")
-    .trim()
-    .replace(/[\s()-]/g, "");
 
-  if (limpio.startsWith("+")) {
+    if (
+      limpio.startsWith("+")
+    ) {
+      const numeros =
+        limpio
+          .slice(1)
+          .replace(
+            /\D/g,
+            ""
+          );
 
-    const numeros = limpio
-      .slice(1)
-      .replace(/\D/g, "");
 
-    if (/^\d{10,15}$/.test(numeros)) {
-      return `+${numeros}`;
+      if (
+        /^\d{10,15}$/.test(
+          numeros
+        )
+      ) {
+        return `+${numeros}`;
+      }
+
+
+      return null;
     }
 
+
+    const soloNumeros =
+      limpio.replace(
+        /\D/g,
+        ""
+      );
+
+
+    if (
+      soloNumeros.length ===
+      10
+    ) {
+      return `+52${soloNumeros}`;
+    }
+
+
+    if (
+      soloNumeros.length ===
+        12 &&
+      soloNumeros.startsWith(
+        "52"
+      )
+    ) {
+      return `+${soloNumeros}`;
+    }
+
+
     return null;
-  }
-
-  const soloNumeros = limpio.replace(/\D/g, "");
-
-  if (soloNumeros.length === 10) {
-    return `+52${soloNumeros}`;
-  }
-
-  if (
-    soloNumeros.length === 12 &&
-    soloNumeros.startsWith("52")
-  ) {
-    return `+${soloNumeros}`;
-  }
-
-  return null;
-};
+  };
 
 
-const telefonoAEmailInterno = (telefonoE164) => {
+const telefonoAEmailInterno =
+  (telefonoE164) => {
+    const numeros =
+      String(
+        telefonoE164 || ""
+      ).replace(
+        /\D/g,
+        ""
+      );
 
-  const numeros = String(
-    telefonoE164 || ""
-  ).replace(/\D/g, "");
 
-  return `${numeros}@${DOMINIO_INTERNO}`;
-};
+    return `${numeros}@${DOMINIO_INTERNO}`;
+  };
 
 
 /* ======================================================
@@ -118,51 +161,65 @@ const telefonoAEmailInterno = (telefonoE164) => {
 ====================================================== */
 
 function Register() {
+  const navigate =
+    useNavigate();
 
-  const navigate = useNavigate();
 
   const {
-    modoOscuro,
-  } = useOutletContext() || {};
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
 
 
   /* ======================================================
-     MODO DE REGISTRO
+     MODO
   ====================================================== */
 
-  const [modo, setModo] =
-    useState("opciones");
+  const [
+    modo,
+    setModo,
+  ] = useState(
+    "opciones"
+  );
 
 
   /* ======================================================
-     DATOS GENERALES
+     DATOS
   ====================================================== */
 
-  const [nombre, setNombre] =
-    useState("");
+  const [
+    nombre,
+    setNombre,
+  ] = useState("");
 
 
   /* ======================================================
      CORREO
   ====================================================== */
 
-  const [correo, setCorreo] =
-    useState("");
+  const [
+    correo,
+    setCorreo,
+  ] = useState("");
+
 
   const [
     passwordCorreo,
     setPasswordCorreo,
   ] = useState("");
 
+
   const [
     confirmarPasswordCorreo,
     setConfirmarPasswordCorreo,
   ] = useState("");
 
+
   const [
     mostrarPasswordCorreo,
     setMostrarPasswordCorreo,
   ] = useState(false);
+
 
   const [
     mostrarConfirmacionCorreo,
@@ -179,45 +236,54 @@ function Register() {
     setPasoTelefono,
   ] = useState(1);
 
+
   const [
     telefono,
     setTelefono,
   ] = useState("");
+
 
   const [
     telefonoVerificado,
     setTelefonoVerificado,
   ] = useState("");
 
+
   const [
     codigo,
     setCodigo,
   ] = useState("");
+
 
   const [
     confirmationResult,
     setConfirmationResult,
   ] = useState(null);
 
+
   const [
     contador,
     setContador,
   ] = useState(0);
+
 
   const [
     passwordTelefono,
     setPasswordTelefono,
   ] = useState("");
 
+
   const [
     confirmarPasswordTelefono,
     setConfirmarPasswordTelefono,
   ] = useState("");
 
+
   const [
     mostrarPasswordTelefono,
     setMostrarPasswordTelefono,
   ] = useState(false);
+
 
   const [
     mostrarConfirmacionTelefono,
@@ -226,7 +292,7 @@ function Register() {
 
 
   /* ======================================================
-     ESTADOS
+     UI
   ====================================================== */
 
   const [
@@ -234,10 +300,12 @@ function Register() {
     setLoading,
   ] = useState(false);
 
+
   const [
     error,
     setError,
   ] = useState("");
+
 
   const [
     mensaje,
@@ -252,68 +320,117 @@ function Register() {
   const recaptchaRef =
     useRef(null);
 
+
   const recaptchaWidgetIdRef =
     useRef(null);
 
 
   /* ======================================================
-     SEGURIDAD CONTRASEÑA
+     PASSWORD
   ====================================================== */
 
-  const calcularSeguridad = (password) => {
+  const calcularSeguridad =
+    (password) => {
+      let puntos = 0;
 
-    let puntos = 0;
 
-    if (password.length >= 8) {
-      puntos++;
-    }
+      if (
+        password.length >=
+        8
+      ) {
+        puntos++;
+      }
 
-    if (password.length >= 10) {
-      puntos++;
-    }
 
-    if (/[A-Z]/.test(password)) {
-      puntos++;
-    }
+      if (
+        password.length >=
+        10
+      ) {
+        puntos++;
+      }
 
-    if (/[a-z]/.test(password)) {
-      puntos++;
-    }
 
-    if (/[0-9]/.test(password)) {
-      puntos++;
-    }
+      if (
+        /[A-Z]/.test(
+          password
+        )
+      ) {
+        puntos++;
+      }
 
-    if (/[^A-Za-z0-9]/.test(password)) {
-      puntos++;
-    }
 
-    if (!password) {
+      if (
+        /[a-z]/.test(
+          password
+        )
+      ) {
+        puntos++;
+      }
+
+
+      if (
+        /[0-9]/.test(
+          password
+        )
+      ) {
+        puntos++;
+      }
+
+
+      if (
+        /[^A-Za-z0-9]/.test(
+          password
+        )
+      ) {
+        puntos++;
+      }
+
+
+      if (!password) {
+        return {
+          nivel:
+            0,
+
+          texto:
+            "",
+        };
+      }
+
+
+      if (
+        puntos <= 2
+      ) {
+        return {
+          nivel:
+            1,
+
+          texto:
+            "Débil",
+        };
+      }
+
+
+      if (
+        puntos <= 4
+      ) {
+        return {
+          nivel:
+            2,
+
+          texto:
+            "Buena",
+        };
+      }
+
+
       return {
-        nivel: 0,
-        texto: "",
-      };
-    }
+        nivel:
+          3,
 
-    if (puntos <= 2) {
-      return {
-        nivel: 1,
-        texto: "Débil",
+        texto:
+          "Segura",
       };
-    }
-
-    if (puntos <= 4) {
-      return {
-        nivel: 2,
-        texto: "Buena",
-      };
-    }
-
-    return {
-      nivel: 3,
-      texto: "Segura",
     };
-  };
 
 
   const seguridadCorreo =
@@ -322,7 +439,9 @@ function Register() {
         calcularSeguridad(
           passwordCorreo
         ),
-      [passwordCorreo]
+      [
+        passwordCorreo,
+      ]
     );
 
 
@@ -332,7 +451,9 @@ function Register() {
         calcularSeguridad(
           passwordTelefono
         ),
-      [passwordTelefono]
+      [
+        passwordTelefono,
+      ]
     );
 
 
@@ -341,126 +462,334 @@ function Register() {
   ====================================================== */
 
   useEffect(() => {
-
-    if (contador <= 0) {
+    if (
+      contador <= 0
+    ) {
       return;
     }
 
-    const timer = setInterval(
-      () => {
 
-        setContador(
-          (actual) =>
-            actual > 0
-              ? actual - 1
-              : 0
-        );
+    const timer =
+      setInterval(
+        () => {
+          setContador(
+            (actual) =>
+              actual > 0
+                ? actual - 1
+                : 0
+          );
+        },
+        1000
+      );
 
-      },
-      1000
-    );
 
     return () =>
-      clearInterval(timer);
+      clearInterval(
+        timer
+      );
 
-  }, [contador]);
+  }, [
+    contador,
+  ]);
 
 
   /* ======================================================
      RECAPTCHA
   ====================================================== */
 
-  const resetearRecaptcha = () => {
+  const resetearRecaptcha =
+    () => {
+      try {
+        if (
+          typeof window !==
+            "undefined" &&
+          window.grecaptcha &&
+          recaptchaWidgetIdRef.current !==
+            null
+        ) {
+          window.grecaptcha.reset(
+            recaptchaWidgetIdRef.current
+          );
+        }
 
-    try {
-
-      if (
-        typeof window !== "undefined" &&
-        window.grecaptcha &&
-        recaptchaWidgetIdRef.current !== null
-      ) {
-
-        window.grecaptcha.reset(
-          recaptchaWidgetIdRef.current
+      } catch (resetError) {
+        console.warn(
+          "No se pudo resetear reCAPTCHA:",
+          resetError
         );
+      }
+    };
 
+
+  const destruirRecaptcha =
+    () => {
+      try {
+        recaptchaRef.current?.clear();
+
+      } catch {
+        // ignorar
       }
 
-    } catch (resetError) {
 
-      console.warn(
-        "No se pudo resetear reCAPTCHA:",
-        resetError
-      );
-
-    }
-
-  };
+      recaptchaRef.current =
+        null;
 
 
-  const destruirRecaptcha = () => {
-
-    try {
-      recaptchaRef.current?.clear();
-    } catch {
-      // Ignorar
-    }
-
-    recaptchaRef.current = null;
-
-    recaptchaWidgetIdRef.current = null;
-  };
+      recaptchaWidgetIdRef.current =
+        null;
+    };
 
 
   useEffect(() => {
-
-    return () => {
+    return () =>
       destruirRecaptcha();
-    };
 
   }, []);
 
 
-  const prepararRecaptcha = async () => {
+  const prepararRecaptcha =
+    async () => {
+      if (
+        recaptchaRef.current
+      ) {
+        return recaptchaRef.current;
+      }
 
-    if (recaptchaRef.current) {
-      return recaptchaRef.current;
-    }
 
-    const container =
-      document.getElementById(
-        "recaptcha-register"
-      );
+      const container =
+        document.getElementById(
+          "recaptcha-register"
+        );
 
-    if (!container) {
-      throw new Error(
-        "No se encontró el contenedor de reCAPTCHA."
-      );
-    }
 
-    const verifier =
-      new RecaptchaVerifier(
-        auth,
-        "recaptcha-register",
+      if (!container) {
+        throw new Error(
+          "No se encontró el contenedor de reCAPTCHA."
+        );
+      }
+
+
+      const verifier =
+        new RecaptchaVerifier(
+          auth,
+          "recaptcha-register",
+          {
+            size:
+              "invisible",
+
+            callback:
+              () => {},
+
+            "expired-callback":
+              () => {
+                resetearRecaptcha();
+              },
+          }
+        );
+
+
+      recaptchaRef.current =
+        verifier;
+
+
+      recaptchaWidgetIdRef.current =
+        await verifier.render();
+
+
+      return verifier;
+    };
+
+
+  /* ======================================================
+     CREAR / COMPLETAR PERFIL
+  ====================================================== */
+
+  const guardarPerfilUsuario =
+    async ({
+      user,
+      nombrePerfil,
+      proveedor,
+      proveedores,
+      telefonoPerfil = "",
+      correoPerfil = "",
+      correoInterno = "",
+    }) => {
+      const ref =
+        doc(
+          db,
+          "users",
+          user.uid
+        );
+
+
+      const snap =
+        await getDoc(
+          ref
+        );
+
+
+      /*
+        Si ya existía, conservamos role.
+        Así jamás convertimos accidentalmente
+        un admin en cliente.
+      */
+
+      const perfilExistente =
+        snap.exists()
+          ? snap.data()
+          : {};
+
+
+      const roleActual =
+        perfilExistente.role ||
+        "cliente";
+
+
+      const telefonoFinal =
+        telefonoPerfil ||
+        user.phoneNumber ||
+        perfilExistente.telefono ||
+        "";
+
+
+      const datos = {
+        uid:
+          user.uid,
+
+        nombre:
+          nombrePerfil ||
+          user.displayName ||
+          perfilExistente.nombre ||
+          "Usuario",
+
+        correo:
+          correoPerfil ||
+          (
+            proveedor ===
+            "telefono_password"
+              ? perfilExistente.correo ||
+                ""
+              : user.email ||
+                perfilExistente.correo ||
+                ""
+          ),
+
+        telefono:
+          telefonoFinal,
+
+        role:
+          roleActual,
+
+        estadoCuenta:
+          perfilExistente.estadoCuenta ||
+          "activa",
+
+        temaPreferido:
+          perfilExistente.temaPreferido ||
+          "claro",
+
+        proveedor,
+
+        proveedores,
+
+        emailVerificado:
+          Boolean(
+            user.emailVerified
+          ),
+
+        telefonoVerificado:
+          Boolean(
+            telefonoFinal
+          ),
+
+        fechaActualizacion:
+          serverTimestamp(),
+
+        ultimoAcceso:
+          serverTimestamp(),
+      };
+
+
+      /*
+        fechaRegistro solo se crea una vez
+      */
+
+      if (
+        !snap.exists()
+      ) {
+        datos.fechaRegistro =
+          serverTimestamp();
+      }
+
+
+      if (
+        proveedor ===
+        "telefono_password"
+      ) {
+        datos.telefonoNacional =
+          telefonoFinal.replace(
+            /^\+52/,
+            ""
+          );
+
+
+        datos.correoInterno =
+          correoInterno ||
+          perfilExistente.correoInterno ||
+          "";
+      }
+
+
+      await setDoc(
+        ref,
+        datos,
         {
-          size: "invisible",
-
-          callback: () => {},
-
-          "expired-callback": () => {
-            resetearRecaptcha();
-          },
+          merge:
+            true,
         }
       );
 
-    recaptchaRef.current =
-      verifier;
 
-    recaptchaWidgetIdRef.current =
-      await verifier.render();
+      return {
+        ...perfilExistente,
+        ...datos,
 
-    return verifier;
-  };
+        role:
+          roleActual,
+      };
+    };
+
+
+  /* ======================================================
+     REDIRECCIÓN
+  ====================================================== */
+
+  const redirigirSegunRol =
+    (perfil) => {
+      if (
+        perfil?.role ===
+        "admin"
+      ) {
+        navigate(
+          "/admin",
+          {
+            replace:
+              true,
+          }
+        );
+
+        return;
+      }
+
+
+      navigate(
+        "/cliente",
+        {
+          replace:
+            true,
+        }
+      );
+    };
 
 
   /* ======================================================
@@ -469,54 +798,54 @@ function Register() {
 
   const mensajeErrorSMS =
     (firebaseError) => {
-
       console.error(
         "Firebase Phone Auth:",
         firebaseError
       );
 
-      switch (firebaseError?.code) {
 
+      switch (
+        firebaseError?.code
+      ) {
         case "auth/invalid-phone-number":
-
           return "El número de teléfono no es válido.";
 
-        case "auth/too-many-requests":
 
+        case "auth/too-many-requests":
           return "Se hicieron demasiados intentos. Espera un momento e inténtalo nuevamente.";
 
-        case "auth/quota-exceeded":
 
+        case "auth/quota-exceeded":
           return "Se alcanzó temporalmente el límite de SMS.";
 
-        case "auth/invalid-verification-id":
 
+        case "auth/invalid-verification-id":
           return "La verificación SMS ya no es válida. Solicita un código nuevo.";
 
-        case "auth/app-not-authorized":
 
-          return "Esta aplicación no está autorizada para usar Firebase Authentication.";
+        case "auth/app-not-authorized":
+          return "Esta aplicación no está autorizada para utilizar Firebase Authentication.";
+
 
         case "auth/billing-not-enabled":
-
           return "Firebase todavía no tiene habilitada la facturación para SMS reales.";
 
-        case "auth/operation-not-allowed":
 
-          return "El registro por teléfono no está habilitado en Firebase.";
+        case "auth/operation-not-allowed":
+          return "El registro por teléfono no está habilitado.";
+
 
         case "auth/unauthorized-domain":
-
           return "Este dominio todavía no está autorizado en Firebase Authentication.";
+
 
         case "auth/captcha-check-failed":
         case "auth/invalid-app-credential":
         case "auth/missing-app-credential":
-
           return "No se pudo validar reCAPTCHA. Inténtalo nuevamente.";
 
-        default:
 
+        default:
           return (
             firebaseError?.message ||
             "No se pudo enviar el código."
@@ -529,55 +858,36 @@ function Register() {
      GOOGLE
   ====================================================== */
 
-  const registrarGoogle = async () => {
+  const registrarGoogle =
+    async () => {
+      setError("");
+      setMensaje("");
 
-    setError("");
-    setMensaje("");
 
-    try {
-
-      setLoading(true);
-
-      const result =
-        await signInWithPopup(
-          auth,
-          provider
+      try {
+        setLoading(
+          true
         );
 
-      const user =
-        result.user;
 
-      const ref =
-        doc(
-          db,
-          "users",
-          user.uid
-        );
+        const result =
+          await signInWithPopup(
+            auth,
+            provider
+          );
 
-      const snap =
-        await getDoc(ref);
 
-      if (!snap.exists()) {
+        const user =
+          result.user;
 
-        await setDoc(
-          ref,
-          {
-            uid: user.uid,
 
-            nombre:
+        const perfil =
+          await guardarPerfilUsuario({
+            user,
+
+            nombrePerfil:
               user.displayName ||
               "Usuario",
-
-            correo:
-              user.email || "",
-
-            telefono:
-              user.phoneNumber || "",
-
-            role: "cliente",
-
-            temaPreferido:
-              "claro",
 
             proveedor:
               "google",
@@ -586,832 +896,824 @@ function Register() {
               "google",
             ],
 
-            emailVerificado:
-              user.emailVerified ||
-              false,
+            telefonoPerfil:
+              user.phoneNumber ||
+              "",
 
-            telefonoVerificado:
-              Boolean(
-                user.phoneNumber
-              ),
+            correoPerfil:
+              user.email ||
+              "",
+          });
 
-            fechaRegistro:
-              serverTimestamp(),
 
-            fechaActualizacion:
-              serverTimestamp(),
-
-            ultimoAcceso:
-              serverTimestamp(),
-          }
+        redirigirSegunRol(
+          perfil
         );
 
-      } else {
-
-        await setDoc(
-          ref,
-          {
-            ultimoAcceso:
-              serverTimestamp(),
-
-            fechaActualizacion:
-              serverTimestamp(),
-          },
-          {
-            merge: true,
-          }
-        );
-      }
-
-      navigate(
-        "/cliente",
-        {
-          replace: true,
-
-          state: {
-            registroExitoso: true,
-          },
-        }
-      );
-
-    } catch (firebaseError) {
-
-      console.error(
-        "Registro Google:",
-        firebaseError
-      );
-
-      if (
-        firebaseError?.code ===
-        "auth/popup-closed-by-user"
-      ) {
-
-        setError(
-          "La ventana de Google fue cerrada antes de completar el registro."
-        );
-
-      } else if (
-        firebaseError?.code ===
-        "auth/account-exists-with-different-credential"
-      ) {
-
-        setError(
-          "Ya existe una cuenta con ese correo usando otro método de acceso."
-        );
-
-      } else {
-
-        setError(
-          "No se pudo continuar con Google."
-        );
-      }
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
-
-
-  /* ======================================================
-     CORREO + CONTRASEÑA
-  ====================================================== */
-
-  const registrarCorreo = async (e) => {
-
-    e.preventDefault();
-
-    setError("");
-    setMensaje("");
-
-    if (
-      nombre.trim().length < 3
-    ) {
-
-      setError(
-        "Escribe tu nombre completo."
-      );
-
-      return;
-    }
-
-    if (!correo.trim()) {
-
-      setError(
-        "Escribe tu correo electrónico."
-      );
-
-      return;
-    }
-
-    if (
-      passwordCorreo.length < 8
-    ) {
-
-      setError(
-        "La contraseña debe tener al menos 8 caracteres."
-      );
-
-      return;
-    }
-
-    if (
-      passwordCorreo !==
-      confirmarPasswordCorreo
-    ) {
-
-      setError(
-        "Las contraseñas no coinciden."
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      const result =
-        await createUserWithEmailAndPassword(
-          auth,
-          correo
-            .trim()
-            .toLowerCase(),
-          passwordCorreo
-        );
-
-      const user =
-        result.user;
-
-      await updateProfile(
-        user,
-        {
-          displayName:
-            nombre.trim(),
-        }
-      );
-
-      await setDoc(
-        doc(
-          db,
-          "users",
-          user.uid
-        ),
-        {
-          uid:
-            user.uid,
-
-          nombre:
-            nombre.trim(),
-
-          correo:
-            correo
-              .trim()
-              .toLowerCase(),
-
-          telefono: "",
-
-          role: "cliente",
-
-          temaPreferido:
-            "claro",
-
-          proveedor:
-            "password",
-
-          proveedores: [
-            "password",
-          ],
-
-          emailVerificado:
-            false,
-
-          telefonoVerificado:
-            false,
-
-          fechaRegistro:
-            serverTimestamp(),
-
-          fechaActualizacion:
-            serverTimestamp(),
-
-          ultimoAcceso:
-            serverTimestamp(),
-        }
-      );
-
-      await sendEmailVerification(
-        user
-      );
-
-      setMensaje(
-        "✅ Cuenta creada. Te enviamos un correo de verificación."
-      );
-
-      setTimeout(
-        () => {
-
-          navigate(
-            "/cliente",
-            {
-              replace: true,
-
-              state: {
-                registroExitoso:
-                  true,
-
-                verificarCorreo:
-                  true,
-
-                correo:
-                  correo.trim(),
-              },
-            }
-          );
-
-        },
-        900
-      );
-
-    } catch (firebaseError) {
-
-      console.error(
-        "Registro correo:",
-        firebaseError
-      );
-
-      switch (
-        firebaseError?.code
-      ) {
-
-        case "auth/email-already-in-use":
-
-          setError(
-            "Este correo ya tiene una cuenta registrada."
-          );
-
-          break;
-
-        case "auth/invalid-email":
-
-          setError(
-            "El correo electrónico no es válido."
-          );
-
-          break;
-
-        case "auth/weak-password":
-
-          setError(
-            "La contraseña es demasiado débil."
-          );
-
-          break;
-
-        case "auth/operation-not-allowed":
-
-          setError(
-            "El registro con correo y contraseña no está habilitado."
-          );
-
-          break;
-
-        default:
-
-          setError(
-            "No se pudo crear la cuenta."
-          );
-      }
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
-
-
-  /* ======================================================
-     TELÉFONO - PASO 1
-  ====================================================== */
-
-  const enviarCodigo = async () => {
-
-    setError("");
-    setMensaje("");
-
-    if (
-      nombre.trim().length < 3
-    ) {
-
-      setError(
-        "Escribe tu nombre completo."
-      );
-
-      return;
-    }
-
-    const telefonoE164 =
-      normalizarTelefonoMexico(
-        telefono
-      );
-
-    if (!telefonoE164) {
-
-      setError(
-        "Escribe un teléfono válido de México de 10 dígitos."
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      const verifier =
-        await prepararRecaptcha();
-
-      resetearRecaptcha();
-
-      const resultado =
-        await signInWithPhoneNumber(
-          auth,
-          telefonoE164,
-          verifier
-        );
-
-      setConfirmationResult(
-        resultado
-      );
-
-      setTelefonoVerificado(
-        telefonoE164
-      );
-
-      setCodigo("");
-
-      setContador(
-        SEGUNDOS_REENVIO
-      );
-
-      setPasoTelefono(2);
-
-      setMensaje(
-        "Enviamos un código de verificación a tu teléfono."
-      );
-
-    } catch (firebaseError) {
-
-      setError(
-        mensajeErrorSMS(
+      } catch (firebaseError) {
+        console.error(
+          "Registro Google:",
           firebaseError
-        )
-      );
+        );
 
-      resetearRecaptcha();
 
-    } finally {
+        if (
+          firebaseError?.code ===
+          "auth/popup-closed-by-user"
+        ) {
+          setError(
+            "La ventana de Google fue cerrada antes de completar el registro."
+          );
 
-      setLoading(false);
+        } else if (
+          firebaseError?.code ===
+          "auth/account-exists-with-different-credential"
+        ) {
+          setError(
+            "Ya existe una cuenta con ese correo usando otro método de acceso."
+          );
 
-    }
-  };
+        } else {
+          setError(
+            "No se pudo continuar con Google."
+          );
+        }
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
 
 
   /* ======================================================
-     TELÉFONO - PASO 2
+     CORREO
   ====================================================== */
 
-  const verificarCodigo = async () => {
+  const registrarCorreo =
+    async (e) => {
+      e.preventDefault();
 
-    setError("");
-    setMensaje("");
 
-    const codigoLimpio =
-      codigo.replace(
-        /\D/g,
-        ""
-      );
+      setError("");
+      setMensaje("");
 
-    if (
-      codigoLimpio.length !== 6
-    ) {
-
-      setError(
-        "El código debe tener 6 dígitos."
-      );
-
-      return;
-    }
-
-    if (!confirmationResult) {
-
-      setError(
-        "Solicita un nuevo código."
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      const result =
-        await confirmationResult.confirm(
-          codigoLimpio
-        );
-
-      const perfilRef =
-        doc(
-          db,
-          "users",
-          result.user.uid
-        );
-
-      const perfilSnap =
-        await getDoc(
-          perfilRef
-        );
 
       if (
-        perfilSnap.exists()
+        nombre.trim().length <
+        3
       ) {
-
-        await signOut(auth);
-
         setError(
-          "Este teléfono ya tiene una cuenta Wealth. Inicia sesión."
+          "Escribe tu nombre completo."
         );
-
-        setPasoTelefono(1);
 
         return;
       }
 
-      setTelefonoVerificado(
-        result.user.phoneNumber ||
-        telefonoVerificado
-      );
-
-      setPasoTelefono(3);
-
-      setMensaje(
-        "Teléfono verificado. Ahora crea tu contraseña."
-      );
-
-    } catch (firebaseError) {
-
-      console.error(
-        "Verificar SMS:",
-        firebaseError
-      );
 
       if (
-        firebaseError?.code ===
-        "auth/invalid-verification-code"
+        !correo.trim()
       ) {
-
         setError(
-          "El código es incorrecto."
+          "Escribe tu correo electrónico."
         );
 
-      } else if (
-        [
-          "auth/code-expired",
-          "auth/session-expired",
-        ].includes(
-          firebaseError?.code
-        )
-      ) {
-
-        setError(
-          "El código expiró. Solicita uno nuevo."
-        );
-
-      } else {
-
-        setError(
-          "No se pudo verificar el código."
-        );
+        return;
       }
 
-    } finally {
 
-      setLoading(false);
-
-    }
-  };
-
-
-  const reenviarCodigo = async () => {
-
-    if (
-      contador > 0 ||
-      loading
-    ) {
-      return;
-    }
-
-    setError("");
-    setMensaje("");
-
-    try {
-
-      setLoading(true);
-
-      const verifier =
-        await prepararRecaptcha();
-
-      resetearRecaptcha();
-
-      const resultado =
-        await signInWithPhoneNumber(
-          auth,
-          telefonoVerificado,
-          verifier
+      if (
+        passwordCorreo.length <
+        8
+      ) {
+        setError(
+          "La contraseña debe tener al menos 8 caracteres."
         );
 
-      setConfirmationResult(
-        resultado
-      );
+        return;
+      }
 
-      setCodigo("");
 
-      setContador(
-        SEGUNDOS_REENVIO
-      );
+      if (
+        passwordCorreo !==
+        confirmarPasswordCorreo
+      ) {
+        setError(
+          "Las contraseñas no coinciden."
+        );
 
-      setMensaje(
-        "Enviamos un nuevo código."
-      );
+        return;
+      }
 
-    } catch (firebaseError) {
 
-      setError(
-        mensajeErrorSMS(
+      try {
+        setLoading(
+          true
+        );
+
+
+        const correoLimpio =
+          correo
+            .trim()
+            .toLowerCase();
+
+
+        const result =
+          await createUserWithEmailAndPassword(
+            auth,
+            correoLimpio,
+            passwordCorreo
+          );
+
+
+        const user =
+          result.user;
+
+
+        await updateProfile(
+          user,
+          {
+            displayName:
+              nombre.trim(),
+          }
+        );
+
+
+        const perfil =
+          await guardarPerfilUsuario({
+            user,
+
+            nombrePerfil:
+              nombre.trim(),
+
+            proveedor:
+              "password",
+
+            proveedores: [
+              "password",
+            ],
+
+            correoPerfil:
+              correoLimpio,
+
+            telefonoPerfil:
+              "",
+          });
+
+
+        await sendEmailVerification(
+          user
+        );
+
+
+        setMensaje(
+          "Cuenta creada correctamente. Te enviamos un correo de verificación."
+        );
+
+
+        setTimeout(
+          () => {
+            redirigirSegunRol(
+              perfil
+            );
+          },
+          900
+        );
+
+      } catch (firebaseError) {
+        console.error(
+          "Registro correo:",
           firebaseError
-        )
-      );
+        );
 
-      resetearRecaptcha();
 
-    } finally {
+        switch (
+          firebaseError?.code
+        ) {
+          case "auth/email-already-in-use":
+            setError(
+              "Este correo ya tiene una cuenta registrada."
+            );
 
-      setLoading(false);
+            break;
 
-    }
-  };
+
+          case "auth/invalid-email":
+            setError(
+              "El correo electrónico no es válido."
+            );
+
+            break;
+
+
+          case "auth/weak-password":
+            setError(
+              "La contraseña es demasiado débil."
+            );
+
+            break;
+
+
+          case "auth/operation-not-allowed":
+            setError(
+              "El registro con correo y contraseña no está habilitado."
+            );
+
+            break;
+
+
+          default:
+            setError(
+              "No se pudo crear la cuenta."
+            );
+        }
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
 
 
   /* ======================================================
-     TELÉFONO - PASO 3
+     TELÉFONO PASO 1
   ====================================================== */
 
-  const crearCuentaTelefono = async () => {
+  const enviarCodigo =
+    async () => {
+      setError("");
+      setMensaje("");
 
-    setError("");
-    setMensaje("");
 
-    if (!auth.currentUser) {
-
-      setError(
-        "La verificación expiró. Comienza nuevamente."
-      );
-
-      setPasoTelefono(1);
-
-      return;
-    }
-
-    if (
-      passwordTelefono.length < 8
-    ) {
-
-      setError(
-        "La contraseña debe tener al menos 8 caracteres."
-      );
-
-      return;
-    }
-
-    if (
-      passwordTelefono !==
-      confirmarPasswordTelefono
-    ) {
-
-      setError(
-        "Las contraseñas no coinciden."
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      const telefonoFinal =
-        auth.currentUser.phoneNumber ||
-        telefonoVerificado;
-
-      const emailInterno =
-        telefonoAEmailInterno(
-          telefonoFinal
-        );
-
-      const credential =
-        EmailAuthProvider.credential(
-          emailInterno,
-          passwordTelefono
-        );
-
-      await linkWithCredential(
-        auth.currentUser,
-        credential
-      );
-
-      await updateProfile(
-        auth.currentUser,
-        {
-          displayName:
-            nombre.trim(),
-        }
-      );
-
-      await setDoc(
-        doc(
-          db,
-          "users",
-          auth.currentUser.uid
-        ),
-        {
-          uid:
-            auth.currentUser.uid,
-
-          nombre:
-            nombre.trim(),
-
-          telefono:
-            telefonoFinal,
-
-          telefonoNacional:
-            telefonoFinal.replace(
-              /^\+52/,
-              ""
-            ),
-
-          telefonoVerificado:
-            true,
-
-          correoInterno:
-            emailInterno,
-
-          role:
-            "cliente",
-
-          temaPreferido:
-            "claro",
-
-          proveedor:
-            "telefono_password",
-
-          proveedores: [
-            "phone",
-            "password",
-          ],
-
-          emailVerificado:
-            false,
-
-          fechaRegistro:
-            serverTimestamp(),
-
-          fechaActualizacion:
-            serverTimestamp(),
-
-          ultimoAcceso:
-            serverTimestamp(),
-        }
-      );
-
-      setMensaje(
-        "✅ Cuenta creada correctamente. Entrando a tu panel..."
-      );
-
-      setTimeout(
-        () => {
-
-          navigate(
-            "/cliente",
-            {
-              replace: true,
-
-              state: {
-                registroExitoso:
-                  true,
-              },
-            }
-          );
-
-        },
-        900
-      );
-
-    } catch (firebaseError) {
-
-      console.error(
-        "Crear cuenta teléfono:",
-        firebaseError
-      );
-
-      switch (
-        firebaseError?.code
+      if (
+        nombre.trim().length <
+        3
       ) {
+        setError(
+          "Escribe tu nombre completo."
+        );
 
-        case "auth/email-already-in-use":
-        case "auth/credential-already-in-use":
-
-          setError(
-            "Este teléfono ya está vinculado a una cuenta Wealth."
-          );
-
-          break;
-
-        case "auth/provider-already-linked":
-
-          setError(
-            "Esta cuenta ya tiene contraseña configurada. Inicia sesión."
-          );
-
-          break;
-
-        case "auth/weak-password":
-
-          setError(
-            "La contraseña es demasiado débil."
-          );
-
-          break;
-
-        default:
-
-          setError(
-            "No se pudo completar el registro."
-          );
+        return;
       }
 
-    } finally {
 
-      setLoading(false);
+      const telefonoE164 =
+        normalizarTelefonoMexico(
+          telefono
+        );
 
-    }
-  };
+
+      if (!telefonoE164) {
+        setError(
+          "Escribe un teléfono válido de México de 10 dígitos."
+        );
+
+        return;
+      }
+
+
+      try {
+        setLoading(
+          true
+        );
+
+
+        const verifier =
+          await prepararRecaptcha();
+
+
+        resetearRecaptcha();
+
+
+        const resultado =
+          await signInWithPhoneNumber(
+            auth,
+            telefonoE164,
+            verifier
+          );
+
+
+        setConfirmationResult(
+          resultado
+        );
+
+
+        setTelefonoVerificado(
+          telefonoE164
+        );
+
+
+        setCodigo("");
+
+
+        setContador(
+          SEGUNDOS_REENVIO
+        );
+
+
+        setPasoTelefono(
+          2
+        );
+
+
+        setMensaje(
+          "Enviamos un código de verificación a tu teléfono."
+        );
+
+      } catch (firebaseError) {
+        setError(
+          mensajeErrorSMS(
+            firebaseError
+          )
+        );
+
+
+        resetearRecaptcha();
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  /* ======================================================
+     TELÉFONO PASO 2
+  ====================================================== */
+
+  const verificarCodigo =
+    async () => {
+      setError("");
+      setMensaje("");
+
+
+      const codigoLimpio =
+        codigo.replace(
+          /\D/g,
+          ""
+        );
+
+
+      if (
+        codigoLimpio.length !==
+        6
+      ) {
+        setError(
+          "El código debe tener 6 dígitos."
+        );
+
+        return;
+      }
+
+
+      if (
+        !confirmationResult
+      ) {
+        setError(
+          "Solicita un nuevo código."
+        );
+
+        return;
+      }
+
+
+      try {
+        setLoading(
+          true
+        );
+
+
+        const result =
+          await confirmationResult.confirm(
+            codigoLimpio
+          );
+
+
+        const perfilRef =
+          doc(
+            db,
+            "users",
+            result.user.uid
+          );
+
+
+        const perfilSnap =
+          await getDoc(
+            perfilRef
+          );
+
+
+        if (
+          perfilSnap.exists()
+        ) {
+          /*
+            Si ya existe completamente,
+            no creamos otra cuenta.
+          */
+
+          await signOut(
+            auth
+          );
+
+
+          setError(
+            "Este teléfono ya tiene una cuenta Macro. Inicia sesión."
+          );
+
+
+          setPasoTelefono(
+            1
+          );
+
+
+          return;
+        }
+
+
+        setTelefonoVerificado(
+          result.user.phoneNumber ||
+          telefonoVerificado
+        );
+
+
+        setPasoTelefono(
+          3
+        );
+
+
+        setMensaje(
+          "Teléfono verificado. Ahora crea tu contraseña."
+        );
+
+      } catch (firebaseError) {
+        console.error(
+          "Verificar SMS:",
+          firebaseError
+        );
+
+
+        if (
+          firebaseError?.code ===
+          "auth/invalid-verification-code"
+        ) {
+          setError(
+            "El código es incorrecto."
+          );
+
+        } else if (
+          [
+            "auth/code-expired",
+            "auth/session-expired",
+          ].includes(
+            firebaseError?.code
+          )
+        ) {
+          setError(
+            "El código expiró. Solicita uno nuevo."
+          );
+
+        } else {
+          setError(
+            "No se pudo verificar el código."
+          );
+        }
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  /* ======================================================
+     REENVIAR SMS
+  ====================================================== */
+
+  const reenviarCodigo =
+    async () => {
+      if (
+        contador >
+          0 ||
+        loading
+      ) {
+        return;
+      }
+
+
+      setError("");
+      setMensaje("");
+
+
+      try {
+        setLoading(
+          true
+        );
+
+
+        const verifier =
+          await prepararRecaptcha();
+
+
+        resetearRecaptcha();
+
+
+        const resultado =
+          await signInWithPhoneNumber(
+            auth,
+            telefonoVerificado,
+            verifier
+          );
+
+
+        setConfirmationResult(
+          resultado
+        );
+
+
+        setCodigo("");
+
+
+        setContador(
+          SEGUNDOS_REENVIO
+        );
+
+
+        setMensaje(
+          "Enviamos un nuevo código."
+        );
+
+      } catch (firebaseError) {
+        setError(
+          mensajeErrorSMS(
+            firebaseError
+          )
+        );
+
+
+        resetearRecaptcha();
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  /* ======================================================
+     TELÉFONO PASO 3
+  ====================================================== */
+
+  const crearCuentaTelefono =
+    async () => {
+      setError("");
+      setMensaje("");
+
+
+      if (
+        !auth.currentUser
+      ) {
+        setError(
+          "La verificación expiró. Comienza nuevamente."
+        );
+
+
+        setPasoTelefono(
+          1
+        );
+
+
+        return;
+      }
+
+
+      if (
+        passwordTelefono.length <
+        8
+      ) {
+        setError(
+          "La contraseña debe tener al menos 8 caracteres."
+        );
+
+        return;
+      }
+
+
+      if (
+        passwordTelefono !==
+        confirmarPasswordTelefono
+      ) {
+        setError(
+          "Las contraseñas no coinciden."
+        );
+
+        return;
+      }
+
+
+      try {
+        setLoading(
+          true
+        );
+
+
+        const telefonoFinal =
+          auth.currentUser.phoneNumber ||
+          telefonoVerificado;
+
+
+        const emailInterno =
+          telefonoAEmailInterno(
+            telefonoFinal
+          );
+
+
+        const credential =
+          EmailAuthProvider.credential(
+            emailInterno,
+            passwordTelefono
+          );
+
+
+        await linkWithCredential(
+          auth.currentUser,
+          credential
+        );
+
+
+        await updateProfile(
+          auth.currentUser,
+          {
+            displayName:
+              nombre.trim(),
+          }
+        );
+
+
+        const perfil =
+          await guardarPerfilUsuario({
+            user:
+              auth.currentUser,
+
+            nombrePerfil:
+              nombre.trim(),
+
+            proveedor:
+              "telefono_password",
+
+            proveedores: [
+              "phone",
+              "password",
+            ],
+
+            telefonoPerfil:
+              telefonoFinal,
+
+            correoPerfil:
+              "",
+
+            correoInterno:
+              emailInterno,
+          });
+
+
+        setMensaje(
+          "Cuenta creada correctamente. Entrando a Macro..."
+        );
+
+
+        setTimeout(
+          () => {
+            redirigirSegunRol(
+              perfil
+            );
+          },
+          900
+        );
+
+      } catch (firebaseError) {
+        console.error(
+          "Crear cuenta teléfono:",
+          firebaseError
+        );
+
+
+        switch (
+          firebaseError?.code
+        ) {
+          case "auth/email-already-in-use":
+          case "auth/credential-already-in-use":
+
+            setError(
+              "Este teléfono ya está vinculado a una cuenta Macro."
+            );
+
+            break;
+
+
+          case "auth/provider-already-linked":
+
+            setError(
+              "Esta cuenta ya tiene contraseña configurada. Inicia sesión."
+            );
+
+            break;
+
+
+          case "auth/weak-password":
+
+            setError(
+              "La contraseña es demasiado débil."
+            );
+
+            break;
+
+
+          default:
+
+            setError(
+              "No se pudo completar el registro."
+            );
+        }
+
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
 
 
   /* ======================================================
      VOLVER
   ====================================================== */
 
-  const volverOpciones = async () => {
+  const volverOpciones =
+    async () => {
+      try {
+        if (
+          modo ===
+            "telefono" &&
+          auth.currentUser
+        ) {
+          await signOut(
+            auth
+          );
+        }
 
-    try {
-
-      if (
-        modo === "telefono" &&
-        auth.currentUser
-      ) {
-        await signOut(auth);
+      } catch {
+        // ignorar
       }
 
-    } catch {
-      // Ignorar
-    }
 
-    resetearRecaptcha();
+      resetearRecaptcha();
 
-    setModo("opciones");
 
-    setPasoTelefono(1);
+      setModo(
+        "opciones"
+      );
 
-    setError("");
 
-    setMensaje("");
+      setPasoTelefono(
+        1
+      );
 
-    setCodigo("");
 
-    setConfirmationResult(null);
+      setError("");
+      setMensaje("");
 
-    setTelefonoVerificado("");
 
-    setContador(0);
+      setCodigo("");
 
-    setPasswordTelefono("");
 
-    setConfirmarPasswordTelefono("");
-  };
+      setConfirmationResult(
+        null
+      );
+
+
+      setTelefonoVerificado(
+        ""
+      );
+
+
+      setContador(
+        0
+      );
+
+
+      setPasswordTelefono(
+        ""
+      );
+
+
+      setConfirmarPasswordTelefono(
+        ""
+      );
+    };
 
 
   /* ======================================================
@@ -1419,16 +1721,19 @@ function Register() {
   ====================================================== */
 
   return (
-
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        modoOscuro
-          ? "bg-black text-white"
-          : "bg-gray-50 text-gray-900"
-      }`}
-    >
+      className={`
+        min-h-screen
+        transition-colors
+        duration-300
 
-      {/* ESPACIO HEADER GLOBAL */}
+        ${
+          modoOscuro
+            ? "bg-slate-950 text-white"
+            : "bg-[#f5fbff] text-slate-900"
+        }
+      `}
+    >
 
       <div className="h-24 md:h-28" />
 
@@ -1436,109 +1741,201 @@ function Register() {
       <main className="max-w-7xl mx-auto px-4 md:px-6 pb-14">
 
         <div
-          className={`overflow-hidden rounded-[32px] border shadow-2xl grid lg:grid-cols-[0.95fr_1.05fr] ${
-            modoOscuro
-              ? "border-zinc-800 bg-zinc-950"
-              : "border-gray-200 bg-white"
-          }`}
+          className={`
+            overflow-hidden
+
+            rounded-[34px]
+
+            border
+
+            shadow-2xl
+
+            grid
+            lg:grid-cols-[0.95fr_1.05fr]
+
+            ${
+              modoOscuro
+                ? "border-slate-800 bg-slate-900"
+                : "border-sky-100 bg-white"
+            }
+          `}
         >
 
-          {/* BRANDING */}
+          {/* ======================================================
+              PANEL IZQUIERDO
+          ====================================================== */}
 
           <section
-            className={`relative hidden lg:flex min-h-[720px] flex-col justify-between p-10 xl:p-12 overflow-hidden border-r ${
-              modoOscuro
-                ? "border-zinc-800"
-                : "border-gray-200"
-            }`}
+            className={`
+              relative
+
+              hidden
+              lg:flex
+
+              min-h-[750px]
+
+              flex-col
+              justify-between
+
+              p-10
+              xl:p-12
+
+              overflow-hidden
+
+              border-r
+
+              ${
+                modoOscuro
+                  ? "border-slate-800"
+                  : "border-sky-100"
+              }
+            `}
           >
 
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${
-                modoOscuro
-                  ? "from-yellow-500/10 via-zinc-950 to-black"
-                  : "from-yellow-50 via-white to-gray-50"
-              }`}
+              className={`
+                absolute
+                inset-0
+
+                bg-gradient-to-br
+
+                ${
+                  modoOscuro
+                    ? "from-sky-950 via-slate-950 to-slate-900"
+                    : "from-sky-100 via-white to-blue-50"
+                }
+              `}
             />
 
-            <div className="absolute -top-32 -left-24 w-80 h-80 rounded-full bg-yellow-500/10 blur-3xl" />
 
-            <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-yellow-500/5 blur-3xl" />
+            <div className="absolute -top-32 -left-24 w-96 h-96 rounded-full bg-sky-300/30 blur-3xl" />
+
+
+            <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-blue-300/20 blur-3xl" />
 
 
             <div className="relative z-10">
 
-              <p className="text-xs uppercase tracking-[0.35em] text-yellow-500 font-semibold">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-sky-200 px-4 py-2 shadow-sm">
 
-                Wealth
-
-              </p>
+                <div className="w-2.5 h-2.5 rounded-full bg-sky-400" />
 
 
-              <h2 className="text-5xl xl:text-6xl font-bold leading-[1.05] mt-5 max-w-md">
+                <span className="text-xs uppercase tracking-[0.30em] text-sky-600 font-bold">
 
-                Crea tu cuenta
+                  Macro
 
-                <span className="text-yellow-500">
-                  {" "}a tu manera.
                 </span>
+
+              </div>
+
+
+              <h2 className="text-5xl xl:text-6xl font-bold leading-[1.05] mt-7 max-w-lg">
+
+                Tecnología,
+
+
+                <span className="text-sky-500">
+
+                  {" "}servicios y soluciones
+
+                </span>
+
+
+                {" "}en un solo lugar.
 
               </h2>
 
 
               <p
-                className={`text-lg leading-relaxed mt-6 max-w-lg ${
-                  modoOscuro
-                    ? "text-zinc-400"
-                    : "text-gray-600"
-                }`}
+                className={`
+                  text-lg
+
+                  leading-relaxed
+
+                  mt-6
+
+                  max-w-lg
+
+                  ${
+                    modoOscuro
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                  }
+                `}
               >
 
-                Puedes registrarte con Google, con correo y contraseña,
-                o verificar tu teléfono por SMS y después usar teléfono
-                + contraseña.
+                Crea tu cuenta para contratar servicios,
+                solicitar proyectos, comprar productos
+                tecnológicos y administrar todo desde Macro.
 
               </p>
 
             </div>
 
 
-            <div className="relative z-10 space-y-4">
+            <div className="relative z-10 grid grid-cols-2 gap-4">
 
-              <Beneficio
-                numero="01"
-                titulo="Google"
-                texto="La forma más rápida de crear tu cuenta."
+              <ServicioCard
+                icon={
+                  <FaGlobe />
+                }
+                titulo="Desarrollo web"
+                texto="Sitios y plataformas digitales."
               />
 
-              <Beneficio
-                numero="02"
-                titulo="Correo"
-                texto="Cuenta tradicional con correo y contraseña."
+
+              <ServicioCard
+                icon={
+                  <FaMobileAlt />
+                }
+                titulo="Apps móviles"
+                texto="Soluciones para iOS y Android."
               />
 
-              <Beneficio
-                numero="03"
-                titulo="Teléfono"
-                texto="Verificación por SMS una sola vez y acceso posterior con contraseña."
+
+              <ServicioCard
+                icon={
+                  <FaVideo />
+                }
+                titulo="Tecnología"
+                texto="Cámaras, seguridad y equipos."
+              />
+
+
+              <ServicioCard
+                icon={
+                  <FaShoppingBag />
+                }
+                titulo="Tienda Macro"
+                texto="Productos y soluciones tecnológicas."
               />
 
             </div>
 
 
             <div
-              className={`relative z-10 pt-8 border-t ${
-                modoOscuro
-                  ? "border-white/10"
-                  : "border-gray-200"
-              }`}
+              className={`
+                relative
+                z-10
+
+                pt-7
+
+                border-t
+
+                ${
+                  modoOscuro
+                    ? "border-white/10"
+                    : "border-sky-200"
+                }
+              `}
             >
 
-              <div className="flex items-center gap-3 text-zinc-500 text-sm">
+              <div className="flex items-center gap-3 text-slate-500 text-sm">
 
-                <FaShieldAlt className="text-yellow-500" />
+                <FaShieldAlt className="text-sky-500" />
 
-                Registro seguro · Wealth Grupo Empresarial
+                Tu cuenta · Tu tecnología · Macro
 
               </div>
 
@@ -1547,25 +1944,28 @@ function Register() {
           </section>
 
 
-          {/* PANEL */}
+          {/* ======================================================
+              PANEL DERECHO
+          ====================================================== */}
 
           <section className="p-6 sm:p-8 md:p-10 xl:p-12">
 
             <div className="max-w-xl mx-auto">
 
-
               {/* HEADER */}
 
               <div className="mb-8">
 
-                <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-sky-100 border border-sky-200 text-sky-500 flex items-center justify-center shadow-sm">
 
-                  <FaUserPlus />
+                  <FaUserPlus
+                    size={21}
+                  />
 
                 </div>
 
 
-                <p className="text-xs uppercase tracking-[0.28em] text-yellow-500 font-semibold mt-5">
+                <p className="text-xs uppercase tracking-[0.28em] text-sky-500 font-bold mt-5">
 
                   Crear cuenta
 
@@ -1574,38 +1974,57 @@ function Register() {
 
                 <h1 className="text-3xl md:text-4xl font-bold mt-2">
 
-                  Bienvenido a Wealth
+                  Bienvenido a Macro
 
                 </h1>
 
 
-                <p className="text-zinc-500 mt-2">
+                <p className="text-slate-500 mt-2 leading-relaxed">
 
-                  {modo === "opciones"
-                    ? "Elige cómo deseas registrarte."
-                    : modo === "correo"
-                    ? "Registro con correo y contraseña."
-                    : `Registro con teléfono · Paso ${pasoTelefono} de 3`}
+                  {modo ===
+                  "opciones"
+                    ? "Crea tu cuenta y comienza a explorar todo lo que Macro tiene para ti."
+                    : modo ===
+                      "correo"
+                    ? "Crea tu cuenta utilizando correo y contraseña."
+                    : `Registro con teléfono · Paso ${pasoTelefono} de 3`
+                  }
 
                 </p>
 
 
-                {modo === "telefono" && (
+                {modo ===
+                  "telefono" && (
 
                   <div className="grid grid-cols-3 gap-2 mt-5">
 
-                    {[1, 2, 3].map(
-                      (item) => (
+                    {[
+                      1,
+                      2,
+                      3,
+                    ].map(
+                      (
+                        item
+                      ) => (
 
                         <div
-                          key={item}
-                          className={`h-1.5 rounded-full ${
-                            pasoTelefono >= item
-                              ? "bg-yellow-500"
-                              : modoOscuro
-                              ? "bg-zinc-800"
-                              : "bg-gray-300"
-                          }`}
+                          key={
+                            item
+                          }
+                          className={`
+                            h-1.5
+                            rounded-full
+                            transition
+
+                            ${
+                              pasoTelefono >=
+                              item
+                                ? "bg-sky-400"
+                                : modoOscuro
+                                ? "bg-slate-700"
+                                : "bg-slate-200"
+                            }
+                          `}
                         />
 
                       )
@@ -1618,15 +2037,19 @@ function Register() {
               </div>
 
 
-              {/* MENSAJES */}
+              {/* ALERTAS */}
 
               {error && (
 
-                <Alerta tipo="error">
+                <Alerta
+                  tipo="error"
+                >
 
                   <FaExclamationTriangle />
 
-                  <span>{error}</span>
+                  <span>
+                    {error}
+                  </span>
 
                 </Alerta>
 
@@ -1635,28 +2058,68 @@ function Register() {
 
               {mensaje && (
 
-                <Alerta tipo="ok">
+                <Alerta
+                  tipo="ok"
+                >
 
                   <FaCheckCircle />
 
-                  <span>{mensaje}</span>
+                  <span>
+                    {mensaje}
+                  </span>
 
                 </Alerta>
 
               )}
 
 
-              {/* OPCIONES */}
+              {/* ======================================================
+                  OPCIONES
+              ====================================================== */}
 
-              {modo === "opciones" && (
+              {modo ===
+                "opciones" && (
 
                 <div className="space-y-3">
 
                   <button
                     type="button"
-                    onClick={registrarGoogle}
-                    disabled={loading}
-                    className="w-full bg-white hover:bg-zinc-100 text-black border border-gray-200 px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition disabled:opacity-50"
+                    onClick={
+                      registrarGoogle
+                    }
+                    disabled={
+                      loading
+                    }
+                    className="
+                      w-full
+
+                      bg-white
+
+                      hover:bg-slate-50
+
+                      text-slate-800
+
+                      border
+                      border-slate-200
+
+                      px-5
+                      py-4
+
+                      rounded-2xl
+
+                      font-semibold
+
+                      flex
+                      items-center
+                      justify-center
+                      gap-3
+
+                      transition
+
+                      shadow-sm
+
+                      disabled:opacity-50
+                    "
                   >
 
                     <img
@@ -1664,6 +2127,7 @@ function Register() {
                       alt="Google"
                       className="w-5 h-5"
                     />
+
 
                     Continuar con Google
 
@@ -1673,20 +2137,23 @@ function Register() {
                   <button
                     type="button"
                     onClick={() => {
-
-                      setModo("telefono");
+                      setModo(
+                        "telefono"
+                      );
 
                       setError("");
-
                       setMensaje("");
-
                     }}
-                    className="w-full bg-green-500/5 border border-green-500/40 hover:bg-green-500/10 text-green-500 px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition"
+                    className={
+                      botonOpcion
+                    }
                   >
 
                     <FaPhone />
 
+
                     Registrarme con teléfono
+
 
                     <FaArrowRight />
 
@@ -1696,20 +2163,23 @@ function Register() {
                   <button
                     type="button"
                     onClick={() => {
-
-                      setModo("correo");
+                      setModo(
+                        "correo"
+                      );
 
                       setError("");
-
                       setMensaje("");
-
                     }}
-                    className="w-full bg-yellow-500/5 border border-yellow-500/40 hover:bg-yellow-500/10 text-yellow-500 px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition"
+                    className={
+                      botonOpcion
+                    }
                   >
 
                     <FaEnvelope />
 
+
                     Registrarme con correo
+
 
                     <FaArrowRight />
 
@@ -1720,31 +2190,47 @@ function Register() {
               )}
 
 
-              {/* REGISTRO CORREO */}
+              {/* ======================================================
+                  CORREO
+              ====================================================== */}
 
-              {modo === "correo" && (
+              {modo ===
+                "correo" && (
 
                 <form
-                  onSubmit={registrarCorreo}
+                  onSubmit={
+                    registrarCorreo
+                  }
                   className="space-y-5"
                 >
 
                   <Campo
                     label="Nombre completo"
-                    icon={<FaUser />}
+                    icon={
+                      <FaUser />
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
                   >
 
                     <input
                       type="text"
                       autoComplete="name"
-                      value={nombre}
+                      value={
+                        nombre
+                      }
                       onChange={(e) =>
                         setNombre(
                           e.target.value
                         )
                       }
                       placeholder="Nombre y apellidos"
-                      className={inputClass(modoOscuro)}
+                      className={
+                        inputClass(
+                          modoOscuro
+                        )
+                      }
                     />
 
                   </Campo>
@@ -1752,20 +2238,31 @@ function Register() {
 
                   <Campo
                     label="Correo electrónico"
-                    icon={<FaEnvelope />}
+                    icon={
+                      <FaEnvelope />
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
                   >
 
                     <input
                       type="email"
                       autoComplete="email"
-                      value={correo}
+                      value={
+                        correo
+                      }
                       onChange={(e) =>
                         setCorreo(
                           e.target.value
                         )
                       }
                       placeholder="correo@ejemplo.com"
-                      className={inputClass(modoOscuro)}
+                      className={
+                        inputClass(
+                          modoOscuro
+                        )
+                      }
                     />
 
                   </Campo>
@@ -1773,7 +2270,12 @@ function Register() {
 
                   <Campo
                     label="Contraseña"
-                    icon={<FaLock />}
+                    icon={
+                      <FaLock />
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
                   >
 
                     <div className="relative">
@@ -1785,25 +2287,32 @@ function Register() {
                             : "password"
                         }
                         autoComplete="new-password"
-                        value={passwordCorreo}
+                        value={
+                          passwordCorreo
+                        }
                         onChange={(e) =>
                           setPasswordCorreo(
                             e.target.value
                           )
                         }
                         placeholder="Mínimo 8 caracteres"
-                        className={`${inputClass(modoOscuro)} pr-12`}
+                        className={`${inputClass(
+                          modoOscuro
+                        )} pr-12`}
                       />
+
 
                       <button
                         type="button"
                         onClick={() =>
                           setMostrarPasswordCorreo(
-                            (actual) =>
+                            (
+                              actual
+                            ) =>
                               !actual
                           )
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-yellow-500"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                       >
 
                         {mostrarPasswordCorreo
@@ -1817,7 +2326,12 @@ function Register() {
 
 
                     <SeguridadPassword
-                      seguridad={seguridadCorreo}
+                      seguridad={
+                        seguridadCorreo
+                      }
+                      modoOscuro={
+                        modoOscuro
+                      }
                     />
 
                   </Campo>
@@ -1825,7 +2339,12 @@ function Register() {
 
                   <Campo
                     label="Confirmar contraseña"
-                    icon={<FaShieldAlt />}
+                    icon={
+                      <FaShieldAlt />
+                    }
+                    modoOscuro={
+                      modoOscuro
+                    }
                   >
 
                     <div className="relative">
@@ -1837,14 +2356,18 @@ function Register() {
                             : "password"
                         }
                         autoComplete="new-password"
-                        value={confirmarPasswordCorreo}
+                        value={
+                          confirmarPasswordCorreo
+                        }
                         onChange={(e) =>
                           setConfirmarPasswordCorreo(
                             e.target.value
                           )
                         }
                         placeholder="Repite la contraseña"
-                        className={`${inputClass(modoOscuro)} pr-12`}
+                        className={`${inputClass(
+                          modoOscuro
+                        )} pr-12`}
                       />
 
 
@@ -1852,11 +2375,13 @@ function Register() {
                         type="button"
                         onClick={() =>
                           setMostrarConfirmacionCorreo(
-                            (actual) =>
+                            (
+                              actual
+                            ) =>
                               !actual
                           )
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-yellow-500"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                       >
 
                         {mostrarConfirmacionCorreo
@@ -1872,18 +2397,24 @@ function Register() {
                     {confirmarPasswordCorreo && (
 
                       <p
-                        className={`text-xs mt-2 ${
-                          passwordCorreo ===
-                          confirmarPasswordCorreo
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
+                        className={`
+                          text-xs
+                          mt-2
+
+                          ${
+                            passwordCorreo ===
+                            confirmarPasswordCorreo
+                              ? "text-emerald-500"
+                              : "text-red-500"
+                          }
+                        `}
                       >
 
                         {passwordCorreo ===
                         confirmarPasswordCorreo
                           ? "✓ Las contraseñas coinciden"
-                          : "Las contraseñas no coinciden"}
+                          : "Las contraseñas no coinciden"
+                        }
 
                       </p>
 
@@ -1894,15 +2425,22 @@ function Register() {
 
                   <button
                     type="submit"
-                    disabled={loading}
-                    className={botonPrincipal}
+                    disabled={
+                      loading
+                    }
+                    className={
+                      botonPrincipal
+                    }
                   >
 
                     <FaUserPlus />
 
+
                     {loading
                       ? "Creando cuenta..."
-                      : "Crear cuenta"}
+                      : "Crear cuenta"
+                    }
+
 
                     {!loading && (
                       <FaArrowRight />
@@ -1913,8 +2451,14 @@ function Register() {
 
                   <button
                     type="button"
-                    onClick={volverOpciones}
-                    className={botonVolver(modoOscuro)}
+                    onClick={
+                      volverOpciones
+                    }
+                    className={
+                      botonVolver(
+                        modoOscuro
+                      )
+                    }
                   >
 
                     <FaArrowLeft />
@@ -1928,35 +2472,49 @@ function Register() {
               )}
 
 
-              {/* REGISTRO TELÉFONO */}
+              {/* ======================================================
+                  TELÉFONO
+              ====================================================== */}
 
-              {modo === "telefono" && (
+              {modo ===
+                "telefono" && (
 
                 <div className="space-y-5">
 
-
                   {/* PASO 1 */}
 
-                  {pasoTelefono === 1 && (
+                  {pasoTelefono ===
+                    1 && (
 
                     <>
 
                       <Campo
                         label="Nombre completo"
-                        icon={<FaUser />}
+                        icon={
+                          <FaUser />
+                        }
+                        modoOscuro={
+                          modoOscuro
+                        }
                       >
 
                         <input
                           type="text"
                           autoComplete="name"
-                          value={nombre}
+                          value={
+                            nombre
+                          }
                           onChange={(e) =>
                             setNombre(
                               e.target.value
                             )
                           }
                           placeholder="Nombre y apellidos"
-                          className={inputClass(modoOscuro)}
+                          className={
+                            inputClass(
+                              modoOscuro
+                            )
+                          }
                         />
 
                       </Campo>
@@ -1964,17 +2522,35 @@ function Register() {
 
                       <Campo
                         label="Número de teléfono"
-                        icon={<FaPhone />}
+                        icon={
+                          <FaPhone />
+                        }
+                        modoOscuro={
+                          modoOscuro
+                        }
                       >
 
                         <div className="flex gap-2">
 
                           <div
-                            className={`border rounded-2xl px-4 flex items-center font-semibold ${
-                              modoOscuro
-                                ? "bg-black border-zinc-700 text-zinc-400"
-                                : "bg-gray-50 border-gray-300 text-gray-600"
-                            }`}
+                            className={`
+                              border
+
+                              rounded-2xl
+
+                              px-4
+
+                              flex
+                              items-center
+
+                              font-semibold
+
+                              ${
+                                modoOscuro
+                                  ? "bg-slate-950 border-slate-700 text-slate-300"
+                                  : "bg-sky-50 border-sky-200 text-sky-700"
+                              }
+                            `}
                           >
 
                             +52
@@ -1986,28 +2562,28 @@ function Register() {
                             type="tel"
                             inputMode="numeric"
                             autoComplete="tel"
-                            value={telefono}
+                            value={
+                              telefono
+                            }
                             onChange={(e) =>
                               setTelefono(
                                 e.target.value
                               )
                             }
                             placeholder="981 123 4567"
-                            className={inputClass(modoOscuro)}
+                            className={
+                              inputClass(
+                                modoOscuro
+                              )
+                            }
                           />
 
                         </div>
 
 
-                        <p
-                          className={`text-xs mt-2 ${
-                            modoOscuro
-                              ? "text-zinc-500"
-                              : "text-gray-500"
-                          }`}
-                        >
+                        <p className="text-xs mt-2 text-slate-500">
 
-                          Recibirás un código SMS para comprobar que el número te pertenece.
+                          Recibirás un código SMS para verificar que el número te pertenece.
 
                         </p>
 
@@ -2016,20 +2592,48 @@ function Register() {
 
                       <button
                         type="button"
-                        onClick={enviarCodigo}
-                        disabled={loading}
-                        className={botonPrincipal}
+                        onClick={
+                          enviarCodigo
+                        }
+                        disabled={
+                          loading
+                        }
+                        className={
+                          botonPrincipal
+                        }
                       >
 
                         <FaSms />
 
+
                         {loading
                           ? "Enviando código..."
-                          : "Enviar código"}
+                          : "Enviar código"
+                        }
+
 
                         {!loading && (
                           <FaArrowRight />
                         )}
+
+                      </button>
+
+
+                      <button
+                        type="button"
+                        onClick={
+                          volverOpciones
+                        }
+                        className={
+                          botonVolver(
+                            modoOscuro
+                          )
+                        }
+                      >
+
+                        <FaArrowLeft />
+
+                        Volver
 
                       </button>
 
@@ -2040,31 +2644,35 @@ function Register() {
 
                   {/* PASO 2 */}
 
-                  {pasoTelefono === 2 && (
+                  {pasoTelefono ===
+                    2 && (
 
                     <>
 
                       <div
-                        className={`border rounded-2xl p-4 ${
-                          modoOscuro
-                            ? "bg-green-500/5 border-green-500/20"
-                            : "bg-green-50 border-green-200"
-                        }`}
+                        className={`
+                          border
+
+                          rounded-2xl
+
+                          p-4
+
+                          ${
+                            modoOscuro
+                              ? "bg-sky-500/10 border-sky-500/20"
+                              : "bg-sky-50 border-sky-200"
+                          }
+                        `}
                       >
 
-                        <p className="text-green-500 font-semibold">
+                        <p className="text-sky-500 font-semibold">
 
                           Código enviado
 
                         </p>
 
-                        <p
-                          className={`text-sm mt-1 ${
-                            modoOscuro
-                              ? "text-zinc-400"
-                              : "text-gray-500"
-                          }`}
-                        >
+
+                        <p className="text-slate-500 text-sm mt-1">
 
                           {telefonoVerificado}
 
@@ -2075,15 +2683,24 @@ function Register() {
 
                       <Campo
                         label="Código de verificación"
-                        icon={<FaSms />}
+                        icon={
+                          <FaSms />
+                        }
+                        modoOscuro={
+                          modoOscuro
+                        }
                       >
 
                         <input
                           type="text"
                           inputMode="numeric"
                           autoComplete="one-time-code"
-                          maxLength={6}
-                          value={codigo}
+                          maxLength={
+                            6
+                          }
+                          value={
+                            codigo
+                          }
                           onChange={(e) =>
                             setCodigo(
                               e.target.value
@@ -2098,21 +2715,9 @@ function Register() {
                             )
                           }
                           placeholder="000000"
-                          className={`
-                            ${inputClass(modoOscuro)}
-                            text-center
-                            text-2xl
-                            font-bold
-                            tracking-[0.35em]
-                          `}
-                          style={{
-                            WebkitTextFillColor:
-                              modoOscuro
-                                ? "#ffffff"
-                                : "#111827",
-                            caretColor:
-                              "#eab308",
-                          }}
+                          className={`${inputClass(
+                            modoOscuro
+                          )} text-center text-2xl font-bold tracking-[0.35em]`}
                         />
 
                       </Campo>
@@ -2120,43 +2725,66 @@ function Register() {
 
                       <button
                         type="button"
-                        onClick={verificarCodigo}
-                        disabled={loading}
-                        className={botonPrincipal}
+                        onClick={
+                          verificarCodigo
+                        }
+                        disabled={
+                          loading
+                        }
+                        className={
+                          botonPrincipal
+                        }
                       >
 
                         <FaCheckCircle />
 
+
                         {loading
                           ? "Verificando..."
-                          : "Verificar teléfono"}
+                          : "Verificar teléfono"
+                        }
 
                       </button>
 
 
                       <button
                         type="button"
-                        onClick={reenviarCodigo}
+                        onClick={
+                          reenviarCodigo
+                        }
                         disabled={
-                          contador > 0 ||
+                          contador >
+                            0 ||
                           loading
                         }
-                        className={botonSecundario(modoOscuro)}
+                        className={
+                          botonSecundario(
+                            modoOscuro
+                          )
+                        }
                       >
 
                         <FaRedo />
 
+
                         {contador > 0
                           ? `Reenviar en ${contador}s`
-                          : "Reenviar código"}
+                          : "Reenviar código"
+                        }
 
                       </button>
 
 
                       <button
                         type="button"
-                        onClick={volverOpciones}
-                        className={botonVolver(modoOscuro)}
+                        onClick={
+                          volverOpciones
+                        }
+                        className={
+                          botonVolver(
+                            modoOscuro
+                          )
+                        }
                       >
 
                         <FaArrowLeft />
@@ -2172,35 +2800,44 @@ function Register() {
 
                   {/* PASO 3 */}
 
-                  {pasoTelefono === 3 && (
+                  {pasoTelefono ===
+                    3 && (
 
                     <>
 
                       <div
-                        className={`border rounded-2xl p-4 flex items-start gap-3 ${
-                          modoOscuro
-                            ? "bg-green-500/5 border-green-500/20"
-                            : "bg-green-50 border-green-200"
-                        }`}
+                        className={`
+                          border
+
+                          rounded-2xl
+
+                          p-4
+
+                          flex
+                          items-start
+                          gap-3
+
+                          ${
+                            modoOscuro
+                              ? "bg-emerald-500/10 border-emerald-500/20"
+                              : "bg-emerald-50 border-emerald-200"
+                          }
+                        `}
                       >
 
-                        <FaCheckCircle className="text-green-500 mt-0.5" />
+                        <FaCheckCircle className="text-emerald-500 mt-0.5" />
+
 
                         <div>
 
-                          <p className="text-green-500 font-semibold">
+                          <p className="text-emerald-600 font-semibold">
 
                             Teléfono verificado
 
                           </p>
 
-                          <p
-                            className={`text-sm mt-1 ${
-                              modoOscuro
-                                ? "text-zinc-400"
-                                : "text-gray-500"
-                            }`}
-                          >
+
+                          <p className="text-slate-500 text-sm mt-1">
 
                             {telefonoVerificado}
 
@@ -2213,7 +2850,12 @@ function Register() {
 
                       <Campo
                         label="Crear contraseña"
-                        icon={<FaLock />}
+                        icon={
+                          <FaLock />
+                        }
+                        modoOscuro={
+                          modoOscuro
+                        }
                       >
 
                         <div className="relative">
@@ -2225,14 +2867,18 @@ function Register() {
                                 : "password"
                             }
                             autoComplete="new-password"
-                            value={passwordTelefono}
+                            value={
+                              passwordTelefono
+                            }
                             onChange={(e) =>
                               setPasswordTelefono(
                                 e.target.value
                               )
                             }
                             placeholder="Mínimo 8 caracteres"
-                            className={`${inputClass(modoOscuro)} pr-12`}
+                            className={`${inputClass(
+                              modoOscuro
+                            )} pr-12`}
                           />
 
 
@@ -2240,11 +2886,13 @@ function Register() {
                             type="button"
                             onClick={() =>
                               setMostrarPasswordTelefono(
-                                (actual) =>
+                                (
+                                  actual
+                                ) =>
                                   !actual
                               )
                             }
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-green-400"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                           >
 
                             {mostrarPasswordTelefono
@@ -2258,7 +2906,12 @@ function Register() {
 
 
                         <SeguridadPassword
-                          seguridad={seguridadTelefono}
+                          seguridad={
+                            seguridadTelefono
+                          }
+                          modoOscuro={
+                            modoOscuro
+                          }
                         />
 
                       </Campo>
@@ -2266,7 +2919,12 @@ function Register() {
 
                       <Campo
                         label="Confirmar contraseña"
-                        icon={<FaShieldAlt />}
+                        icon={
+                          <FaShieldAlt />
+                        }
+                        modoOscuro={
+                          modoOscuro
+                        }
                       >
 
                         <div className="relative">
@@ -2278,14 +2936,18 @@ function Register() {
                                 : "password"
                             }
                             autoComplete="new-password"
-                            value={confirmarPasswordTelefono}
+                            value={
+                              confirmarPasswordTelefono
+                            }
                             onChange={(e) =>
                               setConfirmarPasswordTelefono(
                                 e.target.value
                               )
                             }
                             placeholder="Repite la contraseña"
-                            className={`${inputClass(modoOscuro)} pr-12`}
+                            className={`${inputClass(
+                              modoOscuro
+                            )} pr-12`}
                           />
 
 
@@ -2293,11 +2955,13 @@ function Register() {
                             type="button"
                             onClick={() =>
                               setMostrarConfirmacionTelefono(
-                                (actual) =>
+                                (
+                                  actual
+                                ) =>
                                   !actual
                               )
                             }
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-green-400"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                           >
 
                             {mostrarConfirmacionTelefono
@@ -2313,18 +2977,24 @@ function Register() {
                         {confirmarPasswordTelefono && (
 
                           <p
-                            className={`text-xs mt-2 ${
-                              passwordTelefono ===
-                              confirmarPasswordTelefono
-                                ? "text-green-500"
-                                : "text-red-500"
-                            }`}
+                            className={`
+                              text-xs
+                              mt-2
+
+                              ${
+                                passwordTelefono ===
+                                confirmarPasswordTelefono
+                                  ? "text-emerald-500"
+                                  : "text-red-500"
+                              }
+                            `}
                           >
 
                             {passwordTelefono ===
                             confirmarPasswordTelefono
                               ? "✓ Las contraseñas coinciden"
-                              : "Las contraseñas no coinciden"}
+                              : "Las contraseñas no coinciden"
+                            }
 
                           </p>
 
@@ -2335,16 +3005,25 @@ function Register() {
 
                       <button
                         type="button"
-                        onClick={crearCuentaTelefono}
-                        disabled={loading}
-                        className={botonPrincipal}
+                        onClick={
+                          crearCuentaTelefono
+                        }
+                        disabled={
+                          loading
+                        }
+                        className={
+                          botonPrincipal
+                        }
                       >
 
                         <FaUserPlus />
 
+
                         {loading
                           ? "Creando cuenta..."
-                          : "Crear mi cuenta"}
+                          : "Crear mi cuenta"
+                        }
+
 
                         {!loading && (
                           <FaArrowRight />
@@ -2361,34 +3040,38 @@ function Register() {
               )}
 
 
-              {/* RECAPTCHA */}
-
-              <div id="recaptcha-register" />
+              <div
+                id="recaptcha-register"
+              />
 
 
               {/* LOGIN */}
 
               <div
-                className={`mt-7 pt-6 border-t text-center ${
-                  modoOscuro
-                    ? "border-zinc-800"
-                    : "border-gray-200"
-                }`}
+                className={`
+                  mt-7
+                  pt-6
+
+                  border-t
+
+                  text-center
+
+                  ${
+                    modoOscuro
+                      ? "border-slate-800"
+                      : "border-sky-100"
+                  }
+                `}
               >
 
-                <p
-                  className={`text-sm ${
-                    modoOscuro
-                      ? "text-zinc-500"
-                      : "text-gray-500"
-                  }`}
-                >
+                <p className="text-sm text-slate-500">
 
                   ¿Ya tienes una cuenta?
 
+
                   <Link
                     to="/login"
-                    className="text-yellow-500 hover:text-yellow-400 ml-2 font-bold"
+                    className="text-sky-500 hover:text-sky-600 ml-2 font-bold"
                   >
 
                     Iniciar sesión
@@ -2401,29 +3084,33 @@ function Register() {
 
 
               <div
-                className={`mt-5 border rounded-2xl p-4 ${
-                  modoOscuro
-                    ? "bg-zinc-900 border-zinc-800"
-                    : "bg-gray-50 border-gray-200"
-                }`}
+                className={`
+                  mt-5
+
+                  border
+
+                  rounded-2xl
+
+                  p-4
+
+                  ${
+                    modoOscuro
+                      ? "bg-slate-900 border-slate-700"
+                      : "bg-sky-50 border-sky-100"
+                  }
+                `}
               >
 
                 <div className="flex items-start gap-3">
 
-                  <FaShieldAlt className="text-yellow-500 mt-0.5 shrink-0" />
+                  <FaShieldAlt className="text-sky-500 mt-0.5 shrink-0" />
 
-                  <p
-                    className={`text-xs leading-relaxed ${
-                      modoOscuro
-                        ? "text-zinc-500"
-                        : "text-gray-500"
-                    }`}
-                  >
 
-                    Google, correo y teléfono funcionan como métodos
-                    independientes de registro. Si eliges teléfono,
-                    Wealth verificará el número por SMS y luego podrás
-                    iniciar sesión con teléfono + contraseña.
+                  <p className="text-xs leading-relaxed text-slate-500">
+
+                    Tu cuenta Macro te permitirá contratar
+                    servicios, administrar proyectos y realizar
+                    compras dentro de la plataforma.
 
                   </p>
 
@@ -2445,38 +3132,47 @@ function Register() {
 
 
 /* ======================================================
-   COMPONENTES
+   CAMPO
 ====================================================== */
 
 function Campo({
   label,
   icon,
   children,
+  modoOscuro,
 }) {
-
-  const {
-    modoOscuro,
-  } = useOutletContext() || {};
-
   return (
-
     <div>
 
       <label
-        className={`text-sm flex items-center gap-2 mb-2 ${
-          modoOscuro
-            ? "text-zinc-400"
-            : "text-gray-600"
-        }`}
+        className={`
+          text-sm
+
+          flex
+          items-center
+          gap-2
+
+          mb-2
+
+          ${
+            modoOscuro
+              ? "text-slate-300"
+              : "text-slate-600"
+          }
+        `}
       >
 
-        <span className="text-yellow-500">
+        <span className="text-sky-500">
+
           {icon}
+
         </span>
+
 
         {label}
 
       </label>
+
 
       {children}
 
@@ -2485,91 +3181,116 @@ function Campo({
 }
 
 
-function Beneficio({
-  numero,
+/* ======================================================
+   SERVICIO CARD
+====================================================== */
+
+function ServicioCard({
+  icon,
   titulo,
   texto,
 }) {
-
   const {
-    modoOscuro,
-  } = useOutletContext() || {};
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
+
 
   return (
+    <div
+      className={`
+        rounded-2xl
 
-    <div className="flex gap-4">
+        border
 
-      <div className="text-yellow-500/60 text-sm font-bold pt-1">
+        p-4
 
-        {numero}
+        ${
+          modoOscuro
+            ? "bg-slate-900/70 border-slate-700"
+            : "bg-white/70 border-sky-100"
+        }
+      `}
+    >
 
-      </div>
+      <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-500 flex items-center justify-center">
 
-
-      <div>
-
-        <p className="font-semibold">
-
-          {titulo}
-
-        </p>
-
-        <p
-          className={`${
-            modoOscuro
-              ? "text-zinc-500"
-              : "text-gray-500"
-          } text-sm mt-1 leading-relaxed`}
-        >
-
-          {texto}
-
-        </p>
+        {icon}
 
       </div>
+
+
+      <p className="font-semibold mt-3">
+
+        {titulo}
+
+      </p>
+
+
+      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+
+        {texto}
+
+      </p>
 
     </div>
   );
 }
 
 
+/* ======================================================
+   SEGURIDAD PASSWORD
+====================================================== */
+
 function SeguridadPassword({
   seguridad,
+  modoOscuro,
 }) {
-
-  const {
-    modoOscuro,
-  } = useOutletContext() || {};
-
-  if (!seguridad?.nivel) {
+  if (
+    !seguridad?.nivel
+  ) {
     return null;
   }
 
-  return (
 
+  return (
     <div className="mt-3">
 
       <div className="grid grid-cols-3 gap-2">
 
         <BarraSeguridad
           activa={
-            seguridad.nivel >= 1
+            seguridad.nivel >=
+            1
           }
           clase="bg-red-400"
+          modoOscuro={
+            modoOscuro
+          }
         />
+
 
         <BarraSeguridad
           activa={
-            seguridad.nivel >= 2
+            seguridad.nivel >=
+            2
           }
-          clase="bg-yellow-400"
+          clase="bg-sky-400"
+          modoOscuro={
+            modoOscuro
+          }
         />
+
 
         <BarraSeguridad
           activa={
-            seguridad.nivel >= 3
+            seguridad.nivel >=
+            3
           }
-          clase="bg-green-400"
+          clase="bg-emerald-400"
+          modoOscuro={
+            modoOscuro
+          }
         />
 
       </div>
@@ -2577,13 +3298,7 @@ function SeguridadPassword({
 
       <div className="flex items-center justify-between mt-2">
 
-        <p
-          className={`text-xs ${
-            modoOscuro
-              ? "text-zinc-600"
-              : "text-gray-500"
-          }`}
-        >
+        <p className="text-xs text-slate-500">
 
           Mínimo 8 caracteres
 
@@ -2591,13 +3306,20 @@ function SeguridadPassword({
 
 
         <p
-          className={`text-xs font-semibold ${
-            seguridad.nivel === 1
-              ? "text-red-400"
-              : seguridad.nivel === 2
-              ? "text-yellow-400"
-              : "text-green-400"
-          }`}
+          className={`
+            text-xs
+            font-semibold
+
+            ${
+              seguridad.nivel ===
+              1
+                ? "text-red-400"
+                : seguridad.nivel ===
+                  2
+                ? "text-sky-400"
+                : "text-emerald-400"
+            }
+          `}
         >
 
           {seguridad.texto}
@@ -2611,39 +3333,67 @@ function SeguridadPassword({
 }
 
 
+/* ======================================================
+   BARRA PASSWORD
+====================================================== */
+
 function BarraSeguridad({
   activa,
   clase,
+  modoOscuro,
 }) {
-
   return (
-
     <div
-      className={`h-1.5 rounded-full ${
-        activa
-          ? clase
-          : "bg-zinc-800"
-      }`}
-    />
+      className={`
+        h-1.5
+        rounded-full
 
+        ${
+          activa
+            ? clase
+            : modoOscuro
+            ? "bg-slate-700"
+            : "bg-slate-200"
+        }
+      `}
+    />
   );
 }
 
+
+/* ======================================================
+   ALERTAS
+====================================================== */
 
 function Alerta({
   tipo,
   children,
 }) {
-
   const clase =
     tipo === "error"
-      ? "bg-red-500/5 border-red-500/30 text-red-500"
-      : "bg-green-500/5 border-green-500/30 text-green-500";
+      ? "bg-red-50 border-red-200 text-red-600"
+      : "bg-emerald-50 border-emerald-200 text-emerald-600";
+
 
   return (
-
     <div
-      className={`mb-5 border rounded-2xl p-4 text-sm flex items-start gap-3 ${clase}`}
+      className={`
+        mb-5
+
+        border
+
+        rounded-2xl
+
+        p-4
+
+        text-sm
+
+        flex
+        items-start
+        gap-3
+
+        ${clase}
+      `}
     >
 
       {children}
@@ -2657,120 +3407,174 @@ function Alerta({
    ESTILOS
 ====================================================== */
 
-const inputClass = (modoOscuro) => `
+const inputClass =
+  (modoOscuro) => `
+    w-full
 
-  w-full
-  border
-  rounded-2xl
-  px-4
-  py-3.5
-  outline-none
-  focus:border-yellow-500/70
-  focus:ring-2
-  focus:ring-yellow-500/10
-  transition
-  appearance-none
+    border
 
-  ${
-    modoOscuro
-      ? `
-        bg-black
-        border-zinc-700
-        text-white
-        placeholder:text-zinc-600
-      `
-      : `
-        bg-white
-        border-gray-300
-        text-gray-900
-        placeholder:text-gray-400
-      `
-  }
+    rounded-2xl
 
-`;
+    px-4
+    py-3.5
+
+    outline-none
+
+    transition
+
+    appearance-none
+
+    focus:border-sky-400
+    focus:ring-4
+    focus:ring-sky-100
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-950
+          border-slate-700
+          text-white
+          placeholder:text-slate-500
+        `
+        : `
+          bg-white
+          border-slate-200
+          text-slate-900
+          placeholder:text-slate-400
+        `
+    }
+  `;
 
 
 const botonPrincipal = `
-
   w-full
-  bg-yellow-500
-  hover:bg-yellow-400
-  text-black
+
+  bg-sky-400
+  hover:bg-sky-500
+
+  text-white
+
   px-5
   py-4
+
   rounded-2xl
+
   font-bold
+
   flex
   items-center
   justify-center
   gap-3
+
   transition
+
+  shadow-lg
+  shadow-sky-200/40
+
   disabled:opacity-50
   disabled:cursor-not-allowed
-
 `;
 
 
-const botonSecundario = (modoOscuro) => `
-
+const botonOpcion = `
   w-full
+
+  bg-sky-50
+
   border
+  border-sky-200
+
+  hover:bg-sky-100
+
+  text-sky-700
+
   px-5
-  py-3.5
+  py-4
+
   rounded-2xl
+
   font-semibold
+
   flex
   items-center
   justify-center
-  gap-2
+  gap-3
+
   transition
-  disabled:opacity-40
-  disabled:cursor-not-allowed
-
-  ${
-    modoOscuro
-      ? `
-        bg-zinc-900
-        border-zinc-700
-        text-white
-        hover:border-yellow-500/40
-      `
-      : `
-        bg-gray-100
-        border-gray-300
-        text-gray-700
-        hover:bg-gray-200
-        hover:border-yellow-500/50
-      `
-  }
-
 `;
 
 
-const botonVolver = (modoOscuro) => `
+const botonSecundario =
+  (modoOscuro) => `
+    w-full
 
-  w-full
-  py-3
-  text-sm
-  flex
-  items-center
-  justify-center
-  gap-2
-  transition
+    border
 
-  ${
-    modoOscuro
-      ? `
-        text-zinc-500
-        hover:text-white
-      `
-      : `
-        text-gray-500
-        hover:text-gray-900
-      `
-  }
+    px-5
+    py-3.5
 
-`;
+    rounded-2xl
+
+    font-semibold
+
+    flex
+    items-center
+    justify-center
+    gap-2
+
+    transition
+
+    disabled:opacity-40
+    disabled:cursor-not-allowed
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-950
+          border-slate-700
+          text-white
+
+          hover:border-sky-400
+        `
+        : `
+          bg-slate-50
+          border-slate-200
+          text-slate-600
+
+          hover:bg-sky-50
+          hover:border-sky-300
+        `
+    }
+  `;
+
+
+const botonVolver =
+  (modoOscuro) => `
+    w-full
+
+    py-3
+
+    text-sm
+
+    flex
+    items-center
+    justify-center
+    gap-2
+
+    transition
+
+    ${
+      modoOscuro
+        ? `
+          text-slate-400
+          hover:text-sky-400
+        `
+        : `
+          text-slate-500
+          hover:text-sky-500
+        `
+    }
+  `;
 
 
 export default Register;

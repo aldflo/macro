@@ -1,60 +1,43 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-
-import {
-  useOutletContext,
-} from "react-router-dom";
-
-import {
-  db,
-  auth,
-} from "../firebase.config";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { db, auth } from "../firebase.config";
 
 import {
   arrayUnion,
   collection,
-  query,
-  onSnapshot,
-  orderBy,
-  updateDoc,
   doc,
+  onSnapshot,
+  query,
   serverTimestamp,
   Timestamp,
+  updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
 
-import {
-  onAuthStateChanged,
-} from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
+  TileLayer,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 
 import L from "leaflet";
-
 import "leaflet/dist/leaflet.css";
 
 import {
   FaArrowLeft,
   FaArrowRight,
   FaBell,
-  FaBuilding,
   FaCalendarAlt,
   FaCamera,
   FaCheck,
   FaCheckCircle,
   FaCheckSquare,
-  FaClock,
   FaCloudUploadAlt,
   FaCrosshairs,
   FaDollarSign,
@@ -69,7 +52,6 @@ import {
   FaRulerCombined,
   FaSave,
   FaSearch,
-  FaShieldAlt,
   FaSquare,
   FaSyncAlt,
   FaTag,
@@ -88,91 +70,76 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-
   iconUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
-
-/* ======================================================
-   POSICIÓN INICIAL CAMPECHE
-====================================================== */
 
 const POSICION_CAMPECHE = {
   lat: 19.8301,
   lng: -90.5349,
 };
 
+const TIPOS_SOLUCION = [
+  "Página web",
+  "Aplicación móvil",
+  "Sistema web",
+  "Cámaras y seguridad",
+  "Redes y conectividad",
+  "Publicidad digital",
+  "Soporte y mantenimiento",
+  "Otro",
+];
+
+const ESTADOS_EDITABLES = ["pendiente", "revision", "en_revision"];
+
+const ESTADOS_RESPUESTA_PROPUESTA = [
+  "cotizada",
+  "propuesta_enviada",
+  "propuesta_modificada",
+];
+
 /* ======================================================
    GEOCODIFICACIÓN INVERSA
 ====================================================== */
 
-const obtenerDireccion = async (
-  lat,
-  lng
-) => {
-  const params =
-    new URLSearchParams({
-      format: "jsonv2",
-      lat: String(lat),
-      lon: String(lng),
-      addressdetails: "1",
-      zoom: "18",
-      "accept-language": "es",
-    });
+async function obtenerDireccion(lat, lng) {
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    lat: String(lat),
+    lon: String(lng),
+    addressdetails: "1",
+    zoom: "18",
+    "accept-language": "es",
+  });
 
-  const response =
-    await fetch(
-      `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
-    );
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
+  );
 
   if (!response.ok) {
-    throw new Error(
-      "No se pudo obtener la dirección."
-    );
+    throw new Error("No se pudo obtener la dirección.");
   }
 
-  const data =
-    await response.json();
-
-  return (
-    data.display_name ||
-    ""
-  );
-};
+  const data = await response.json();
+  return data.display_name || "";
+}
 
 /* ======================================================
    RECENTRAR MAPA
 ====================================================== */
 
-function RecentrarMapa({
-  posicion,
-  zoom = 16,
-}) {
+function RecentrarMapa({ posicion, zoom = 16 }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!posicion) {
-      return;
-    }
+    if (!posicion) return;
 
-    map.setView(
-      [
-        posicion.lat,
-        posicion.lng,
-      ],
-      zoom,
-      {
-        animate: true,
-      }
-    );
-  }, [
-    posicion,
-    map,
-    zoom,
-  ]);
+    map.setView([posicion.lat, posicion.lng], zoom, {
+      animate: true,
+    });
+  }, [posicion, map, zoom]);
 
   return null;
 }
@@ -187,84 +154,40 @@ function SelectorUbicacionEditar({
   setUbicacion,
   setError,
 }) {
-  const actualizarUbicacion =
-    async (
-      lat,
-      lng
-    ) => {
-      setError("");
+  const actualizarUbicacion = async (lat, lng) => {
+    setError("");
 
-      setPosicion({
-        lat,
-        lng,
-      });
+    setPosicion({ lat, lng });
 
-      try {
-        const direccion =
-          await obtenerDireccion(
-            lat,
-            lng
-          );
-
-        setUbicacion(
-          direccion ||
-            `${lat.toFixed(
-              6
-            )}, ${lng.toFixed(
-              6
-            )}`
-        );
-      } catch (error) {
-        console.error(
-          "Error obteniendo dirección:",
-          error
-        );
-
-        setUbicacion(
-          `${lat.toFixed(
-            6
-          )}, ${lng.toFixed(
-            6
-          )}`
-        );
-      }
-    };
+    try {
+      const direccion = await obtenerDireccion(lat, lng);
+      setUbicacion(direccion || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    } catch (error) {
+      console.error("Error obteniendo dirección:", error);
+      setUbicacion(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    }
+  };
 
   useMapEvents({
     click(e) {
-      actualizarUbicacion(
-        e.latlng.lat,
-        e.latlng.lng
-      );
+      actualizarUbicacion(e.latlng.lat, e.latlng.lng);
     },
   });
 
-  if (!posicion) {
-    return null;
-  }
+  if (!posicion) return null;
 
   return (
     <Marker
-      position={[
-        posicion.lat,
-        posicion.lng,
-      ]}
+      position={[posicion.lat, posicion.lng]}
       draggable
       eventHandlers={{
         dragend: (e) => {
-          const nuevaPosicion =
-            e.target.getLatLng();
-
-          actualizarUbicacion(
-            nuevaPosicion.lat,
-            nuevaPosicion.lng
-          );
+          const nuevaPosicion = e.target.getLatLng();
+          actualizarUbicacion(nuevaPosicion.lat, nuevaPosicion.lng);
         },
       }}
     >
-      <Popup>
-        Ubicación seleccionada
-      </Popup>
+      <Popup>Ubicación seleccionada</Popup>
     </Marker>
   );
 }
@@ -273,2871 +196,1298 @@ function SelectorUbicacionEditar({
    COMPONENTE PRINCIPAL
 ====================================================== */
 
-
-const ESTILOS_TEMA_CLARO = `
-  .wealth-light-page {
-    background-color: #f9fafb !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .bg-black {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-950 {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-900 {
-    background-color: #f9fafb !important;
-  }
-
-  .wealth-light-page .bg-zinc-800 {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .bg-zinc-700 {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-950/70"],
-  .wealth-light-page [class~="bg-zinc-950/60"] {
-    background-color: rgba(255, 255, 255, 0.92) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-900/80"],
-  .wealth-light-page [class~="bg-zinc-900/60"] {
-    background-color: rgba(249, 250, 251, 0.94) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-800/70"],
-  .wealth-light-page [class~="bg-zinc-800/60"],
-  .wealth-light-page [class~="bg-zinc-800/40"] {
-    background-color: rgba(243, 244, 246, 0.9) !important;
-  }
-
-  .wealth-light-page .border-zinc-900,
-  .wealth-light-page .border-zinc-800 {
-    border-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .border-zinc-700,
-  .wealth-light-page .border-zinc-600 {
-    border-color: #d1d5db !important;
-  }
-
-  .wealth-light-page .text-white {
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .text-zinc-100,
-  .wealth-light-page .text-zinc-200 {
-    color: #1f2937 !important;
-  }
-
-  .wealth-light-page .text-zinc-300 {
-    color: #374151 !important;
-  }
-
-  .wealth-light-page .text-zinc-400 {
-    color: #4b5563 !important;
-  }
-
-  .wealth-light-page .text-zinc-500,
-  .wealth-light-page .text-zinc-600 {
-    color: #6b7280 !important;
-  }
-
-  .wealth-light-page .text-zinc-700 {
-    color: #9ca3af !important;
-  }
-
-  .wealth-light-page input,
-  .wealth-light-page textarea,
-  .wealth-light-page select {
-    color: #111827;
-  }
-
-  .wealth-light-page input::placeholder,
-  .wealth-light-page textarea::placeholder {
-    color: #9ca3af;
-  }
-
-  .wealth-light-page option {
-    background: #ffffff;
-    color: #111827;
-  }
-
-  .wealth-light-page .inputAdmin {
-    background: #ffffff !important;
-    border-color: #d1d5db !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-900:hover {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-800:hover {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-700:hover {
-    background-color: #d1d5db !important;
-  }
-
-  /* Mantener texto blanco en botones/estados de color intenso */
-  .wealth-light-page [class*="bg-red-"][class~="text-white"],
-  .wealth-light-page [class*="bg-green-"][class~="text-white"],
-  .wealth-light-page [class*="bg-emerald-"][class~="text-white"],
-  .wealth-light-page [class*="bg-blue-"][class~="text-white"],
-  .wealth-light-page [class*="bg-purple-"][class~="text-white"],
-  .wealth-light-page [class*="bg-cyan-"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-
-  /* Overlays fotográficos siguen oscuros */
-  .wealth-light-page [class*="bg-black/"][class~="text-white"],
-  .wealth-light-page [class*="from-black"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-`;
-
 function Cotizaciones() {
-  const { modoOscuro } = useOutletContext();
-  // ======================================================
-  // CONTROL DE NOTIFICACIONES
-  // ======================================================
-  //
-  // Al entrar a "Mis cotizaciones" se marcan como vistas
-  // únicamente las novedades que YA estaban pendientes.
-  // Si llega otra actualización mientras el cliente permanece
-  // en esta pantalla, no se borra automáticamente.
+  const outlet = useOutletContext() || {};
+  const modoOscuro = outlet?.modoOscuro ?? false;
+
   const notificacionesInicialesMarcadas = useRef(false);
 
-  /* ======================================================
-     COTIZACIONES
-  ====================================================== */
+  const [solicitudes, setCotizaciones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [procesando, setProcesando] = useState(false);
+  const [mensajeGeneral, setMensajeGeneral] = useState("");
+  const [errorGeneral, setErrorGeneral] = useState("");
 
-  const [
-    cotizaciones,
-    setCotizaciones,
-  ] = useState([]);
+  const [modoSeleccion, setModoSeleccion] = useState(false);
+  const [seleccionadas, setSeleccionadas] = useState([]);
 
-  const [
-    cargando,
-    setCargando,
-  ] = useState(true);
+  const [galeriaOpen, setGaleriaOpen] = useState(false);
+  const [imgs, setImgs] = useState([]);
+  const [index, setIndex] = useState(0);
 
-  const [
-    procesando,
-    setProcesando,
-  ] = useState(false);
+  const [propuestaOpen, setPropuestaOpen] = useState(false);
+  const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState(null);
 
-  const [
-    mensajeGeneral,
-    setMensajeGeneral,
-  ] = useState("");
+  const [historialOpen, setHistorialOpen] = useState(false);
+  const [cotizacionHistorial, setCotizacionHistorial] = useState(null);
 
-  const [
-    errorGeneral,
-    setErrorGeneral,
-  ] = useState("");
+  const [editarOpen, setEditarOpen] = useState(false);
+  const [cotizacionEditando, setCotizacionEditando] = useState(null);
+  const [pasoEditar, setPasoEditar] = useState(1);
+  const totalPasosEditar = 4;
 
-  /* ======================================================
-     SELECCIÓN MÚLTIPLE
-  ====================================================== */
+  const [editNombre, setEditNombre] = useState("");
+  const [editDescripcion, setEditDescripcion] = useState("");
+  const [editTipo, setEditTipo] = useState("Página web");
+  const [editUbicacion, setEditUbicacion] = useState("");
+  const [editMedidas, setEditMedidas] = useState("");
+  const [editFechaDeseada, setEditFechaDeseada] = useState("");
+  const [editPresupuesto, setEditPresupuesto] = useState("");
+  const [editTelefono, setEditTelefono] = useState("");
+  const [editMetodoContacto, setEditMetodoContacto] = useState("WhatsApp");
 
-  const [
-    modoSeleccion,
-    setModoSeleccion,
-  ] = useState(false);
+  const [editPosicion, setEditPosicion] = useState(POSICION_CAMPECHE);
+  const [buscandoUbicacion, setBuscandoUbicacion] = useState(false);
+  const [obteniendoGPS, setObteniendoGPS] = useState(false);
 
-  const [
-    seleccionadas,
-    setSeleccionadas,
-  ] = useState([]);
+  const [imagenesProyectoEdit, setImagenesProyectoEdit] = useState([]);
+  const [imagenesClienteEdit, setImagenesClienteEdit] = useState([]);
+  const [nuevasImagenes, setNuevasImagenes] = useState([]);
 
-  /* ======================================================
-     GALERÍA
-  ====================================================== */
-
-  const [
-    galeriaOpen,
-    setGaleriaOpen,
-  ] = useState(false);
-
-  const [
-    imgs,
-    setImgs,
-  ] = useState([]);
-
-  const [
-    index,
-    setIndex,
-  ] = useState(0);
-
-  /* ======================================================
-     MODAL DETALLES
-  ====================================================== */
-
-  const [
-    propuestaOpen,
-    setPropuestaOpen,
-  ] = useState(false);
-
-  const [
-    cotizacionSeleccionada,
-    setCotizacionSeleccionada,
-  ] = useState(null);
-
-  /* ======================================================
-     HISTORIAL / LÍNEA DE TIEMPO
-  ====================================================== */
-
-  const [
-    historialOpen,
-    setHistorialOpen,
-  ] = useState(false);
-
-  const [
-    cotizacionHistorial,
-    setCotizacionHistorial,
-  ] = useState(null);
-
-  /* ======================================================
-     EDICIÓN
-  ====================================================== */
-
-  const [
-    editarOpen,
-    setEditarOpen,
-  ] = useState(false);
-
-  const [
-    cotizacionEditando,
-    setCotizacionEditando,
-  ] = useState(null);
-
-  const [
-    pasoEditar,
-    setPasoEditar,
-  ] = useState(1);
-
-  const totalPasosEditar =
-    4;
-
-  /* ======================================================
-     DATOS EDICIÓN
-  ====================================================== */
-
-  const [
-    editNombre,
-    setEditNombre,
-  ] = useState("");
-
-  const [
-    editDescripcion,
-    setEditDescripcion,
-  ] = useState("");
-
-  const [
-    editTipo,
-    setEditTipo,
-  ] = useState(
-    "Construcción"
-  );
-
-  const [
-    editUbicacion,
-    setEditUbicacion,
-  ] = useState("");
-
-  const [
-    editMedidas,
-    setEditMedidas,
-  ] = useState("");
-
-  const [
-    editFechaDeseada,
-    setEditFechaDeseada,
-  ] = useState("");
-
-  const [
-    editPresupuesto,
-    setEditPresupuesto,
-  ] = useState("");
-
-  const [
-    editTelefono,
-    setEditTelefono,
-  ] = useState("");
-
-  const [
-    editMetodoContacto,
-    setEditMetodoContacto,
-  ] = useState(
-    "WhatsApp"
-  );
-
-  /* ======================================================
-     MAPA EDICIÓN
-  ====================================================== */
-
-  const [
-    editPosicion,
-    setEditPosicion,
-  ] = useState(
-    POSICION_CAMPECHE
-  );
-
-  const [
-    buscandoUbicacion,
-    setBuscandoUbicacion,
-  ] = useState(false);
-
-  const [
-    obteniendoGPS,
-    setObteniendoGPS,
-  ] = useState(false);
-
-  /* ======================================================
-     IMÁGENES EDICIÓN
-  ====================================================== */
-
-  const [
-    imagenesProyectoEdit,
-    setImagenesProyectoEdit,
-  ] = useState([]);
-
-  const [
-    imagenesClienteEdit,
-    setImagenesClienteEdit,
-  ] = useState([]);
-
-  const [
-    nuevasImagenes,
-    setNuevasImagenes,
-  ] = useState([]);
-
-  /* ======================================================
-     PREVIEWS NUEVAS FOTOS
-  ====================================================== */
-
-  const previewsNuevos =
-    useMemo(() => {
-      return nuevasImagenes.map(
-        (file) => ({
-          file,
-          url:
-            URL.createObjectURL(
-              file
-            ),
-        })
-      );
-    }, [
-      nuevasImagenes,
-    ]);
+  const previewsNuevos = useMemo(() => {
+    return nuevasImagenes.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+  }, [nuevasImagenes]);
 
   useEffect(() => {
     return () => {
-      previewsNuevos.forEach(
-        (preview) => {
-          URL.revokeObjectURL(
-            preview.url
-          );
-        }
-      );
+      previewsNuevos.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
-  }, [
-    previewsNuevos,
-  ]);
+  }, [previewsNuevos]);
+
+  const theme = useMemo(() => {
+    if (modoOscuro) {
+      return {
+        page: "min-h-screen bg-slate-950 text-white",
+        shell: "max-w-7xl mx-auto",
+        card: "bg-slate-900 border border-slate-800 shadow-xl shadow-black/10",
+        cardSoft: "bg-slate-900/80 border border-slate-800",
+        overlay: "bg-slate-950/75",
+        title: "text-white",
+        text: "text-slate-200",
+        muted: "text-slate-400",
+        line: "border-slate-800",
+        input:
+          "w-full rounded-2xl border border-slate-700 bg-slate-950 text-white placeholder:text-slate-500 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15",
+        primaryBtn:
+          "bg-sky-500 hover:bg-sky-400 text-white border border-sky-500 shadow-lg shadow-sky-500/20",
+        secondaryBtn:
+          "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+        successBtn:
+          "bg-emerald-500 hover:bg-emerald-400 text-white border border-emerald-500 shadow-lg shadow-emerald-500/20",
+        warningBtn:
+          "bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30",
+        dangerBtn:
+          "bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30",
+        hero:
+          "bg-gradient-to-r from-sky-500/15 via-cyan-500/10 to-transparent border border-slate-800",
+      };
+    }
+
+    return {
+      page: "min-h-screen bg-[#f3f8ff] text-slate-900",
+      shell: "max-w-7xl mx-auto",
+      card: "bg-white border border-slate-200 shadow-sm shadow-slate-200/50",
+      cardSoft: "bg-[#f8fbff] border border-slate-200",
+      overlay: "bg-slate-900/45",
+      title: "text-slate-900",
+      text: "text-slate-700",
+      muted: "text-slate-500",
+      line: "border-slate-200",
+      input:
+        "w-full rounded-2xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15",
+      primaryBtn:
+        "bg-sky-500 hover:bg-sky-600 text-white border border-sky-500 shadow-lg shadow-sky-500/20",
+      secondaryBtn:
+        "bg-white hover:bg-slate-50 text-slate-700 border border-slate-300",
+      successBtn:
+        "bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-500 shadow-lg shadow-emerald-500/20",
+      warningBtn:
+        "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200",
+      dangerBtn:
+        "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200",
+      hero:
+        "bg-gradient-to-r from-sky-100 via-cyan-50 to-white border border-slate-200",
+    };
+  }, [modoOscuro]);
 
   /* ======================================================
      FIREBASE EN TIEMPO REAL
   ====================================================== */
 
   useEffect(() => {
-    let unsubCotizaciones =
-      null;
+    let unsubCotizaciones = null;
 
-    const unsubAuth =
-      onAuthStateChanged(
-        auth,
-        (user) => {
-          if (!user) {
-            setCotizaciones(
-              []
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setCotizaciones([]);
+        setCargando(false);
+        return;
+      }
+
+      const userEmail = user.email;
+      const userUid = user.uid;
+
+      const q = query(
+        collection(db, "cotizaciones"),
+        where("uid", "==", userUid)
+      );
+
+      unsubCotizaciones = onSnapshot(
+        q,
+        (snapshot) => {
+          const data = snapshot.docs
+            .map((documento) => ({
+              id: documento.id,
+              ...documento.data(),
+            }))
+            .filter((c) => {
+              const pertenece =
+                c.uid === userUid || (userEmail && c.usuario === userEmail);
+
+              const visible = c.ocultoPorCliente !== true;
+
+              const sigueEnCotizaciones = ![
+                "finalizada",
+                "terminada",
+                "terminado",
+              ].includes(c.estado);
+
+              return pertenece && visible && sigueEnCotizaciones;
+            });
+
+          data.sort((a, b) => {
+            const fechaA =
+              a.fechaActualizacion?.toMillis?.() ||
+              a.fecha?.toMillis?.() ||
+              0;
+
+            const fechaB =
+              b.fechaActualizacion?.toMillis?.() ||
+              b.fecha?.toMillis?.() ||
+              0;
+
+            return fechaB - fechaA;
+          });
+
+          if (!notificacionesInicialesMarcadas.current) {
+            notificacionesInicialesMarcadas.current = true;
+
+            const pendientesDeVista = data.filter(
+              (cotizacion) =>
+                cotizacion.vistoPorCliente === false &&
+                [
+                  "cotizada",
+                  "propuesta_enviada",
+                  "propuesta_modificada",
+                  "confirmada_admin",
+                  "anticipo_pendiente",
+                  "anticipo_pagado",
+                  "anticipo_recibido",
+                  "en_proceso",
+                  "proceso",
+                  "instalacion_programada",
+                  "instalacion",
+                ].includes(cotizacion.estado)
             );
 
-            setCargando(
-              false
-            );
+            if (pendientesDeVista.length > 0) {
+              const batchVistas = writeBatch(db);
 
-            return;
-          }
+              pendientesDeVista.forEach((cotizacion) => {
+                batchVistas.update(doc(db, "cotizaciones", cotizacion.id), {
+                  vistoPorCliente: true,
+                });
+              });
 
-          const userEmail =
-            user.email;
-
-          const userUid =
-            user.uid;
-
-          const q = query(
-            collection(
-              db,
-              "cotizaciones"
-            ),
-            orderBy(
-              "fecha",
-              "desc"
-            )
-          );
-
-          unsubCotizaciones =
-            onSnapshot(
-              q,
-
-              (snapshot) => {
-                const data =
-                  snapshot.docs
-                    .map(
-                      (
-                        documento
-                      ) => ({
-                        id:
-                          documento.id,
-
-                        ...documento.data(),
-                      })
-                    )
-                    .filter(
-                      (c) => {
-                        const pertenece =
-                          c.uid ===
-                            userUid ||
-                          (
-                            userEmail &&
-                            c.usuario ===
-                              userEmail
-                          );
-
-                        const visible =
-                          c.ocultoPorCliente !==
-                          true;
-
-                        // Los trabajos ya finalizados dejan Mis Cotizaciones
-                        // y se consultan únicamente desde Mis Proyectos.
-                        const sigueEnCotizaciones =
-                          ![
-                            "finalizada",
-                            "terminada",
-                            "terminado",
-                          ].includes(
-                            c.estado
-                          );
-
-                        return (
-                          pertenece &&
-                          visible &&
-                          sigueEnCotizaciones
-                        );
-                      }
-                    );
-
-                // =========================================
-                // MARCAR NOVEDADES COMO VISTAS AL ENTRAR
-                // =========================================
-                if (!notificacionesInicialesMarcadas.current) {
-                  notificacionesInicialesMarcadas.current = true;
-
-                  const pendientesDeVista = data.filter(
-                    (cotizacion) =>
-                      cotizacion.vistoPorCliente === false &&
-                      [
-                        "cotizada",
-                        "propuesta_enviada",
-                        "propuesta_modificada",
-                        "confirmada_admin",
-                        "anticipo_pendiente",
-                        "anticipo_pagado",
-                        "anticipo_recibido",
-                        "en_proceso",
-                        "proceso",
-                        "instalacion_programada",
-                        "instalacion",
-                      ].includes(cotizacion.estado)
-                  );
-
-                  if (pendientesDeVista.length > 0) {
-                    const batchVistas = writeBatch(db);
-
-                    pendientesDeVista.forEach((cotizacion) => {
-                      batchVistas.update(
-                        doc(
-                          db,
-                          "cotizaciones",
-                          cotizacion.id
-                        ),
-                        {
-                          vistoPorCliente: true,
-                        }
-                      );
-                    });
-
-                    batchVistas.commit().catch((error) => {
-                      console.error(
-                        "Error marcando novedades del cliente como vistas:",
-                        error
-                      );
-                    });
-                  }
-                }
-
-                setCotizaciones(
-                  data
-                );
-
-                setSeleccionadas(
-                  (actuales) =>
-                    actuales.filter(
-                      (id) =>
-                        data.some(
-                          (c) =>
-                            c.id ===
-                            id
-                        )
-                    )
-                );
-
-                setCotizacionSeleccionada(
-                  (actual) => {
-                    if (!actual) {
-                      return null;
-                    }
-
-                    return (
-                      data.find(
-                        (c) =>
-                          c.id ===
-                          actual.id
-                      ) ||
-                      actual
-                    );
-                  }
-                );
-
-                setCargando(
-                  false
-                );
-              },
-
-              (error) => {
+              batchVistas.commit().catch((error) => {
                 console.error(
-                  "Error cargando cotizaciones:",
+                  "Error marcando novedades del cliente como vistas:",
                   error
                 );
+              });
+            }
+          }
 
-                setErrorGeneral(
-                  "No se pudieron cargar las cotizaciones."
-                );
+          setCotizaciones(data);
 
-                setCargando(
-                  false
-                );
-              }
-            );
+          setSeleccionadas((actuales) =>
+            actuales.filter((id) => data.some((c) => c.id === id))
+          );
+
+          setCotizacionSeleccionada((actual) => {
+            if (!actual) return null;
+            return data.find((c) => c.id === actual.id) || actual;
+          });
+
+          setCotizacionHistorial((actual) => {
+            if (!actual) return null;
+            return data.find((c) => c.id === actual.id) || actual;
+          });
+
+          setCargando(false);
+        },
+        (error) => {
+          console.error("Error cargando solicitudes:", error);
+          setErrorGeneral("No se pudieron cargar las solicitudes.");
+          setCargando(false);
         }
       );
+    });
 
     return () => {
       unsubAuth();
-
-      if (
-        unsubCotizaciones
-      ) {
-        unsubCotizaciones();
-      }
+      if (unsubCotizaciones) unsubCotizaciones();
     };
   }, []);
 
   /* ======================================================
-     HISTORIAL / LÍNEA DE TIEMPO
+     HISTORIAL
   ====================================================== */
 
-  const crearEventoHistorial =
-    (
-      tipo,
-      titulo,
-      descripcion = "",
-      actor = "cliente",
-      extra = {}
-    ) => ({
-      tipo,
-      titulo,
-      descripcion,
-      actor,
-      fecha:
-        Timestamp.now(),
-      ...extra,
-    });
+  const crearEventoHistorial = (
+    tipo,
+    titulo,
+    descripcion = "",
+    actor = "cliente",
+    extra = {}
+  ) => ({
+    tipo,
+    titulo,
+    descripcion,
+    actor,
+    fecha: Timestamp.now(),
+    ...extra,
+  });
 
-  const obtenerMillis =
-    (fecha) => {
-      if (!fecha) {
-        return 0;
-      }
+  const obtenerMillis = (fecha) => {
+    if (!fecha) return 0;
 
-      try {
-        if (
-          typeof fecha.toMillis ===
-          "function"
-        ) {
-          return fecha.toMillis();
-        }
+    try {
+      if (typeof fecha.toMillis === "function") return fecha.toMillis();
+      if (typeof fecha.toDate === "function") return fecha.toDate().getTime();
+      return new Date(fecha).getTime() || 0;
+    } catch {
+      return 0;
+    }
+  };
 
-        if (
-          typeof fecha.toDate ===
-          "function"
-        ) {
-          return fecha
-            .toDate()
-            .getTime();
-        }
+  const obtenerHistorialVisible = (cotizacion) => {
+    const eventos = Array.isArray(cotizacion?.historial)
+      ? [...cotizacion.historial]
+      : [];
 
-        return (
-          new Date(
-            fecha
-          ).getTime() ||
-          0
-        );
-      } catch {
-        return 0;
-      }
-    };
+    if (
+      cotizacion?.fecha &&
+      !eventos.some((evento) => evento.tipo === "solicitud_creada")
+    ) {
+      eventos.push({
+        tipo: "solicitud_creada",
+        titulo: "Solicitud enviada",
+        descripcion: "Enviaste la solicitud a Macro.",
+        actor: "cliente",
+        fecha: cotizacion.fecha,
+      });
+    }
 
-  const obtenerHistorialVisible =
-    (cotizacion) => {
-      const eventos =
-        Array.isArray(
-          cotizacion?.historial
-        )
-          ? [
-              ...cotizacion.historial,
-            ]
-          : [];
+    if (
+      cotizacion?.fechaPropuesta &&
+      !eventos.some((evento) =>
+        ["propuesta_enviada", "propuesta_modificada"].includes(evento.tipo)
+      )
+    ) {
+      eventos.push({
+        tipo: "propuesta_enviada",
+        titulo: "Propuesta recibida",
+        descripcion: "Macro envió una propuesta.",
+        actor: "admin",
+        fecha: cotizacion.fechaPropuesta,
+      });
+    }
 
-      // Compatibilidad con solicitudes anteriores a esta función.
+    if (
+      cotizacion?.fechaRespuestaCliente &&
+      !eventos.some((evento) =>
+        [
+          "propuesta_aceptada",
+          "cambios_solicitados",
+          "propuesta_rechazada",
+          "solicitud_cancelada",
+        ].includes(evento.tipo)
+      )
+    ) {
       if (
-        cotizacion?.fecha &&
-        !eventos.some(
-          (evento) =>
-            evento.tipo ===
-            "solicitud_creada"
-        )
+        cotizacion.respuestaCliente === "aceptada" ||
+        cotizacion.estado === "aceptada_cliente"
       ) {
         eventos.push({
-          tipo:
-            "solicitud_creada",
-
-          titulo:
-            "Solicitud enviada",
-
-          descripcion:
-            "Enviaste la solicitud de cotización a Wealth.",
-
-          actor:
-            "cliente",
-
-          fecha:
-            cotizacion.fecha,
+          tipo: "propuesta_aceptada",
+          titulo: "Propuesta aceptada",
+          descripcion: "Aceptaste la propuesta de Macro.",
+          actor: "cliente",
+          fecha: cotizacion.fechaRespuestaCliente,
         });
-      }
-
-      if (
-        cotizacion?.fechaPropuesta &&
-        !eventos.some(
-          (evento) =>
-            [
-              "propuesta_enviada",
-              "propuesta_modificada",
-            ].includes(
-              evento.tipo
-            )
-        )
+      } else if (
+        cotizacion.respuestaCliente === "solicita_modificacion" ||
+        cotizacion.estado === "cambios_solicitados"
       ) {
         eventos.push({
-          tipo:
-            "propuesta_enviada",
-
-          titulo:
-            "Propuesta recibida",
-
+          tipo: "cambios_solicitados",
+          titulo: "Cambios solicitados",
           descripcion:
-            "Wealth envió una propuesta.",
-
-          actor:
-            "admin",
-
-          fecha:
-            cotizacion.fechaPropuesta,
+            cotizacion.mensajeCliente || "Solicitaste cambios a la propuesta.",
+          actor: "cliente",
+          fecha: cotizacion.fechaRespuestaCliente,
+        });
+      } else if (
+        cotizacion.respuestaCliente === "rechazada" ||
+        cotizacion.estado === "rechazada_cliente"
+      ) {
+        eventos.push({
+          tipo: "propuesta_rechazada",
+          titulo: "Propuesta rechazada",
+          descripcion: "Rechazaste la propuesta.",
+          actor: "cliente",
+          fecha: cotizacion.fechaRespuestaCliente,
+        });
+      } else if (cotizacion.respuestaCliente === "cancelada") {
+        eventos.push({
+          tipo: "solicitud_cancelada",
+          titulo: "Solicitud cancelada",
+          descripcion: "Cancelaste la solicitud.",
+          actor: "cliente",
+          fecha: cotizacion.fechaRespuestaCliente,
         });
       }
+    }
 
-      if (
-        cotizacion?.fechaRespuestaCliente &&
-        !eventos.some(
-          (evento) =>
-            [
-              "propuesta_aceptada",
-              "cambios_solicitados",
-              "propuesta_rechazada",
-            ].includes(
-              evento.tipo
-            )
-        )
-      ) {
-        if (
-          cotizacion.respuestaCliente ===
-            "aceptada" ||
-          cotizacion.estado ===
-            "aceptada_cliente"
-        ) {
-          eventos.push({
-            tipo:
-              "propuesta_aceptada",
-
-            titulo:
-              "Propuesta aceptada",
-
-            descripcion:
-              "Aceptaste la propuesta de Wealth.",
-
-            actor:
-              "cliente",
-
-            fecha:
-              cotizacion.fechaRespuestaCliente,
-          });
-        } else if (
-          cotizacion.respuestaCliente ===
-            "solicita_modificacion" ||
-          cotizacion.estado ===
-            "cambios_solicitados"
-        ) {
-          eventos.push({
-            tipo:
-              "cambios_solicitados",
-
-            titulo:
-              "Cambios solicitados",
-
-            descripcion:
-              cotizacion.mensajeCliente ||
-              "Solicitaste cambios a la propuesta.",
-
-            actor:
-              "cliente",
-
-            fecha:
-              cotizacion.fechaRespuestaCliente,
-          });
-        } else if (
-          cotizacion.respuestaCliente ===
-            "rechazada" ||
-          cotizacion.estado ===
-            "rechazada_cliente"
-        ) {
-          eventos.push({
-            tipo:
-              "propuesta_rechazada",
-
-            titulo:
-              "Propuesta rechazada",
-
-            descripcion:
-              "Rechazaste la propuesta.",
-
-            actor:
-              "cliente",
-
-            fecha:
-              cotizacion.fechaRespuestaCliente,
-          });
-        }
-      }
-
-      return eventos
-        .filter(
-          (evento) =>
-            evento &&
-            evento.fecha
-        )
-        .sort(
-          (a, b) =>
-            obtenerMillis(
-              a.fecha
-            ) -
-            obtenerMillis(
-              b.fecha
-            )
-        );
-    };
-
-  const abrirHistorial =
-    async (
-      cotizacion
-    ) => {
-      setCotizacionHistorial(
-        cotizacion
-      );
-
-      setHistorialOpen(
-        true
-      );
-
-      await marcarComoVista(
-        cotizacion
-      );
-    };
+    return eventos
+      .filter((evento) => evento && evento.fecha)
+      .sort((a, b) => obtenerMillis(a.fecha) - obtenerMillis(b.fecha));
+  };
 
   /* ======================================================
      ESTADO
   ====================================================== */
 
-  const obtenerEstado =
-    (estado) => {
-      switch (estado) {
-        case "pendiente":
-          return {
-            texto:
-              "Solicitud enviada",
+  const obtenerEstado = (estado) => {
+    const normal = {
+      pendiente: {
+        texto: "Solicitud enviada",
+        clase: modoOscuro
+          ? "bg-slate-800 text-slate-200 border border-slate-700"
+          : "bg-slate-100 text-slate-700 border border-slate-200",
+      },
+      revision: {
+        texto: "En revisión",
+        clase: "bg-blue-50 text-blue-700 border border-blue-200",
+      },
+      en_revision: {
+        texto: "En revisión",
+        clase: "bg-blue-50 text-blue-700 border border-blue-200",
+      },
+      cotizada: {
+        texto: "Propuesta recibida",
+        clase: "bg-sky-50 text-sky-700 border border-sky-200",
+      },
+      propuesta_enviada: {
+        texto: "Propuesta recibida",
+        clase: "bg-sky-50 text-sky-700 border border-sky-200",
+      },
+      propuesta_modificada: {
+        texto: "Propuesta modificada",
+        clase: "bg-amber-50 text-amber-700 border border-amber-200",
+      },
+      aceptada_cliente: {
+        texto: "Aceptada",
+        clase: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      },
+      cambios: {
+        texto: "Cambios solicitados",
+        clase: "bg-amber-50 text-amber-700 border border-amber-200",
+      },
+      cambios_solicitados: {
+        texto: "Cambios solicitados",
+        clase: "bg-amber-50 text-amber-700 border border-amber-200",
+      },
+      rechazada_cliente: {
+        texto: "Propuesta rechazada",
+        clase: "bg-red-50 text-red-700 border border-red-200",
+      },
+      cancelada_cliente: {
+        texto: "Solicitud cancelada",
+        clase: "bg-red-50 text-red-700 border border-red-200",
+      },
+      confirmada_admin: {
+        texto: "Proyecto confirmado",
+        clase: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      },
+      anticipo_pendiente: {
+        texto: "Anticipo pendiente",
+        clase: "bg-cyan-50 text-cyan-700 border border-cyan-200",
+      },
+      anticipo_pagado: {
+        texto: "Anticipo recibido",
+        clase: "bg-green-50 text-green-700 border border-green-200",
+      },
+      anticipo_recibido: {
+        texto: "Anticipo recibido",
+        clase: "bg-green-50 text-green-700 border border-green-200",
+      },
+      proceso: {
+        texto: "Proyecto en proceso",
+        clase: "bg-violet-50 text-violet-700 border border-violet-200",
+      },
+      en_proceso: {
+        texto: "Proyecto en proceso",
+        clase: "bg-violet-50 text-violet-700 border border-violet-200",
+      },
+      instalacion: {
+        texto: "Instalación programada",
+        clase: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      },
+      instalacion_programada: {
+        texto: "Instalación programada",
+        clase: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      },
+      finalizada: {
+        texto: "Proyecto finalizado",
+        clase: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      },
+      terminada: {
+        texto: "Proyecto finalizado",
+        clase: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      },
+    };
 
-            color:
-              "bg-zinc-700 text-white",
-          };
-
-        case "revision":
-        case "en_revision":
-          return {
-            texto:
-              "En revisión",
-
-            color:
-              "bg-blue-600 text-white",
-          };
-
-        case "cotizada":
-        case "propuesta_enviada":
-          return {
-            texto:
-              "Propuesta recibida",
-
-            color:
-              "bg-yellow-500 text-black",
-          };
-
-        case "propuesta_modificada":
-          return {
-            texto:
-              "Propuesta modificada",
-
-            color:
-              "bg-orange-500 text-black",
-          };
-
-        case "aceptada_cliente":
-          return {
-            texto:
-              "Aceptada",
-
-            color:
-              "bg-green-600 text-white",
-          };
-
-        case "cambios":
-        case "cambios_solicitados":
-          return {
-            texto:
-              "Cambios solicitados",
-
-            color:
-              "bg-orange-500 text-black",
-          };
-
-        case "rechazada_cliente":
-          return {
-            texto:
-              "Propuesta rechazada",
-
-            color:
-              "bg-red-600 text-white",
-          };
-
-        case "cancelada_cliente":
-          return {
-            texto:
-              "Solicitud cancelada",
-
-            color:
-              "bg-red-700 text-white",
-          };
-
-        case "confirmada_admin":
-          return {
-            texto:
-              "Trabajo confirmado",
-
-            color:
-              "bg-emerald-600 text-white",
-          };
-
-        case "anticipo_pendiente":
-          return {
-            texto:
-              "Anticipo pendiente",
-
-            color:
-              "bg-amber-500 text-black",
-          };
-
-        case "anticipo_pagado":
-          return {
-            texto:
-              "Anticipo recibido",
-
-            color:
-              "bg-green-600 text-white",
-          };
-
-        case "proceso":
-        case "en_proceso":
-          return {
-            texto:
-              "Trabajo en proceso",
-
-            color:
-              "bg-purple-600 text-white",
-          };
-
-        case "instalacion":
-        case "instalacion_programada":
-          return {
-            texto:
-              "Instalación programada",
-
-            color:
-              "bg-cyan-600 text-white",
-          };
-
-        case "finalizada":
-        case "terminada":
-          return {
-            texto:
-              "Trabajo finalizado",
-
-            color:
-              "bg-green-700 text-white",
-          };
-
-        default:
-          return {
-            texto:
-              estado ||
-              "Pendiente",
-
-            color:
-              "bg-zinc-700 text-white",
-          };
+    return (
+      normal[estado] || {
+        texto: estado || "Pendiente",
+        clase: modoOscuro
+          ? "bg-slate-800 text-slate-200 border border-slate-700"
+          : "bg-slate-100 text-slate-700 border border-slate-200",
       }
-    };
+    );
+  };
 
-  /* ======================================================
-     PERMISOS
-  ====================================================== */
+  const puedeEditarSolicitud = (cotizacion) =>
+    ESTADOS_EDITABLES.includes(cotizacion.estado);
 
-  const puedeEditarSolicitud =
-    (cotizacion) => {
-      return [
-        "pendiente",
-        "revision",
-        "en_revision",
-      ].includes(
-        cotizacion.estado
-      );
-    };
+  const puedeCancelarSolicitud = (cotizacion) =>
+    ESTADOS_EDITABLES.includes(cotizacion.estado);
 
-  const puedeCancelarSolicitud =
-    (cotizacion) => {
-      return [
-        "pendiente",
-        "revision",
-        "en_revision",
-      ].includes(
-        cotizacion.estado
-      );
-    };
+  const tieneNovedad = (cotizacion) => {
+    return (
+      cotizacion.vistoPorCliente === false &&
+      [
+        "cotizada",
+        "propuesta_enviada",
+        "propuesta_modificada",
+        "confirmada_admin",
+        "anticipo_pendiente",
+        "anticipo_pagado",
+        "anticipo_recibido",
+        "proceso",
+        "en_proceso",
+        "instalacion",
+        "instalacion_programada",
+        "finalizada",
+        "terminada",
+      ].includes(cotizacion.estado)
+    );
+  };
 
-  /* ======================================================
-     NOVEDADES
-  ====================================================== */
+  const cantidadNuevas = solicitudes.filter(tieneNovedad).length;
 
-  const tieneNovedad =
-    (cotizacion) => {
-      return (
-        cotizacion.vistoPorCliente ===
-          false &&
-        [
-          "cotizada",
-          "propuesta_enviada",
-          "propuesta_modificada",
-          "confirmada_admin",
-          "anticipo_pendiente",
-          "anticipo_pagado",
-          "proceso",
-          "en_proceso",
-          "instalacion",
-          "instalacion_programada",
-          "finalizada",
-          "terminada",
-        ].includes(
-          cotizacion.estado
-        )
-      );
-    };
+  const obtenerMensajeEstado = (cotizacion) => {
+    switch (cotizacion.estado) {
+      case "cotizada":
+      case "propuesta_enviada":
+        return {
+          titulo: "Macro envió una propuesta",
+          texto: "Revisa el precio y las condiciones del proyecto.",
+          clase: "bg-sky-50 border border-sky-200 text-sky-700",
+          icono: <FaBell className="text-sky-500" />,
+        };
 
-  const cantidadNuevas =
-    cotizaciones.filter(
-      tieneNovedad
-    ).length;
+      case "propuesta_modificada":
+        return {
+          titulo: "Propuesta actualizada",
+          texto: "Macro modificó la propuesta con nuevos datos.",
+          clase: "bg-amber-50 border border-amber-200 text-amber-700",
+          icono: <FaSyncAlt className="text-amber-500" />,
+        };
 
-  /* ======================================================
-     MENSAJE DE ESTADO
-  ====================================================== */
+      case "aceptada_cliente":
+        return {
+          titulo: "Aceptación registrada",
+          texto: "Macro ya recibió tu aceptación.",
+          clase: "bg-emerald-50 border border-emerald-200 text-emerald-700",
+          icono: <FaCheckCircle className="text-emerald-500" />,
+        };
 
-  const obtenerMensajeEstado =
-    (cotizacion) => {
-      switch (
-        cotizacion.estado
-      ) {
-        case "cotizada":
-        case "propuesta_enviada":
-          return {
-            titulo:
-              "Wealth envió una propuesta",
+      case "cancelada_cliente":
+        return {
+          titulo: "Solicitud cancelada",
+          texto: "Esta solicitud ya no seguirá en proceso.",
+          clase: "bg-red-50 border border-red-200 text-red-700",
+          icono: <FaTimesCircle className="text-red-500" />,
+        };
 
-            texto:
-              "Revisa el precio y las condiciones.",
+      case "confirmada_admin":
+        return {
+          titulo: "Proyecto confirmado",
+          texto: "Macro confirmó tu proyecto y pronto seguirá el proceso.",
+          clase: "bg-emerald-50 border border-emerald-200 text-emerald-700",
+          icono: <FaCheckCircle className="text-emerald-500" />,
+        };
 
-            clase:
-              "bg-yellow-500/10 border-yellow-500/30",
-
-            icono: (
-              <FaBell className="text-yellow-500" />
-            ),
-          };
-
-        case "propuesta_modificada":
-          return {
-            titulo:
-              "Propuesta modificada",
-
-            texto:
-              "Wealth actualizó la propuesta.",
-
-            clase:
-              "bg-orange-500/10 border-orange-500/30",
-
-            icono: (
-              <FaSyncAlt className="text-orange-400" />
-            ),
-          };
-
-        case "aceptada_cliente":
-          return {
-            titulo:
-              "Propuesta aceptada",
-
-            texto:
-              "Wealth recibió tu aceptación.",
-
-            clase:
-              "bg-green-500/10 border-green-500/30",
-
-            icono: (
-              <FaCheckCircle className="text-green-500" />
-            ),
-          };
-
-        case "cancelada_cliente":
-          return {
-            titulo:
-              "Solicitud cancelada",
-
-            texto:
-              "Wealth dejará de procesar esta solicitud.",
-
-            clase:
-              "bg-red-500/10 border-red-500/30",
-
-            icono: (
-              <FaTimesCircle className="text-red-500" />
-            ),
-          };
-
-        case "confirmada_admin":
-          return {
-            titulo:
-              "Trabajo confirmado por Wealth",
-
-            texto:
-              "Nuestro personal se pondrá en contacto contigo.",
-
-            clase:
-              "bg-emerald-500/10 border-emerald-500/30",
-
-            icono: (
-              <FaBuilding className="text-emerald-500" />
-            ),
-          };
-
-        default:
-          return null;
-      }
-    };
+      default:
+        return null;
+    }
+  };
 
   /* ======================================================
      SELECCIÓN
   ====================================================== */
 
-  const alternarModoSeleccion =
-    () => {
-      setModoSeleccion(
-        (actual) =>
-          !actual
-      );
+  const alternarModoSeleccion = () => {
+    setModoSeleccion((actual) => !actual);
+    setSeleccionadas([]);
+    setMensajeGeneral("");
+    setErrorGeneral("");
+  };
 
-      setSeleccionadas(
-        []
-      );
-
-      setMensajeGeneral(
-        ""
-      );
-
-      setErrorGeneral(
-        ""
-      );
-    };
-
-  const seleccionarCotizacion =
-    (id) => {
-      setSeleccionadas(
-        (actuales) => {
-          if (
-            actuales.includes(
-              id
-            )
-          ) {
-            return actuales.filter(
-              (item) =>
-                item !== id
-            );
-          }
-
-          return [
-            ...actuales,
-            id,
-          ];
-        }
-      );
-    };
+  const seleccionarCotizacion = (id) => {
+    setSeleccionadas((actuales) => {
+      if (actuales.includes(id)) {
+        return actuales.filter((item) => item !== id);
+      }
+      return [...actuales, id];
+    });
+  };
 
   const todasSeleccionadas =
-    cotizaciones.length >
-      0 &&
-    seleccionadas.length ===
-      cotizaciones.length;
+    solicitudes.length > 0 && seleccionadas.length === solicitudes.length;
 
-  const seleccionarTodas =
-    () => {
-      if (
-        todasSeleccionadas
-      ) {
-        setSeleccionadas(
-          []
-        );
+  const seleccionarTodas = () => {
+    if (todasSeleccionadas) {
+      setSeleccionadas([]);
+      return;
+    }
 
-        return;
-      }
+    setSeleccionadas(solicitudes.map((c) => c.id));
+  };
 
-      setSeleccionadas(
-        cotizaciones.map(
-          (c) =>
-            c.id
-        )
-      );
-    };
+  const eliminarSeleccionadas = async () => {
+    if (seleccionadas.length === 0) return;
 
-  /* ======================================================
-     ELIMINAR DEL PANEL
-  ====================================================== */
+    const confirmar = window.confirm(
+      `¿Quieres quitar ${seleccionadas.length} ${
+        seleccionadas.length === 1 ? "solicitud" : "solicitudes"
+      } de tu panel?`
+    );
 
-  const eliminarSeleccionadas =
-    async () => {
-      if (
-        seleccionadas.length ===
-        0
-      ) {
-        return;
-      }
+    if (!confirmar) return;
 
-      const confirmar =
-        window.confirm(
-          `¿Quieres eliminar ${
-            seleccionadas.length
-          } ${
-            seleccionadas.length ===
-            1
-              ? "cotización"
-              : "cotizaciones"
-          }?\n\nSi todavía no ha sido aceptada o confirmada, se eliminará de las cotizaciones activas de Wealth y el administrador recibirá un aviso de que la cancelaste.`
-        );
+    try {
+      setProcesando(true);
+      const batch = writeBatch(db);
 
-      if (!confirmar) {
-        return;
-      }
+      seleccionadas.forEach((id) => {
+        const cotizacion = solicitudes.find((item) => item.id === id);
+        if (!cotizacion) return;
 
-      try {
-        setProcesando(
-          true
-        );
+        const yaEsProyecto = [
+          "aceptada_cliente",
+          "confirmada_admin",
+          "anticipo_pendiente",
+          "anticipo_pagado",
+          "anticipo_recibido",
+          "en_proceso",
+          "proceso",
+          "instalacion_programada",
+          "instalacion",
+        ].includes(cotizacion.estado);
 
-        const batch =
-          writeBatch(db);
+        if (yaEsProyecto) return;
 
-        seleccionadas.forEach(
-          (id) => {
-            const cotizacion =
-              cotizaciones.find(
-                (item) =>
-                  item.id === id
-              );
-
-            if (!cotizacion) {
-              return;
-            }
-
-            // Solo permitimos eliminación definitiva desde el cliente
-            // mientras el trabajo todavía NO ha sido confirmado.
-            const yaEsTrabajo =
-              [
-                "aceptada_cliente",
-                "confirmada_admin",
-                "anticipo_pendiente",
-                "anticipo_pagado",
-                "anticipo_recibido",
-                "en_proceso",
-                "proceso",
-                "instalacion_programada",
-                "instalacion",
-              ].includes(
-                cotizacion.estado
-              );
-
-            if (yaEsTrabajo) {
-              return;
-            }
-
-            // 1. Guardar aviso administrativo mínimo.
-            //    Así Wealth sabe quién eliminó la solicitud,
-            //    pero la cotización ya no se acumula entre las activas.
-            const avisoRef =
-              doc(
-                collection(
-                  db,
-                  "cotizacionesEliminadas"
-                )
-              );
-
-            batch.set(
-              avisoRef,
-              {
-                cotizacionId:
-                  cotizacion.id,
-
-                uid:
-                  cotizacion.uid ||
-                  auth.currentUser?.uid ||
-                  null,
-
-                usuario:
-                  cotizacion.usuario ||
-                  auth.currentUser?.email ||
-                  "",
-
-                nombreCliente:
-                  cotizacion.nombreCliente ||
-                  cotizacion.clienteNombre ||
-                  "",
-
-                telefono:
-                  cotizacion.telefono ||
-                  "",
-
-                nombreProyecto:
-                  cotizacion.nombre ||
-                  "Cotización",
-
-                descripcion:
-                  cotizacion.descripcion ||
-                  "",
-
-                estadoAnterior:
-                  cotizacion.estado ||
-                  "pendiente",
-
-                precioTotal:
-                  cotizacion.precioTotal ??
-                  cotizacion.presupuestoAdmin ??
-                  null,
-
-                eliminadoPorCliente:
-                  true,
-
-                vistoPorAdmin:
-                  false,
-
-                fechaEliminacion:
-                  serverTimestamp(),
-              }
-            );
-
-            // 2. Eliminar la cotización original.
-            batch.delete(
-              doc(
-                db,
-                "cotizaciones",
-                id
-              )
-            );
-          }
-        );
-
-        await batch.commit();
-
-        setSeleccionadas(
-          []
-        );
-
-        setModoSeleccion(
-          false
-        );
-
-        setMensajeGeneral(
-          "✅ La cotización fue eliminada. Wealth recibió un aviso de la cancelación."
-        );
-
-      } catch (error) {
-        console.error(
-          "Error eliminando cotizaciones:",
-          error
-        );
-
-        setErrorGeneral(
-          "No se pudieron eliminar las cotizaciones."
-        );
-
-      } finally {
-        setProcesando(
-          false
-        );
-      }
-    };
-
-  /* ======================================================
-     MARCAR VISTA
-  ====================================================== */
-
-  const marcarComoVista =
-    async (
-      cotizacion
-    ) => {
-      if (
-        cotizacion.vistoPorCliente !==
-        false
-      ) {
-        return;
-      }
-
-      try {
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacion.id
-          ),
-          {
-            vistoPorCliente:
-              true,
-          }
-        );
-      } catch (error) {
-        console.error(
-          "Error marcando vista:",
-          error
-        );
-      }
-    };
-
-  /* ======================================================
-     VER DETALLES
-  ====================================================== */
-
-  const verPropuesta =
-    async (
-      cotizacion
-    ) => {
-      setCotizacionSeleccionada(
-        cotizacion
-      );
-
-      setPropuestaOpen(
-        true
-      );
-
-      await marcarComoVista(
-        cotizacion
-      );
-    };
-
-  /* ======================================================
-     ABRIR EDICIÓN
-  ====================================================== */
-
-  const abrirEdicion =
-    (cotizacion) => {
-      if (
-        !puedeEditarSolicitud(
-          cotizacion
-        )
-      ) {
-        window.alert(
-          "Esta solicitud ya no puede modificarse."
-        );
-
-        return;
-      }
-
-      setCotizacionEditando(
-        cotizacion
-      );
-
-      setPasoEditar(
-        1
-      );
-
-      setEditNombre(
-        cotizacion.nombre ||
-        ""
-      );
-
-      setEditDescripcion(
-        cotizacion.descripcion ||
-        ""
-      );
-
-      setEditTipo(
-        cotizacion.tipo ||
-        "Construcción"
-      );
-
-      setEditUbicacion(
-        cotizacion.ubicacion ||
-        ""
-      );
-
-      setEditMedidas(
-        cotizacion.medidas ||
-        ""
-      );
-
-      setEditFechaDeseada(
-        cotizacion.fechaDeseada ||
-        ""
-      );
-
-      setEditPresupuesto(
-        cotizacion.presupuestoEstimadoCliente ??
-          ""
-      );
-
-      setEditTelefono(
-        cotizacion.telefono ||
-        ""
-      );
-
-      setEditMetodoContacto(
-        cotizacion.metodoContacto ||
-        "WhatsApp"
-      );
-
-      const lat =
-        Number(
-          cotizacion.latitud
-        );
-
-      const lng =
-        Number(
-          cotizacion.longitud
-        );
-
-      if (
-        Number.isFinite(lat) &&
-        Number.isFinite(lng)
-      ) {
-        setEditPosicion({
-          lat,
-          lng,
+        batch.update(doc(db, "cotizaciones", id), {
+          ocultoPorCliente: true,
+          vistoPorAdmin: false,
+          mensajeAdmin: "El cliente quitó esta solicitud de su panel.",
+          fechaActualizacion: serverTimestamp(),
         });
-      } else {
-        setEditPosicion(
-          POSICION_CAMPECHE
-        );
+      });
+
+      await batch.commit();
+
+      setSeleccionadas([]);
+      setModoSeleccion(false);
+      setMensajeGeneral(
+        "Las solicitudes seleccionadas se quitaron de tu panel."
+      );
+    } catch (error) {
+      console.error("Error ocultando solicitudes:", error);
+      setErrorGeneral("No se pudieron quitar las solicitudes.");
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  /* ======================================================
+     VER / HISTORIAL
+  ====================================================== */
+
+  const marcarComoVista = async (cotizacion) => {
+    if (cotizacion.vistoPorCliente !== false) return;
+
+    try {
+      await updateDoc(doc(db, "cotizaciones", cotizacion.id), {
+        vistoPorCliente: true,
+      });
+    } catch (error) {
+      console.error("Error marcando vista:", error);
+    }
+  };
+
+  const verPropuesta = async (cotizacion) => {
+    setCotizacionSeleccionada(cotizacion);
+    setPropuestaOpen(true);
+    await marcarComoVista(cotizacion);
+  };
+
+  const abrirHistorial = async (cotizacion) => {
+    setCotizacionHistorial(cotizacion);
+    setHistorialOpen(true);
+    await marcarComoVista(cotizacion);
+  };
+
+  /* ======================================================
+     EDICIÓN
+  ====================================================== */
+
+  const abrirEdicion = (cotizacion) => {
+    if (!puedeEditarSolicitud(cotizacion)) {
+      window.alert("Esta solicitud ya no puede modificarse.");
+      return;
+    }
+
+    setCotizacionEditando(cotizacion);
+    setPasoEditar(1);
+    setEditNombre(cotizacion.nombre || "");
+    setEditDescripcion(cotizacion.descripcion || "");
+    setEditTipo(cotizacion.tipo || "Página web");
+    setEditUbicacion(cotizacion.ubicacion || "");
+    setEditMedidas(cotizacion.medidas || "");
+    setEditFechaDeseada(cotizacion.fechaDeseada || "");
+    setEditPresupuesto(cotizacion.presupuestoEstimadoCliente ?? "");
+    setEditTelefono(cotizacion.telefono || "");
+    setEditMetodoContacto(cotizacion.metodoContacto || "WhatsApp");
+
+    const lat = Number(cotizacion.latitud);
+    const lng = Number(cotizacion.longitud);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setEditPosicion({ lat, lng });
+    } else {
+      setEditPosicion(POSICION_CAMPECHE);
+    }
+
+    const referencias = Array.isArray(cotizacion.imagenesProyecto)
+      ? cotizacion.imagenesProyecto.filter(Boolean)
+      : [];
+
+    const cliente = Array.isArray(cotizacion.imagenesCliente)
+      ? cotizacion.imagenesCliente.filter(Boolean)
+      : [];
+
+    setImagenesProyectoEdit(referencias);
+    setImagenesClienteEdit(cliente);
+    setNuevasImagenes([]);
+    setErrorGeneral("");
+    setEditarOpen(true);
+  };
+
+  const cerrarEdicion = () => {
+    setEditarOpen(false);
+    setCotizacionEditando(null);
+    setNuevasImagenes([]);
+    setErrorGeneral("");
+  };
+
+  const validarPasoEditar = () => {
+    setErrorGeneral("");
+
+    if (pasoEditar === 1) {
+      if (!editNombre.trim()) {
+        setErrorGeneral("Escribe el nombre del proyecto.");
+        return false;
       }
 
-      const referencias =
-        Array.isArray(
-          cotizacion.imagenesProyecto
-        )
-          ? cotizacion.imagenesProyecto.filter(
-              Boolean
-            )
-          : [];
+      if (editDescripcion.trim().length < 10) {
+        setErrorGeneral("La descripción debe tener al menos 10 caracteres.");
+        return false;
+      }
+    }
 
-      const cliente =
-        Array.isArray(
-          cotizacion.imagenesCliente
-        )
-          ? cotizacion.imagenesCliente.filter(
-              Boolean
-            )
-          : [];
+    if (pasoEditar === 2) {
+      if (!editUbicacion.trim()) {
+        setErrorGeneral("Escribe o selecciona una ubicación.");
+        return false;
+      }
+    }
 
-      setImagenesProyectoEdit(
-        referencias
-      );
+    if (pasoEditar === 4) {
+      const numero = editTelefono.replace(/\D/g, "");
+      if (numero.length < 10) {
+        setErrorGeneral("Escribe un teléfono válido.");
+        return false;
+      }
+    }
 
-      setImagenesClienteEdit(
-        cliente
-      );
+    return true;
+  };
 
-      setNuevasImagenes(
-        []
-      );
+  const siguienteEditar = () => {
+    if (!validarPasoEditar()) return;
 
-      setErrorGeneral(
-        ""
-      );
+    if (pasoEditar < totalPasosEditar) {
+      setPasoEditar((actual) => actual + 1);
+      setErrorGeneral("");
+    }
+  };
 
-      setEditarOpen(
-        true
-      );
-    };
+  const anteriorEditar = () => {
+    if (pasoEditar > 1) {
+      setPasoEditar((actual) => actual - 1);
+      setErrorGeneral("");
+    }
+  };
 
-  /* ======================================================
-     CERRAR EDICIÓN
-  ====================================================== */
+  const buscarDireccionEditar = async () => {
+    if (!editUbicacion.trim()) {
+      setErrorGeneral("Escribe una dirección.");
+      return;
+    }
 
-  const cerrarEdicion =
-    () => {
-      setEditarOpen(
-        false
-      );
-
-      setCotizacionEditando(
-        null
-      );
-
-      setNuevasImagenes(
-        []
-      );
-
-      setErrorGeneral(
-        ""
-      );
-    };
-
-  /* ======================================================
-     VALIDACIÓN EDICIÓN
-  ====================================================== */
-
-  const validarPasoEditar =
-    () => {
+    try {
+      setBuscandoUbicacion(true);
       setErrorGeneral("");
 
-      if (
-        pasoEditar ===
-        1
-      ) {
-        if (
-          !editNombre.trim()
-        ) {
-          setErrorGeneral(
-            "Escribe el nombre del proyecto."
-          );
+      const params = new URLSearchParams({
+        q: editUbicacion.trim(),
+        format: "jsonv2",
+        addressdetails: "1",
+        limit: "1",
+        countrycodes: "mx",
+        "accept-language": "es",
+      });
 
-          return false;
-        }
-
-        if (
-          editDescripcion
-            .trim()
-            .length <
-          10
-        ) {
-          setErrorGeneral(
-            "La descripción debe tener al menos 10 caracteres."
-          );
-
-          return false;
-        }
-      }
-
-      if (
-        pasoEditar ===
-        2
-      ) {
-        if (
-          !editUbicacion.trim()
-        ) {
-          setErrorGeneral(
-            "Escribe o selecciona una ubicación."
-          );
-
-          return false;
-        }
-      }
-
-      if (
-        pasoEditar ===
-        4
-      ) {
-        const numero =
-          editTelefono.replace(
-            /\D/g,
-            ""
-          );
-
-        if (
-          numero.length <
-          10
-        ) {
-          setErrorGeneral(
-            "Escribe un teléfono válido."
-          );
-
-          return false;
-        }
-      }
-
-      return true;
-    };
-
-  /* ======================================================
-     PASOS EDICIÓN
-  ====================================================== */
-
-  const siguienteEditar =
-    () => {
-      if (
-        !validarPasoEditar()
-      ) {
-        return;
-      }
-
-      if (
-        pasoEditar <
-        totalPasosEditar
-      ) {
-        setPasoEditar(
-          (actual) =>
-            actual + 1
-        );
-
-        setErrorGeneral(
-          ""
-        );
-      }
-    };
-
-  const anteriorEditar =
-    () => {
-      if (
-        pasoEditar >
-        1
-      ) {
-        setPasoEditar(
-          (actual) =>
-            actual - 1
-        );
-
-        setErrorGeneral(
-          ""
-        );
-      }
-    };
-
-  /* ======================================================
-     BUSCAR DIRECCIÓN
-  ====================================================== */
-
-  const buscarDireccionEditar =
-    async () => {
-      if (
-        !editUbicacion.trim()
-      ) {
-        setErrorGeneral(
-          "Escribe una dirección."
-        );
-
-        return;
-      }
-
-      try {
-        setBuscandoUbicacion(
-          true
-        );
-
-        setErrorGeneral(
-          ""
-        );
-
-        const params =
-          new URLSearchParams({
-            q:
-              editUbicacion.trim(),
-
-            format:
-              "jsonv2",
-
-            addressdetails:
-              "1",
-
-            limit:
-              "1",
-
-            countrycodes:
-              "mx",
-
-            "accept-language":
-              "es",
-          });
-
-        const response =
-          await fetch(
-            `https://nominatim.openstreetmap.org/search?${params.toString()}`
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Error buscando ubicación"
-          );
-        }
-
-        const resultados =
-          await response.json();
-
-        if (
-          resultados.length ===
-          0
-        ) {
-          setErrorGeneral(
-            "No encontramos esa dirección."
-          );
-
-          return;
-        }
-
-        const resultado =
-          resultados[0];
-
-        setEditPosicion({
-          lat:
-            Number(
-              resultado.lat
-            ),
-
-          lng:
-            Number(
-              resultado.lon
-            ),
-        });
-
-        setEditUbicacion(
-          resultado.display_name ||
-          editUbicacion
-        );
-
-      } catch (error) {
-        console.error(
-          "Error buscando:",
-          error
-        );
-
-        setErrorGeneral(
-          "No pudimos buscar esa ubicación."
-        );
-
-      } finally {
-        setBuscandoUbicacion(
-          false
-        );
-      }
-    };
-
-  /* ======================================================
-     GPS
-  ====================================================== */
-
-  const usarMiUbicacionEditar =
-    () => {
-      setErrorGeneral("");
-
-      if (
-        !navigator.geolocation
-      ) {
-        setErrorGeneral(
-          "Tu navegador no permite obtener tu ubicación."
-        );
-
-        return;
-      }
-
-      setObteniendoGPS(
-        true
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`
       );
-
-      navigator.geolocation.getCurrentPosition(
-        async (
-          position
-        ) => {
-          const lat =
-            position.coords.latitude;
-
-          const lng =
-            position.coords.longitude;
-
-          setEditPosicion({
-            lat,
-            lng,
-          });
-
-          try {
-            const direccion =
-              await obtenerDireccion(
-                lat,
-                lng
-              );
-
-            setEditUbicacion(
-              direccion ||
-              `${lat}, ${lng}`
-            );
-          } catch {
-            setEditUbicacion(
-              `${lat}, ${lng}`
-            );
-          } finally {
-            setObteniendoGPS(
-              false
-            );
-          }
-        },
-
-        () => {
-          setObteniendoGPS(
-            false
-          );
-
-          setErrorGeneral(
-            "No pudimos obtener tu ubicación."
-          );
-        },
-
-        {
-          enableHighAccuracy:
-            true,
-
-          timeout:
-            10000,
-
-          maximumAge:
-            0,
-        }
-      );
-    };
-
-  /* ======================================================
-     NUEVAS FOTOS
-  ====================================================== */
-
-  const handleNuevasImagenes =
-    (e) => {
-      setErrorGeneral("");
-
-      const archivos =
-        Array.from(
-          e.target.files ||
-          []
-        );
-
-      const total =
-        imagenesClienteEdit.length +
-        nuevasImagenes.length +
-        archivos.length;
-
-      if (
-        total >
-        6
-      ) {
-        setErrorGeneral(
-          "Puedes tener máximo 6 fotografías propias."
-        );
-
-        e.target.value =
-          "";
-
-        return;
-      }
-
-      for (
-        const file of archivos
-      ) {
-        if (
-          !file.type.startsWith(
-            "image/"
-          )
-        ) {
-          setErrorGeneral(
-            "Solo puedes subir imágenes."
-          );
-
-          e.target.value =
-            "";
-
-          return;
-        }
-
-        if (
-          file.size >
-          5 *
-            1024 *
-            1024
-        ) {
-          setErrorGeneral(
-            `La imagen "${file.name}" supera los 5 MB.`
-          );
-
-          e.target.value =
-            "";
-
-          return;
-        }
-      }
-
-      setNuevasImagenes(
-        (actuales) => [
-          ...actuales,
-          ...archivos,
-        ]
-      );
-
-      e.target.value =
-        "";
-    };
-
-  const quitarImagenCliente =
-    (indice) => {
-      setImagenesClienteEdit(
-        (actuales) =>
-          actuales.filter(
-            (_, i) =>
-              i !== indice
-          )
-      );
-    };
-
-  const quitarNuevaImagen =
-    (indice) => {
-      setNuevasImagenes(
-        (actuales) =>
-          actuales.filter(
-            (_, i) =>
-              i !== indice
-          )
-      );
-    };
-
-  /* ======================================================
-     SUBIR CLOUDINARY
-  ====================================================== */
-
-  const subirImagen =
-    async (file) => {
-      const formData =
-        new FormData();
-
-      formData.append(
-        "file",
-        file
-      );
-
-      formData.append(
-        "upload_preset",
-        "wealth"
-      );
-
-      const response =
-        await fetch(
-          "https://api.cloudinary.com/v1_1/dxj4iczvk/image/upload",
-          {
-            method:
-              "POST",
-
-            body:
-              formData,
-          }
-        );
 
       if (!response.ok) {
-        throw new Error(
-          "No se pudo subir una imagen."
-        );
+        throw new Error("Error buscando ubicación");
       }
 
-      const data =
-        await response.json();
+      const resultados = await response.json();
 
-      if (
-        !data.secure_url
-      ) {
-        throw new Error(
-          "Cloudinary no devolvió una URL."
-        );
-      }
-
-      return data.secure_url;
-    };
-
-  /* ======================================================
-     GUARDAR EDICIÓN
-  ====================================================== */
-
-  const guardarCambiosSolicitud =
-    async () => {
-      if (
-        !cotizacionEditando
-      ) {
+      if (resultados.length === 0) {
+        setErrorGeneral("No encontramos esa dirección.");
         return;
       }
 
-      if (
-        !validarPasoEditar()
-      ) {
-        return;
-      }
+      const resultado = resultados[0];
 
-      try {
-        setProcesando(
-          true
-        );
+      setEditPosicion({
+        lat: Number(resultado.lat),
+        lng: Number(resultado.lon),
+      });
 
-        setErrorGeneral(
-          ""
-        );
+      setEditUbicacion(resultado.display_name || editUbicacion);
+    } catch (error) {
+      console.error("Error buscando:", error);
+      setErrorGeneral("No pudimos buscar esa ubicación.");
+    } finally {
+      setBuscandoUbicacion(false);
+    }
+  };
 
-        let nuevasUrls =
-          [];
+  const usarMiUbicacionEditar = () => {
+    setErrorGeneral("");
 
-        if (
-          nuevasImagenes.length >
-          0
-        ) {
-          nuevasUrls =
-            await Promise.all(
-              nuevasImagenes.map(
-                (file) =>
-                  subirImagen(
-                    file
-                  )
-              )
-            );
+    if (!navigator.geolocation) {
+      setErrorGeneral("Tu navegador no permite obtener tu ubicación.");
+      return;
+    }
+
+    setObteniendoGPS(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        setEditPosicion({ lat, lng });
+
+        try {
+          const direccion = await obtenerDireccion(lat, lng);
+          setEditUbicacion(direccion || `${lat}, ${lng}`);
+        } catch {
+          setEditUbicacion(`${lat}, ${lng}`);
+        } finally {
+          setObteniendoGPS(false);
         }
+      },
+      () => {
+        setObteniendoGPS(false);
+        setErrorGeneral("No pudimos obtener tu ubicación.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
-        const imagenesClienteFinal =
-          [
-            ...new Set([
-              ...imagenesClienteEdit,
-              ...nuevasUrls,
-            ]),
-          ];
+  const handleNuevasImagenes = (e) => {
+    setErrorGeneral("");
 
-        const todasLasImagenes =
-          [
-            ...new Set([
-              ...imagenesProyectoEdit,
-              ...imagenesClienteFinal,
-            ]),
-          ];
+    const archivos = Array.from(e.target.files || []);
+    const total =
+      imagenesClienteEdit.length + nuevasImagenes.length + archivos.length;
 
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacionEditando.id
-          ),
+    if (total > 6) {
+      setErrorGeneral("Puedes tener máximo 6 fotografías propias.");
+      e.target.value = "";
+      return;
+    }
 
-          {
-            nombre:
-              editNombre.trim(),
+    for (const file of archivos) {
+      if (!file.type.startsWith("image/")) {
+        setErrorGeneral("Solo puedes subir imágenes.");
+        e.target.value = "";
+        return;
+      }
 
-            descripcion:
-              editDescripcion.trim(),
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorGeneral(`La imagen "${file.name}" supera los 5 MB.`);
+        e.target.value = "";
+        return;
+      }
+    }
 
-            tipo:
-              editTipo,
+    setNuevasImagenes((actuales) => [...actuales, ...archivos]);
+    e.target.value = "";
+  };
 
-            ubicacion:
-              editUbicacion.trim(),
+  const quitarImagenCliente = (indice) => {
+    setImagenesClienteEdit((actuales) =>
+      actuales.filter((_, i) => i !== indice)
+    );
+  };
 
-            latitud:
-              editPosicion.lat,
+  const quitarNuevaImagen = (indice) => {
+    setNuevasImagenes((actuales) => actuales.filter((_, i) => i !== indice));
+  };
 
-            longitud:
-              editPosicion.lng,
+  const subirImagen = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
 
-            medidas:
-              editMedidas.trim(),
+    const cloudName =
+      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dxj4iczvk";
 
-            fechaDeseada:
-              editFechaDeseada ||
-              null,
+    const uploadPreset =
+      import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "macroservices";
 
-            presupuestoEstimadoCliente:
-              editPresupuesto !==
-              ""
-                ? Number(
-                    editPresupuesto
-                  )
-                : null,
+    formData.append("upload_preset", uploadPreset);
 
-            telefono:
-              editTelefono.trim(),
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
-            metodoContacto:
-              editMetodoContacto,
+    if (!response.ok) {
+      throw new Error("No se pudo subir una imagen.");
+    }
 
-            imagenesProyecto:
-              imagenesProyectoEdit,
+    const data = await response.json();
 
-            imagenesCliente:
-              imagenesClienteFinal,
+    if (!data.secure_url) {
+      throw new Error("Cloudinary no devolvió una URL.");
+    }
 
-            imagenes:
-              todasLasImagenes,
+    return data.secure_url;
+  };
 
-            imagen:
-              todasLasImagenes[0] ||
-              null,
+  const guardarCambiosSolicitud = async () => {
+    if (!cotizacionEditando) return;
+    if (!validarPasoEditar()) return;
 
-            solicitudModificadaCliente:
-              true,
+    try {
+      setProcesando(true);
+      setErrorGeneral("");
 
-            fechaModificacionCliente:
-              serverTimestamp(),
+      let nuevasUrls = [];
 
-            fechaActualizacion:
-              serverTimestamp(),
-
-            vistoPorAdmin:
-              false,
-
-            vistoPorCliente:
-              true,
-
-            mensajeAdmin:
-              "El cliente modificó su solicitud.",
-
-            historial:
-              arrayUnion(
-                crearEventoHistorial(
-                  "solicitud_modificada",
-                  "Solicitud modificada",
-                  "Modificaste los datos de la solicitud."
-                )
-              ),
-          }
-        );
-
-        setEditarOpen(
-          false
-        );
-
-        setCotizacionEditando(
-          null
-        );
-
-        setNuevasImagenes(
-          []
-        );
-
-        setMensajeGeneral(
-          "✅ La cotización fue modificada correctamente."
-        );
-
-      } catch (error) {
-        console.error(
-          "Error modificando cotización:",
-          error
-        );
-
-        setErrorGeneral(
-          "No se pudieron guardar los cambios."
-        );
-
-      } finally {
-        setProcesando(
-          false
+      if (nuevasImagenes.length > 0) {
+        nuevasUrls = await Promise.all(
+          nuevasImagenes.map((file) => subirImagen(file))
         );
       }
-    };
+
+      const imagenesClienteFinal = [
+        ...new Set([...imagenesClienteEdit, ...nuevasUrls]),
+      ];
+
+      const todasLasImagenes = [
+        ...new Set([...imagenesProyectoEdit, ...imagenesClienteFinal]),
+      ];
+
+      await updateDoc(doc(db, "cotizaciones", cotizacionEditando.id), {
+        nombre: editNombre.trim(),
+        descripcion: editDescripcion.trim(),
+        tipo: editTipo,
+        ubicacion: editUbicacion.trim(),
+        latitud: editPosicion.lat,
+        longitud: editPosicion.lng,
+        medidas: editMedidas.trim(),
+        fechaDeseada: editFechaDeseada || null,
+        presupuestoEstimadoCliente:
+          editPresupuesto !== "" ? Number(editPresupuesto) : null,
+        telefono: editTelefono.trim(),
+        metodoContacto: editMetodoContacto,
+        imagenesProyecto: imagenesProyectoEdit,
+        imagenesCliente: imagenesClienteFinal,
+        imagenes: todasLasImagenes,
+        imagen: todasLasImagenes[0] || null,
+        solicitudModificadaCliente: true,
+        fechaModificacionCliente: serverTimestamp(),
+        fechaActualizacion: serverTimestamp(),
+        vistoPorAdmin: false,
+        vistoPorCliente: true,
+        mensajeAdmin: "El cliente modificó su solicitud.",
+        historial: arrayUnion(
+          crearEventoHistorial(
+            "solicitud_modificada",
+            "Solicitud modificada",
+            "Modificaste los datos de la solicitud."
+          )
+        ),
+      });
+
+      setEditarOpen(false);
+      setCotizacionEditando(null);
+      setNuevasImagenes([]);
+      setMensajeGeneral("✅ La solicitud fue modificada correctamente.");
+    } catch (error) {
+      console.error("Error modificando solicitud:", error);
+      setErrorGeneral("No se pudieron guardar los cambios.");
+    } finally {
+      setProcesando(false);
+    }
+  };
 
   /* ======================================================
      CANCELAR SOLICITUD
   ====================================================== */
 
-  const cancelarSolicitud =
-    async (
-      cotizacion
-    ) => {
-      if (
-        !puedeCancelarSolicitud(
-          cotizacion
-        )
-      ) {
-        return;
-      }
+  const cancelarSolicitud = async (cotizacion) => {
+    if (!puedeCancelarSolicitud(cotizacion)) return;
 
-      const confirmar =
-        window.confirm(
-          `¿Cancelar la solicitud "${cotizacion.nombre}"?\n\nWealth dejará de procesarla.`
-        );
+    const confirmar = window.confirm(
+      `¿Cancelar la solicitud "${cotizacion.nombre}"?\n\nMacro dejará de procesarla.`
+    );
 
-      if (!confirmar) {
-        return;
-      }
+    if (!confirmar) return;
 
-      try {
-        setProcesando(
-          true
-        );
+    try {
+      setProcesando(true);
 
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacion.id
-          ),
+      await updateDoc(doc(db, "cotizaciones", cotizacion.id), {
+        estado: "cancelada_cliente",
+        respuestaCliente: "cancelada",
+        fechaCancelacionCliente: serverTimestamp(),
+        fechaActualizacion: serverTimestamp(),
+        vistoPorAdmin: false,
+        vistoPorCliente: true,
+        mensajeAdmin: "El cliente canceló la solicitud.",
+        historial: arrayUnion(
+          crearEventoHistorial(
+            "solicitud_cancelada",
+            "Solicitud cancelada",
+            "Cancelaste la solicitud antes de que el trabajo fuera confirmado."
+          )
+        ),
+      });
 
-          {
-            estado:
-              "cancelada_cliente",
-
-            respuestaCliente:
-              "cancelada",
-
-            fechaCancelacionCliente:
-              serverTimestamp(),
-
-            fechaActualizacion:
-              serverTimestamp(),
-
-            vistoPorAdmin:
-              false,
-
-            vistoPorCliente:
-              true,
-
-            mensajeAdmin:
-              "El cliente canceló la solicitud.",
-
-            historial:
-              arrayUnion(
-                crearEventoHistorial(
-                  "solicitud_cancelada",
-                  "Solicitud cancelada",
-                  "Cancelaste la solicitud antes de que el trabajo fuera confirmado."
-                )
-              ),
-          }
-        );
-
-        setMensajeGeneral(
-          "Solicitud cancelada."
-        );
-
-      } catch (error) {
-        console.error(
-          "Error cancelando:",
-          error
-        );
-
-        setErrorGeneral(
-          "No se pudo cancelar la solicitud."
-        );
-
-      } finally {
-        setProcesando(
-          false
-        );
-      }
-    };
+      setMensajeGeneral("Solicitud cancelada.");
+    } catch (error) {
+      console.error("Error cancelando:", error);
+      setErrorGeneral("No se pudo cancelar la solicitud.");
+    } finally {
+      setProcesando(false);
+    }
+  };
 
   /* ======================================================
-     ACEPTAR PROPUESTA
+     PROPUESTA
   ====================================================== */
 
-  const confirmarPropuesta =
-    async () => {
-      if (
-        !cotizacionSeleccionada
-      ) {
-        return;
-      }
+  const moneda = (cantidad) => {
+    if (cantidad === undefined || cantidad === null || cantidad === "") {
+      return "Pendiente";
+    }
 
-      const propuesta =
-        obtenerPropuestaActual(
-          cotizacionSeleccionada
-        );
+    const numero = Number(cantidad);
 
-      const precio =
-        propuesta.precioTotal;
+    if (Number.isNaN(numero)) return String(cantidad);
 
-      const confirmar =
-        window.confirm(
-          `¿Aceptar la propuesta${
+    return numero.toLocaleString("es-MX", {
+      style: "currency",
+      currency: "MXN",
+      maximumFractionDigits: 0,
+    });
+  };
+
+  const obtenerPropuestaActual = (cotizacion) => {
+    const propuesta = cotizacion?.propuestaActual || {};
+
+    const precio =
+      propuesta.precioTotal ??
+      cotizacion?.precioTotal ??
+      cotizacion?.presupuestoAdmin ??
+      cotizacion?.total ??
+      cotizacion?.precio ??
+      cotizacion?.propuestaPrecio ??
+      null;
+
+    const porcentajeAnticipo =
+      propuesta.porcentajeAnticipo ?? cotizacion?.porcentajeAnticipo ?? null;
+
+    let anticipo =
+      propuesta.anticipo ?? cotizacion?.anticipo ?? cotizacion?.montoAnticipo ?? null;
+
+    if (anticipo === null && precio !== null && porcentajeAnticipo !== null) {
+      anticipo = (Number(precio) * Number(porcentajeAnticipo)) / 100;
+    }
+
+    let saldo =
+      propuesta.saldo ?? cotizacion?.saldo ?? cotizacion?.saldoPendiente ?? null;
+
+    if (saldo === null && precio !== null && anticipo !== null) {
+      saldo = Number(precio) - Number(anticipo);
+    }
+
+    return {
+      version: propuesta.version ?? cotizacion?.versionPropuesta ?? 1,
+      precioTotal: precio,
+      porcentajeAnticipo,
+      anticipo,
+      saldo,
+      tiempoEstimado:
+        propuesta.tiempoEstimado ?? cotizacion?.tiempoEstimado ?? cotizacion?.tiempo ?? "",
+      garantia: propuesta.garantia ?? cotizacion?.garantia ?? "",
+      observaciones:
+        propuesta.observaciones ??
+        cotizacion?.observacionesAdmin ??
+        cotizacion?.observaciones ??
+        cotizacion?.detallesPropuesta ??
+        cotizacion?.mensajePropuesta ??
+        "",
+      fecha:
+        propuesta.fecha ??
+        cotizacion?.fechaPropuesta ??
+        cotizacion?.fechaActualizacion ??
+        null,
+    };
+  };
+
+  const confirmarPropuesta = async () => {
+    if (!cotizacionSeleccionada) return;
+
+    const propuesta = obtenerPropuestaActual(cotizacionSeleccionada);
+    const precio = propuesta.precioTotal;
+
+    const confirmar = window.confirm(
+      `¿Aceptar la propuesta${precio ? ` por ${moneda(precio)}` : ""}?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setProcesando(true);
+
+      await updateDoc(doc(db, "cotizaciones", cotizacionSeleccionada.id), {
+        estado: "aceptada_cliente",
+        respuestaCliente: "aceptada",
+        precioAceptado:
+          precio !== undefined && precio !== null ? Number(precio) : null,
+        versionAceptada: propuesta.version || 1,
+        fechaRespuestaCliente: serverTimestamp(),
+        fechaActualizacion: serverTimestamp(),
+        vistoPorAdmin: false,
+        vistoPorCliente: true,
+        mensajeAdmin: "El cliente aceptó la propuesta.",
+        historial: arrayUnion(
+          crearEventoHistorial(
+            "propuesta_aceptada",
+            "Propuesta aceptada",
             precio
-              ? ` por ${moneda(
-                  precio
-                )}`
-              : ""
-          }?`
-        );
+              ? `Aceptaste la propuesta por ${moneda(precio)}.`
+              : "Aceptaste la propuesta de Macro."
+          )
+        ),
+      });
 
-      if (!confirmar) {
-        return;
-      }
+      window.alert("✅ Propuesta aceptada.");
+    } catch (error) {
+      console.error("Error aceptando:", error);
+    } finally {
+      setProcesando(false);
+    }
+  };
 
-      try {
-        setProcesando(
-          true
-        );
+  const solicitarModificacion = async () => {
+    if (!cotizacionSeleccionada) return;
 
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacionSeleccionada.id
-          ),
+    const motivo = window.prompt("Describe qué deseas modificar:");
+    if (motivo === null || !motivo.trim()) return;
 
-          {
-            estado:
-              "aceptada_cliente",
+    try {
+      setProcesando(true);
 
-            respuestaCliente:
-              "aceptada",
+      await updateDoc(doc(db, "cotizaciones", cotizacionSeleccionada.id), {
+        estado: "cambios_solicitados",
+        respuestaCliente: "solicita_modificacion",
+        mensajeCliente: motivo.trim(),
+        fechaRespuestaCliente: serverTimestamp(),
+        fechaActualizacion: serverTimestamp(),
+        vistoPorAdmin: false,
+        vistoPorCliente: true,
+        mensajeAdmin: "El cliente solicitó cambios.",
+        historial: arrayUnion(
+          crearEventoHistorial(
+            "cambios_solicitados",
+            "Cambios solicitados",
+            motivo.trim()
+          )
+        ),
+      });
 
-            precioAceptado:
-              precio !==
-                undefined &&
-              precio !==
-                null
-                ? Number(
-                    precio
-                  )
-                : null,
+      window.alert("Solicitud de cambios enviada.");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setProcesando(false);
+    }
+  };
 
-            versionAceptada:
-              propuesta.version ||
-              1,
+  const rechazarPropuesta = async () => {
+    if (!cotizacionSeleccionada) return;
 
-            fechaRespuestaCliente:
-              serverTimestamp(),
+    const confirmar = window.confirm(
+      "¿Seguro que deseas rechazar esta propuesta?"
+    );
+    if (!confirmar) return;
 
-            fechaActualizacion:
-              serverTimestamp(),
+    try {
+      setProcesando(true);
 
-            vistoPorAdmin:
-              false,
+      await updateDoc(doc(db, "cotizaciones", cotizacionSeleccionada.id), {
+        estado: "rechazada_cliente",
+        respuestaCliente: "rechazada",
+        fechaRespuestaCliente: serverTimestamp(),
+        fechaActualizacion: serverTimestamp(),
+        vistoPorAdmin: false,
+        vistoPorCliente: true,
+        mensajeAdmin: "El cliente rechazó la propuesta.",
+        historial: arrayUnion(
+          crearEventoHistorial(
+            "propuesta_rechazada",
+            "Propuesta rechazada",
+            "Rechazaste la propuesta de Macro."
+          )
+        ),
+      });
 
-            vistoPorCliente:
-              true,
-
-            mensajeAdmin:
-              "El cliente aceptó la propuesta.",
-
-            historial:
-              arrayUnion(
-                crearEventoHistorial(
-                  "propuesta_aceptada",
-                  "Propuesta aceptada",
-                  precio
-                    ? `Aceptaste la propuesta por ${moneda(
-                        precio
-                      )}.`
-                    : "Aceptaste la propuesta de Wealth."
-                )
-              ),
-          }
-        );
-
-        window.alert(
-          "✅ Propuesta aceptada."
-        );
-
-      } catch (error) {
-        console.error(
-          "Error aceptando:",
-          error
-        );
-
-      } finally {
-        setProcesando(
-          false
-        );
-      }
-    };
-
-  /* ======================================================
-     SOLICITAR MODIFICACIÓN PROPUESTA
-  ====================================================== */
-
-  const solicitarModificacion =
-    async () => {
-      if (
-        !cotizacionSeleccionada
-      ) {
-        return;
-      }
-
-      const motivo =
-        window.prompt(
-          "Describe qué deseas modificar:"
-        );
-
-      if (
-        motivo ===
-          null ||
-        !motivo.trim()
-      ) {
-        return;
-      }
-
-      try {
-        setProcesando(
-          true
-        );
-
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacionSeleccionada.id
-          ),
-
-          {
-            estado:
-              "cambios_solicitados",
-
-            respuestaCliente:
-              "solicita_modificacion",
-
-            mensajeCliente:
-              motivo.trim(),
-
-            fechaRespuestaCliente:
-              serverTimestamp(),
-
-            fechaActualizacion:
-              serverTimestamp(),
-
-            vistoPorAdmin:
-              false,
-
-            vistoPorCliente:
-              true,
-
-            mensajeAdmin:
-              "El cliente solicitó cambios.",
-
-            historial:
-              arrayUnion(
-                crearEventoHistorial(
-                  "cambios_solicitados",
-                  "Cambios solicitados",
-                  motivo.trim()
-                )
-              ),
-          }
-        );
-
-        window.alert(
-          "Solicitud de cambios enviada."
-        );
-
-      } catch (error) {
-        console.error(
-          error
-        );
-
-      } finally {
-        setProcesando(
-          false
-        );
-      }
-    };
-
-  /* ======================================================
-     RECHAZAR PROPUESTA
-  ====================================================== */
-
-  const rechazarPropuesta =
-    async () => {
-      if (
-        !cotizacionSeleccionada
-      ) {
-        return;
-      }
-
-      const confirmar =
-        window.confirm(
-          "¿Seguro que deseas rechazar esta propuesta?"
-        );
-
-      if (!confirmar) {
-        return;
-      }
-
-      try {
-        setProcesando(
-          true
-        );
-
-        await updateDoc(
-          doc(
-            db,
-            "cotizaciones",
-            cotizacionSeleccionada.id
-          ),
-
-          {
-            estado:
-              "rechazada_cliente",
-
-            respuestaCliente:
-              "rechazada",
-
-            fechaRespuestaCliente:
-              serverTimestamp(),
-
-            fechaActualizacion:
-              serverTimestamp(),
-
-            vistoPorAdmin:
-              false,
-
-            vistoPorCliente:
-              true,
-
-            mensajeAdmin:
-              "El cliente rechazó la propuesta.",
-
-            historial:
-              arrayUnion(
-                crearEventoHistorial(
-                  "propuesta_rechazada",
-                  "Propuesta rechazada",
-                  "Rechazaste la propuesta de Wealth."
-                )
-              ),
-          }
-        );
-
-        window.alert(
-          "Propuesta rechazada."
-        );
-
-      } catch (error) {
-        console.error(
-          error
-        );
-
-      } finally {
-        setProcesando(
-          false
-        );
-      }
-    };
+      window.alert("Propuesta rechazada.");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setProcesando(false);
+    }
+  };
 
   /* ======================================================
      GALERÍA
   ====================================================== */
 
-  const abrirGaleria =
-    (
-      imagenes,
-      indiceInicial = 0
-    ) => {
-      const lista =
-        Array.isArray(
-          imagenes
-        )
-          ? imagenes.filter(
-              Boolean
-            )
-          : imagenes
-          ? [imagenes]
-          : [];
+  const abrirGaleria = (imagenes, indiceInicial = 0) => {
+    const lista = Array.isArray(imagenes)
+      ? imagenes.filter(Boolean)
+      : imagenes
+      ? [imagenes]
+      : [];
 
-      if (
-        lista.length ===
-        0
-      ) {
-        return;
-      }
+    if (lista.length === 0) return;
 
-      setImgs(
-        lista
-      );
+    setImgs(lista);
+    setIndex(indiceInicial);
+    setGaleriaOpen(true);
+  };
 
-      setIndex(
-        indiceInicial
-      );
+  const siguienteImagen = () => {
+    setIndex((actual) => (actual + 1 >= imgs.length ? 0 : actual + 1));
+  };
 
-      setGaleriaOpen(
-        true
-      );
-    };
-
-  const siguienteImagen =
-    () => {
-      setIndex(
-        (actual) =>
-          actual + 1 >=
-          imgs.length
-            ? 0
-            : actual + 1
-      );
-    };
-
-  const anteriorImagen =
-    () => {
-      setIndex(
-        (actual) =>
-          actual === 0
-            ? imgs.length -
-              1
-            : actual - 1
-      );
-    };
+  const anteriorImagen = () => {
+    setIndex((actual) => (actual === 0 ? imgs.length - 1 : actual - 1));
+  };
 
   /* ======================================================
-     MONEDA
+     FECHAS
   ====================================================== */
 
-  const moneda =
-    (cantidad) => {
-      if (
-        cantidad ===
-          undefined ||
-        cantidad ===
-          null ||
-        cantidad ===
-          ""
-      ) {
-        return "Pendiente";
-      }
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "";
 
-      const numero =
-        Number(
-          cantidad
-        );
+    try {
+      if (fecha.toDate) return fecha.toDate().toLocaleString("es-MX");
+      return new Date(fecha).toLocaleString("es-MX");
+    } catch {
+      return "";
+    }
+  };
 
-      if (
-        Number.isNaN(
-          numero
-        )
-      ) {
-        return String(
-          cantidad
-        );
-      }
+  const formatearFechaCorta = (fecha) => {
+    if (!fecha) return "Sin fecha";
 
-      return numero.toLocaleString(
-        "es-MX",
-        {
-          style:
-            "currency",
+    try {
+      const date = fecha.toDate ? fecha.toDate() : new Date(fecha);
+      if (Number.isNaN(date.getTime())) return "Sin fecha";
 
-          currency:
-            "MXN",
-
-          maximumFractionDigits:
-            0,
-        }
-      );
-    };
-
-  /* ======================================================
-     PROPUESTA NORMALIZADA
-  ====================================================== */
-
-  const obtenerPropuestaActual =
-    (cotizacion) => {
-      const propuesta =
-        cotizacion?.propuestaActual ||
-        {};
-
-      const precio =
-        propuesta.precioTotal ??
-        cotizacion?.precioTotal ??
-        cotizacion?.presupuestoAdmin ??
-        cotizacion?.total ??
-        cotizacion?.precio ??
-        cotizacion?.propuestaPrecio ??
-        null;
-
-      const porcentajeAnticipo =
-        propuesta.porcentajeAnticipo ??
-        cotizacion?.porcentajeAnticipo ??
-        null;
-
-      let anticipo =
-        propuesta.anticipo ??
-        cotizacion?.anticipo ??
-        cotizacion?.montoAnticipo ??
-        null;
-
-      if (
-        anticipo === null &&
-        precio !== null &&
-        porcentajeAnticipo !== null
-      ) {
-        anticipo =
-          Number(precio) *
-          Number(porcentajeAnticipo) /
-          100;
-      }
-
-      let saldo =
-        propuesta.saldo ??
-        cotizacion?.saldo ??
-        cotizacion?.saldoPendiente ??
-        null;
-
-      if (
-        saldo === null &&
-        precio !== null &&
-        anticipo !== null
-      ) {
-        saldo =
-          Number(precio) -
-          Number(anticipo);
-      }
-
-      return {
-        version:
-          propuesta.version ??
-          cotizacion?.versionPropuesta ??
-          1,
-
-        precioTotal:
-          precio,
-
-        porcentajeAnticipo,
-        anticipo,
-        saldo,
-
-        tiempoEstimado:
-          propuesta.tiempoEstimado ??
-          cotizacion?.tiempoEstimado ??
-          cotizacion?.tiempo ??
-          "",
-
-        garantia:
-          propuesta.garantia ??
-          cotizacion?.garantia ??
-          "",
-
-        observaciones:
-          propuesta.observaciones ??
-          cotizacion?.observacionesAdmin ??
-          cotizacion?.observaciones ??
-          cotizacion?.detallesPropuesta ??
-          cotizacion?.mensajePropuesta ??
-          "",
-
-        fecha:
-          propuesta.fecha ??
-          cotizacion?.fechaPropuesta ??
-          cotizacion?.fechaActualizacion ??
-          null,
-      };
-    };
-
-  /* ======================================================
-     FECHA
-  ====================================================== */
-
-  const formatearFecha =
-    (fecha) => {
-      if (!fecha) {
-        return "";
-      }
-
-      try {
-        if (
-          fecha.toDate
-        ) {
-          return fecha
-            .toDate()
-            .toLocaleString(
-              "es-MX"
-            );
-        }
-
-        return new Date(
-          fecha
-        ).toLocaleString(
-          "es-MX"
-        );
-
-      } catch {
-        return "";
-      }
-    };
-
-  /* ======================================================
-     PROGRESO
-  ====================================================== */
+      return date.toLocaleDateString("es-MX", {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return "Sin fecha";
+    }
+  };
 
   const porcentajeEditar =
-    (
-      (pasoEditar - 1) /
-      (totalPasosEditar - 1)
-    ) *
-    100;
+    ((pasoEditar - 1) / (totalPasosEditar - 1)) * 100;
 
   /* ======================================================
      LOADING
@@ -3145,19 +1495,13 @@ function Cotizaciones() {
 
   if (cargando) {
     return (
-      <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-screen bg-black text-white flex items-center justify-center`}>
-        {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
-
+      <div className={`${theme.page} flex items-center justify-center p-8`}>
         <div className="text-center">
-
-          <div className="w-10 h-10 border-4 border-zinc-700 border-t-yellow-500 rounded-full animate-spin mx-auto" />
-
-          <p className="text-zinc-400 mt-4">
-            Cargando cotizaciones...
+          <div className="w-14 h-14 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin mx-auto" />
+          <p className={`${theme.muted} mt-4 font-medium`}>
+            Cargando solicitudes...
           </p>
-
         </div>
-
       </div>
     );
   }
@@ -3167,2597 +1511,1313 @@ function Cotizaciones() {
   ====================================================== */
 
   return (
-    <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-screen bg-black text-white px-4 md:px-6 py-6`}>
-      {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
+    <div className={`${theme.page} px-4 md:px-6 py-6 md:py-8`}>
+      <div className={`${theme.shell} space-y-6`}>
+        {solicitudes.length > 0 && (
+          <section
+            className={`${theme.card} ${theme.hero} rounded-[28px] p-5 md:p-7 overflow-hidden relative`}
+          >
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.12),transparent_35%)]" />
 
-      {/* =================================================
-          BARRA SUPERIOR
-      ================================================= */}
-
-      {cotizaciones.length >
-        0 && (
-        <section className="max-w-7xl mx-auto mb-6">
-
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4">
-
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
               <div>
-
-                <h1 className="text-xl font-bold">
-                  Mis cotizaciones
-                </h1>
-
-                <p className="text-sm text-zinc-500 mt-1">
-
-                  {modoSeleccion
-                    ? `${seleccionadas.length} seleccionada${
-                        seleccionadas.length ===
-                        1
-                          ? ""
-                          : "s"
-                      }`
-                    : `${cotizaciones.length} cotización${
-                        cotizaciones.length ===
-                        1
-                          ? ""
-                          : "es"
-                      }`}
-
+                <p className="text-sky-500 text-xs font-extrabold uppercase tracking-[0.3em]">
+                  Macro · Mis solicitudes
                 </p>
 
+                <h1
+                  className={`mt-3 text-3xl md:text-4xl font-black ${theme.title}`}
+                >
+                  Gestiona tus cotizaciones
+                </h1>
+
+                <p className={`${theme.muted} mt-3 max-w-2xl`}>
+                  Consulta el estado de tus solicitudes, revisa propuestas,
+                  solicita cambios y mantén actualizada tu información.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto lg:min-w-[520px]">
+                <MiniStat
+                  theme={theme}
+                  label="Solicitudes"
+                  value={solicitudes.length}
+                  icon={<FaMoneyBillWave />}
+                />
+
+                <MiniStat
+                  theme={theme}
+                  label="Novedades"
+                  value={cantidadNuevas}
+                  icon={<FaBell />}
+                  accent={cantidadNuevas > 0}
+                />
+
+                <MiniStat
+                  theme={theme}
+                  label="Selección"
+                  value={modoSeleccion ? seleccionadas.length : 0}
+                  icon={<FaCheckSquare />}
+                />
+
+                <MiniStat
+                  theme={theme}
+                  label="Macro"
+                  value="Activo"
+                  icon={<FaCheckCircle />}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {solicitudes.length > 0 && (
+          <section className={`${theme.card} rounded-[26px] p-4 md:p-5`}>
+            <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+              <div>
+                <h2 className={`text-lg md:text-xl font-black ${theme.title}`}>
+                  {modoSeleccion
+                    ? `${seleccionadas.length} seleccionada${
+                        seleccionadas.length === 1 ? "" : "s"
+                      }`
+                    : `${solicitudes.length} solicitud${
+                        solicitudes.length === 1 ? "" : "es"
+                      }`}
+                </h2>
+
+                <p className={`${theme.muted} text-sm mt-1`}>
+                  {modoSeleccion
+                    ? "Selecciona las solicitudes que quieres quitar de tu panel."
+                    : "Tu panel de seguimiento personal de cotizaciones."}
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
-
                 {modoSeleccion && (
                   <button
                     type="button"
-                    onClick={
-                      seleccionarTodas
-                    }
-                    className="
-                      px-4
-                      py-3
-
-                      bg-zinc-900
-
-                      border
-                      border-zinc-700
-
-                      hover:border-yellow-500/50
-
-                      rounded-xl
-
-                      flex
-                      items-center
-                      gap-2
-
-                      font-semibold
-                      text-sm
-
-                      transition
-                    "
+                    onClick={seleccionarTodas}
+                    className={`rounded-2xl px-4 py-3 font-semibold text-sm flex items-center gap-2 transition ${theme.secondaryBtn}`}
                   >
-
                     {todasSeleccionadas ? (
-                      <FaCheckSquare className="text-yellow-500" />
+                      <FaCheckSquare className="text-sky-500" />
                     ) : (
                       <FaSquare />
                     )}
-
-                    {todasSeleccionadas
-                      ? "Quitar todas"
-                      : "Seleccionar todas"}
-
+                    {todasSeleccionadas ? "Quitar todas" : "Seleccionar todas"}
                   </button>
                 )}
 
-                {modoSeleccion &&
-                  seleccionadas.length >
-                    0 && (
+                {modoSeleccion && seleccionadas.length > 0 && (
                   <button
                     type="button"
-                    onClick={
-                      eliminarSeleccionadas
-                    }
-                    disabled={
-                      procesando
-                    }
-                    className="
-                      px-4
-                      py-3
-
-                      bg-red-600
-                      hover:bg-red-500
-
-                      rounded-xl
-
-                      flex
-                      items-center
-                      gap-2
-
-                      font-bold
-                      text-sm
-
-                      disabled:opacity-50
-
-                      transition
-                    "
+                    onClick={eliminarSeleccionadas}
+                    disabled={procesando}
+                    className={`rounded-2xl px-4 py-3 font-bold text-sm flex items-center gap-2 transition disabled:opacity-60 ${theme.dangerBtn}`}
                   >
-
                     <FaTrashAlt />
-
                     Eliminar seleccionadas
-
-                    <span className="bg-black/20 px-2 py-0.5 rounded-full">
-                      {
-                        seleccionadas.length
-                      }
+                    <span className="px-2 py-0.5 rounded-full bg-white/70 text-xs">
+                      {seleccionadas.length}
                     </span>
-
                   </button>
                 )}
 
                 <button
                   type="button"
-                  onClick={
-                    alternarModoSeleccion
-                  }
-                  className={`
-                    px-5
-                    py-3
-
-                    rounded-xl
-
-                    border
-
-                    flex
-                    items-center
-                    gap-2
-
-                    font-semibold
-                    text-sm
-
-                    transition
-
-                    ${
-                      modoSeleccion
-                        ? `
-                          bg-yellow-500
-                          border-yellow-500
-                          text-black
-                        `
-                        : `
-                          bg-zinc-900
-                          border-zinc-700
-                          text-white
-
-                          hover:border-yellow-500/50
-                        `
-                    }
-                  `}
+                  onClick={alternarModoSeleccion}
+                  className={`rounded-2xl px-5 py-3 font-bold text-sm flex items-center gap-2 transition ${
+                    modoSeleccion ? theme.primaryBtn : theme.secondaryBtn
+                  }`}
                 >
-
-                  {modoSeleccion ? (
-                    <FaTimes />
-                  ) : (
-                    <FaCheckSquare />
-                  )}
-
-                  {modoSeleccion
-                    ? "Terminar selección"
-                    : "Seleccionar"}
-
+                  {modoSeleccion ? <FaTimes /> : <FaCheckSquare />}
+                  {modoSeleccion ? "Terminar selección" : "Seleccionar"}
                 </button>
-
               </div>
-
             </div>
-
-            {modoSeleccion && (
-              <div className="mt-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3">
-
-                <p className="text-xs text-zinc-400">
-                  Selecciona las cotizaciones que quieras quitar de tu panel. El registro seguirá disponible para Wealth.
-                </p>
-
-              </div>
-            )}
-
-          </div>
-
-        </section>
-      )}
-
-      {/* =================================================
-          MENSAJES
-      ================================================= */}
-
-      <div className="max-w-7xl mx-auto">
+          </section>
+        )}
 
         {mensajeGeneral && (
-          <div className="mb-6 bg-green-500/10 border border-green-500/30 text-green-300 rounded-2xl p-4 flex items-center gap-3">
-
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 flex items-center gap-3">
             <FaCheckCircle />
-
-            {
-              mensajeGeneral
-            }
-
+            <span>{mensajeGeneral}</span>
           </div>
         )}
 
-        {errorGeneral &&
-          !editarOpen && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/30 text-red-300 rounded-2xl p-4">
-
-            {
-              errorGeneral
-            }
-
+        {errorGeneral && !editarOpen && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            {errorGeneral}
           </div>
         )}
 
-        {cantidadNuevas >
-          0 &&
-          !modoSeleccion && (
-          <div className="mb-6 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-5">
-
-            <div className="flex items-center gap-4">
-
-              <FaBell className="text-yellow-500 text-2xl" />
-
-              <div>
-
-                <p className="font-bold">
-
-                  {cantidadNuevas ===
-                  1
-                    ? "Tienes una actualización"
-                    : `Tienes ${cantidadNuevas} actualizaciones`}
-
-                </p>
-
-                <p className="text-zinc-400 text-sm mt-1">
-                  Wealth realizó cambios en tus cotizaciones.
-                </p>
-
-              </div>
-
+        {cantidadNuevas > 0 && !modoSeleccion && (
+          <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5 flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white text-sky-500 border border-sky-200 flex items-center justify-center text-xl shrink-0">
+              <FaBell />
             </div>
 
+            <div>
+              <p className={`font-black ${theme.title}`}>
+                {cantidadNuevas === 1
+                  ? "Tienes una actualización"
+                  : `Tienes ${cantidadNuevas} actualizaciones`}
+              </p>
+
+              <p className={`${theme.text} mt-1`}>
+                Macro realizó cambios en tus solicitudes. Entra a revisar los
+                detalles.
+              </p>
+            </div>
           </div>
         )}
 
-      </div>
+        {solicitudes.length === 0 ? (
+          <div className={`${theme.card} rounded-[30px] p-10 md:p-14 text-center`}>
+            <div className="w-20 h-20 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center mx-auto text-3xl">
+              <FaMoneyBillWave />
+            </div>
 
-      {/* =================================================
-          SIN COTIZACIONES
-      ================================================= */}
-
-      {cotizaciones.length ===
-        0 && (
-        <div className="max-w-7xl mx-auto">
-
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-12 text-center">
-
-            <FaMoneyBillWave className="mx-auto text-zinc-700 text-5xl" />
-
-            <h2 className="text-2xl font-bold mt-5">
-              Aún no tienes cotizaciones
+            <h2 className={`text-2xl font-black mt-5 ${theme.title}`}>
+              Aún no tienes solicitudes
             </h2>
 
-            <p className="text-zinc-500 mt-2">
-              Tus solicitudes aparecerán aquí.
+            <p className={`${theme.muted} mt-2`}>
+              Tus solicitudes aparecerán aquí cuando envíes una cotización.
             </p>
-
           </div>
-
-        </div>
-      )}
-
-      {/* =================================================
-          TARJETAS
-      ================================================= */}
-
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-        {cotizaciones.map(
-          (cotizacion) => {
-            const imagenes =
-              Array.isArray(
-                cotizacion.imagenes
-              ) &&
-              cotizacion.imagenes.length >
-                0
-                ? cotizacion.imagenes
-                : cotizacion.imagen
-                ? [
-                    cotizacion.imagen,
-                  ]
-                : [];
-
-            const estado =
-              obtenerEstado(
-                cotizacion.estado
-              );
-
-            const mensajeEstado =
-              obtenerMensajeEstado(
-                cotizacion
-              );
-
-            const seleccionada =
-              seleccionadas.includes(
-                cotizacion.id
-              );
-
-            const editable =
-              puedeEditarSolicitud(
-                cotizacion
-              );
-
-            const cancelable =
-              puedeCancelarSolicitud(
-                cotizacion
-              );
-
-            const propuesta =
-              obtenerPropuestaActual(
-                cotizacion
-              );
-
-            const precio =
-              propuesta.precioTotal;
-
-            return (
-              <article
-                key={
-                  cotizacion.id
-                }
-                onClick={() => {
-                  if (
-                    modoSeleccion
-                  ) {
-                    seleccionarCotizacion(
-                      cotizacion.id
-                    );
-                  }
-                }}
-                className={`
-                  relative
-                  overflow-hidden
-
-                  bg-zinc-950
-
-                  rounded-3xl
-
-                  border
-
-                  transition-all
-                  duration-300
-
-                  ${
-                    modoSeleccion
-                      ? "cursor-pointer"
-                      : ""
-                  }
-
-                  ${
-                    seleccionada
-                      ? `
-                        border-yellow-500
-                        ring-2
-                        ring-yellow-500/20
-                      `
-                      : `
-                        border-zinc-800
-                      `
-                  }
-
-                  ${
-                    cotizacion.estado ===
-                    "cancelada_cliente"
-                      ? "opacity-75"
-                      : ""
-                  }
-                `}
-              >
-
-                {/* CHECK */}
-
-                {modoSeleccion && (
-                  <div className="absolute top-4 left-4 z-20">
-
-                    <div
-                      className={`
-                        w-12
-                        h-12
-
-                        rounded-xl
-
-                        border
-
-                        flex
-                        items-center
-                        justify-center
-
-                        shadow-xl
-
-                        ${
-                          seleccionada
-                            ? `
-                              bg-yellow-500
-                              border-yellow-400
-                              text-black
-                            `
-                            : `
-                              bg-black/85
-                              border-white/30
-                              text-white
-                            `
-                        }
-                      `}
-                    >
-
-                      {seleccionada ? (
-                        <FaCheck />
-                      ) : (
-                        <FaSquare />
-                      )}
-
-                    </div>
-
-                  </div>
-                )}
-
-                {/* IMAGEN */}
-
-                <div className="relative h-64 bg-black">
-
-                  {imagenes.length >
-                  0 ? (
-                    <img
-                      src={
-                        imagenes[0]
-                      }
-                      alt={
-                        cotizacion.nombre ||
-                        "Cotización Wealth"
-                      }
-                      onClick={(e) => {
-                        e.stopPropagation();
-
-                        if (
-                          modoSeleccion
-                        ) {
-                          seleccionarCotizacion(
-                            cotizacion.id
-                          );
-
-                          return;
-                        }
-
-                        abrirGaleria(
-                          imagenes
-                        );
-                      }}
-                      className="
-                        w-full
-                        h-full
-                        object-contain
-
-                        cursor-pointer
-                      "
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
-
-                      Sin imagen
-
-                    </div>
-                  )}
-
-                  {imagenes.length >
-                    1 && (
-                    <span className="absolute bottom-3 right-3 bg-black/80 border border-white/10 text-white text-xs px-3 py-1.5 rounded-xl flex items-center gap-2">
-
-                      <FaImages />
-
-                      {
-                        imagenes.length
-                      } fotos
-
-                    </span>
-                  )}
-
-                </div>
-
-                {/* CONTENIDO */}
-
-                <div className="p-6">
-
-                  <div className="flex justify-between items-start gap-4">
-
-                    <h2 className="text-xl font-bold capitalize">
-                      {cotizacion.nombre ||
-                        "Cotización"}
-                    </h2>
-
-                    <span
-                      className={`
-                        px-3
-                        py-1.5
-
-                        rounded-full
-
-                        text-xs
-                        font-bold
-
-                        shrink-0
-
-                        ${estado.color}
-                      `}
-                    >
-
-                      {
-                        estado.texto
-                      }
-
-                    </span>
-
-                  </div>
-
-                  {cotizacion.descripcion && (
-                    <p className="text-zinc-400 text-sm leading-relaxed mt-4 line-clamp-4">
-
-                      {
-                        cotizacion.descripcion
-                      }
-
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-2 text-zinc-500 text-sm mt-5">
-
-                    <FaCalendarAlt />
-
-                    {cotizacion.fecha?.toDate
-                      ? cotizacion.fecha
-                          .toDate()
-                          .toLocaleDateString(
-                            "es-MX"
-                          )
-                      : "Sin fecha"}
-
-                  </div>
-
-                  {mensajeEstado &&
-                    !modoSeleccion && (
-                    <div
-                      className={`
-                        mt-5
-
-                        border
-
-                        rounded-2xl
-
-                        p-4
-
-                        ${mensajeEstado.clase}
-                      `}
-                    >
-
-                      <div className="flex items-start gap-3">
-
-                        <span className="text-xl mt-0.5">
-                          {
-                            mensajeEstado.icono
-                          }
-                        </span>
-
-                        <div>
-
-                          <p className="font-bold text-sm">
-                            {
-                              mensajeEstado.titulo
-                            }
-                          </p>
-
-                          <p className="text-zinc-400 text-xs mt-1">
-                            {
-                              mensajeEstado.texto
-                            }
-                          </p>
-
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {solicitudes.map((cotizacion) => {
+              const imagenes =
+                Array.isArray(cotizacion.imagenes) &&
+                cotizacion.imagenes.length > 0
+                  ? cotizacion.imagenes
+                  : cotizacion.imagen
+                  ? [cotizacion.imagen]
+                  : [];
+
+              const estado = obtenerEstado(cotizacion.estado);
+              const mensajeEstado = obtenerMensajeEstado(cotizacion);
+              const seleccionada = seleccionadas.includes(cotizacion.id);
+              const editable = puedeEditarSolicitud(cotizacion);
+              const cancelable = puedeCancelarSolicitud(cotizacion);
+              const propuesta = obtenerPropuestaActual(cotizacion);
+              const precio = propuesta.precioTotal;
+
+              return (
+                <article
+                  key={cotizacion.id}
+                  onClick={() => {
+                    if (modoSeleccion) seleccionarCotizacion(cotizacion.id);
+                  }}
+                  className={`${theme.card} rounded-[28px] overflow-hidden transition-all duration-300 ${
+                    modoSeleccion ? "cursor-pointer" : ""
+                  } ${seleccionada ? "ring-2 ring-sky-400 border-sky-400" : ""} ${
+                    tieneNovedad(cotizacion) ? "ring-1 ring-sky-200" : ""
+                  } ${
+                    cotizacion.estado === "cancelada_cliente" ? "opacity-85" : ""
+                  }`}
+                >
+                  <div className="relative h-56 bg-gradient-to-br from-slate-100 via-sky-50 to-white border-b border-slate-200">
+                    {modoSeleccion && (
+                      <div className="absolute top-4 left-4 z-20">
+                        <div
+                          className={`w-12 h-12 rounded-2xl border shadow-lg flex items-center justify-center ${
+                            seleccionada
+                              ? "bg-sky-500 border-sky-500 text-white"
+                              : "bg-white/95 border-slate-200 text-slate-500"
+                          }`}
+                        >
+                          {seleccionada ? <FaCheck /> : <FaSquare />}
                         </div>
-
                       </div>
+                    )}
 
-                    </div>
-                  )}
+                    {tieneNovedad(cotizacion) && !modoSeleccion && (
+                      <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-black uppercase tracking-wide">
+                        Nuevo
+                      </div>
+                    )}
 
-                  {precio !==
-                    undefined &&
-                    precio !==
-                      null &&
-                    !modoSeleccion && (
-                    <div className="mt-5 bg-black border border-zinc-800 rounded-2xl p-4">
+                    {imagenes.length > 0 ? (
+                      <img
+                        src={imagenes[0]}
+                        alt={cotizacion.nombre || "Cotización Macro"}
+                        onClick={(e) => {
+                          e.stopPropagation();
 
-                      <p className="text-yellow-500 text-xs uppercase tracking-wider font-bold">
-                        Propuesta actual
-                      </p>
+                          if (modoSeleccion) {
+                            seleccionarCotizacion(cotizacion.id);
+                            return;
+                          }
 
-                      <p className="text-2xl font-bold mt-2">
+                          abrirGaleria(imagenes);
+                        }}
+                        className="w-full h-full object-cover cursor-pointer"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl text-sky-500">
+                          <FaImages />
+                        </div>
+                        <p className="mt-4 font-semibold">Sin imagen</p>
+                      </div>
+                    )}
 
-                        {
-                          moneda(
-                            precio
-                          )
-                        }
-
-                      </p>
-
-                    </div>
-                  )}
-
-                  {/* BOTONES */}
-
-                  {!modoSeleccion &&
-                    (editable ||
-                      cancelable) && (
-                    <div className="grid grid-cols-2 gap-3 mt-5">
-
-                      {editable && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-
-                            abrirEdicion(
-                              cotizacion
-                            );
-                          }}
-                          className="
-                            py-3
-
-                            bg-blue-500/10
-                            hover:bg-blue-600
-
-                            border
-                            border-blue-500/30
-
-                            text-blue-400
-                            hover:text-white
-
-                            rounded-xl
-
-                            font-semibold
-
-                            flex
-                            items-center
-                            justify-center
-                            gap-2
-
-                            transition
-                          "
-                        >
-
-                          <FaEdit />
-
-                          Modificar
-
-                        </button>
-                      )}
-
-                      {cancelable && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-
-                            cancelarSolicitud(
-                              cotizacion
-                            );
-                          }}
-                          className="
-                            py-3
-
-                            bg-red-500/10
-                            hover:bg-red-600
-
-                            border
-                            border-red-500/30
-
-                            text-red-400
-                            hover:text-white
-
-                            rounded-xl
-
-                            font-semibold
-
-                            flex
-                            items-center
-                            justify-center
-                            gap-2
-
-                            transition
-                          "
-                        >
-
-                          <FaTimesCircle />
-
-                          Cancelar
-
-                        </button>
-                      )}
-
-                    </div>
-                  )}
-
-                  {!modoSeleccion && (
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-
+                    {imagenes.length > 1 && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-
-                          abrirHistorial(
-                            cotizacion
-                          );
+                          abrirGaleria(imagenes);
                         }}
-                        className="
-                          py-3.5
-
-                          bg-zinc-900
-                          hover:bg-zinc-800
-
-                          border
-                          border-zinc-700
-
-                          text-white
-
-                          rounded-xl
-
-                          font-bold
-
-                          flex
-                          items-center
-                          justify-center
-                          gap-2
-
-                          transition
-                        "
+                        className="absolute bottom-4 right-4 px-3 py-2 rounded-xl bg-white/95 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 shadow"
                       >
-
-                        <FaHistory className="text-yellow-500" />
-
-                        Historial
-
+                        <FaImages className="text-sky-500" />
+                        {imagenes.length} fotos
                       </button>
+                    )}
+                  </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className={`text-xl font-black ${theme.title}`}>
+                        {cotizacion.nombre || "Cotización"}
+                      </h2>
 
-                          verPropuesta(
-                            cotizacion
-                          );
-                        }}
-                        className="
-                          py-3.5
-
-                          bg-yellow-500
-                          hover:bg-yellow-400
-
-                          text-black
-
-                          rounded-xl
-
-                          font-bold
-
-                          flex
-                          items-center
-                          justify-center
-                          gap-2
-
-                          transition
-                        "
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 ${estado.clase}`}
                       >
-
-                        <FaEye />
-
-                        Ver detalles
-
-                      </button>
-
+                        {estado.texto}
+                      </span>
                     </div>
-                  )}
 
-                  {modoSeleccion && (
-                    <div
-                      className={`
-                        mt-5
+                    {cotizacion.descripcion && (
+                      <p className={`${theme.text} text-sm leading-relaxed mt-4 min-h-[64px]`}>
+                        {cotizacion.descripcion.length > 160
+                          ? `${cotizacion.descripcion.slice(0, 160)}...`
+                          : cotizacion.descripcion}
+                      </p>
+                    )}
 
-                        py-3
+                    <div className="flex items-center gap-2 mt-4 text-sm text-slate-500">
+                      <FaCalendarAlt className="text-sky-500" />
+                      {formatearFechaCorta(cotizacion.fecha)}
+                    </div>
 
-                        text-center
+                    {mensajeEstado && !modoSeleccion && (
+                      <div className={`mt-5 rounded-2xl p-4 ${mensajeEstado.clase}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="text-xl mt-0.5">
+                            {mensajeEstado.icono}
+                          </div>
 
-                        rounded-xl
+                          <div>
+                            <p className="font-black text-sm">
+                              {mensajeEstado.titulo}
+                            </p>
+                            <p className="text-sm mt-1 opacity-90">
+                              {mensajeEstado.texto}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                        border
+                    {precio !== undefined && precio !== null && !modoSeleccion && (
+                      <div className={`${theme.cardSoft} rounded-2xl p-4 mt-5`}>
+                        <p className="text-xs uppercase tracking-[0.18em] font-black text-sky-600">
+                          Propuesta actual
+                        </p>
 
-                        text-sm
-                        font-semibold
+                        <p className={`text-2xl font-black mt-2 ${theme.title}`}>
+                          {moneda(precio)}
+                        </p>
+                      </div>
+                    )}
 
-                        ${
+                    {!modoSeleccion && (editable || cancelable) && (
+                      <div className="grid grid-cols-2 gap-3 mt-5">
+                        {editable && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              abrirEdicion(cotizacion);
+                            }}
+                            className="rounded-2xl py-3.5 font-bold flex items-center justify-center gap-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                          >
+                            <FaEdit />
+                            Modificar
+                          </button>
+                        )}
+
+                        {cancelable && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelarSolicitud(cotizacion);
+                            }}
+                            className="rounded-2xl py-3.5 font-bold flex items-center justify-center gap-2 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
+                          >
+                            <FaTimesCircle />
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {!modoSeleccion && (
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirHistorial(cotizacion);
+                          }}
+                          className={`rounded-2xl py-3.5 font-bold flex items-center justify-center gap-2 transition ${theme.secondaryBtn}`}
+                        >
+                          <FaHistory className="text-sky-500" />
+                          Historial
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            verPropuesta(cotizacion);
+                          }}
+                          className={`rounded-2xl py-3.5 font-bold flex items-center justify-center gap-2 transition ${theme.primaryBtn}`}
+                        >
+                          <FaEye />
+                          Ver detalles
+                        </button>
+                      </div>
+                    )}
+
+                    {modoSeleccion && (
+                      <div
+                        className={`mt-5 rounded-2xl p-3 text-center text-sm font-bold border ${
                           seleccionada
-                            ? `
-                              bg-yellow-500/10
-                              border-yellow-500/40
-                              text-yellow-400
-                            `
-                            : `
-                              bg-zinc-900
-                              border-zinc-800
-                              text-zinc-500
-                            `
-                        }
-                      `}
-                    >
-
-                      {seleccionada
-                        ? "✓ Seleccionada"
-                        : "Seleccionar"}
-
-                    </div>
-                  )}
-
-                </div>
-
-              </article>
-            );
-          }
+                            ? "bg-sky-50 text-sky-700 border-sky-200"
+                            : "bg-slate-50 text-slate-500 border-slate-200"
+                        }`}
+                      >
+                        {seleccionada ? "✓ Seleccionada" : "Seleccionar"}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         )}
-
       </div>
 
       {/* =================================================
           MODAL EDITAR
       ================================================= */}
 
-      {editarOpen &&
-        cotizacionEditando && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md overflow-y-auto">
+      {editarOpen && cotizacionEditando && (
+        <ModalOverlay onClose={cerrarEdicion} theme={theme} z="z-[100]">
+          <div className={`${theme.card} w-full max-w-5xl rounded-[30px] overflow-hidden`}>
+            <header className={`p-6 md:p-8 border-b ${theme.line} relative`}>
+              <button
+                type="button"
+                onClick={cerrarEdicion}
+                className={`absolute right-6 top-6 w-11 h-11 rounded-2xl flex items-center justify-center transition ${theme.secondaryBtn}`}
+              >
+                <FaTimes />
+              </button>
 
-          <div className="min-h-full px-3 md:px-6 py-6">
+              <p className="text-sky-500 text-xs uppercase tracking-[0.3em] font-extrabold">
+                Macro
+              </p>
 
-            <div className="max-w-5xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+              <h1
+                className={`text-3xl md:text-4xl font-black mt-3 pr-14 ${theme.title}`}
+              >
+                Modificar solicitud
+              </h1>
 
-              {/* HEADER */}
+              <p className={`${theme.muted} mt-3 max-w-2xl`}>
+                Actualiza la información de tu solicitud con una interfaz más
+                clara y ordenada.
+              </p>
 
-              <header className="relative p-6 sm:p-8 md:p-10 border-b border-zinc-800">
-
-                <button
-                  type="button"
-                  onClick={
-                    cerrarEdicion
-                  }
-                  className="
-                    absolute
-                    right-6
-                    top-6
-
-                    w-11
-                    h-11
-
-                    bg-black
-
-                    border
-                    border-zinc-700
-
-                    hover:border-zinc-500
-
-                    rounded-xl
-
-                    flex
-                    items-center
-                    justify-center
-
-                    text-zinc-400
-                    hover:text-white
-                  "
-                >
-                  <FaTimes />
-                </button>
-
-                <p className="text-yellow-500 text-xs uppercase tracking-[0.25em] font-semibold">
-                  Wealth
-                </p>
-
-                <h1 className="text-3xl md:text-4xl font-bold mt-3 pr-14">
-                  Modificar cotización
-                </h1>
-
-                <p className="text-zinc-400 mt-3 max-w-2xl">
-                  Actualiza la información de tu solicitud manteniendo el mismo formato utilizado al crearla.
-                </p>
-
-                {/* PROGRESO */}
-
-                <div className="mt-8">
-
-                  <div className="flex justify-between text-xs sm:text-sm mb-3">
-
-                    <span
-                      className={
-                        pasoEditar >=
-                        1
-                          ? "text-yellow-500"
-                          : "text-zinc-500"
-                      }
-                    >
-                      Proyecto
-                    </span>
-
-                    <span
-                      className={
-                        pasoEditar >=
-                        2
-                          ? "text-yellow-500"
-                          : "text-zinc-500"
-                      }
-                    >
-                      Detalles
-                    </span>
-
-                    <span
-                      className={
-                        pasoEditar >=
-                        3
-                          ? "text-yellow-500"
-                          : "text-zinc-500"
-                      }
-                    >
-                      Imágenes
-                    </span>
-
-                    <span
-                      className={
-                        pasoEditar >=
-                        4
-                          ? "text-yellow-500"
-                          : "text-zinc-500"
-                      }
-                    >
-                      Confirmar
-                    </span>
-
-                  </div>
-
-                  <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-
-                    <div
-                      className="h-full bg-yellow-500 rounded-full transition-all duration-300"
-                      style={{
-                        width:
-                          `${porcentajeEditar}%`,
-                      }}
-                    />
-
-                  </div>
-
-                  <p className="text-zinc-500 text-xs mt-2">
-                    Paso {pasoEditar} de {totalPasosEditar}
-                  </p>
-
+              <div className="mt-8">
+                <div className="flex justify-between text-xs sm:text-sm mb-3">
+                  <span className={pasoEditar >= 1 ? "text-sky-500 font-bold" : theme.muted}>
+                    Proyecto
+                  </span>
+                  <span className={pasoEditar >= 2 ? "text-sky-500 font-bold" : theme.muted}>
+                    Detalles
+                  </span>
+                  <span className={pasoEditar >= 3 ? "text-sky-500 font-bold" : theme.muted}>
+                    Imágenes
+                  </span>
+                  <span className={pasoEditar >= 4 ? "text-sky-500 font-bold" : theme.muted}>
+                    Confirmar
+                  </span>
                 </div>
 
-              </header>
+                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-sky-500 rounded-full transition-all duration-300"
+                    style={{ width: `${porcentajeEditar}%` }}
+                  />
+                </div>
 
-              {/* CUERPO */}
+                <p className={`${theme.muted} text-xs mt-2`}>
+                  Paso {pasoEditar} de {totalPasosEditar}
+                </p>
+              </div>
+            </header>
 
-              <div className="p-6 sm:p-8 md:p-10">
+            <div className="p-6 sm:p-8 md:p-10">
+              {errorGeneral && (
+                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+                  {errorGeneral}
+                </div>
+              )}
 
-                {errorGeneral && (
-                  <div className="mb-6 bg-red-500/10 border border-red-500/30 text-red-300 rounded-2xl p-4">
-
-                    {
-                      errorGeneral
-                    }
-
+              {pasoEditar === 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className={`text-2xl font-black ${theme.title}`}>
+                      Actualiza tu proyecto
+                    </h2>
+                    <p className={`${theme.muted} mt-1`}>
+                      Modifica la información principal de tu solicitud.
+                    </p>
                   </div>
-                )}
 
-                {/* =======================================
-                    PASO 1
-                ======================================= */}
-
-                {pasoEditar ===
-                  1 && (
-                  <div className="space-y-6">
-
+                  {imagenesProyectoEdit.length > 0 && (
                     <div>
-
-                      <h2 className="text-2xl font-semibold">
-                        Actualiza tu proyecto
-                      </h2>
-
-                      <p className="text-zinc-400 mt-1">
-                        Puedes modificar la información principal.
-                      </p>
-
-                    </div>
-
-                    {imagenesProyectoEdit.length >
-                      0 && (
-                      <div>
-
-                        <div className="flex items-center gap-2 text-zinc-400 text-sm mb-3">
-
-                          <FaImages className="text-yellow-500" />
-
-                          Proyecto de referencia
-
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-
-                          {imagenesProyectoEdit.map(
-                            (
-                              imagen,
-                              indice
-                            ) => (
-                              <div
-                                key={`${imagen}-${indice}`}
-                                className="aspect-square rounded-2xl overflow-hidden bg-black border border-yellow-500/20"
-                              >
-
-                                <img
-                                  src={
-                                    imagen
-                                  }
-                                  alt={`Referencia ${
-                                    indice +
-                                    1
-                                  }`}
-                                  className="w-full h-full object-cover"
-                                />
-
-                              </div>
-                            )
-                          )}
-
-                        </div>
-
+                      <div className={`flex items-center gap-2 text-sm mb-3 ${theme.muted}`}>
+                        <FaImages className="text-sky-500" />
+                        Referencia seleccionada
                       </div>
-                    )}
 
-                    <Campo>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {imagenesProyectoEdit.map((imagen, indice) => (
+                          <div
+                            key={`${imagen}-${indice}`}
+                            className="aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200"
+                          >
+                            <img
+                              src={imagen}
+                              alt={`Referencia ${indice + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                      <Label
-                        icon={
-                          <FaPen />
-                        }
-                      >
-                        Nombre del proyecto
-                      </Label>
+                  <FieldBlock label="Nombre del proyecto" icon={<FaPen />} theme={theme}>
+                    <input
+                      type="text"
+                      value={editNombre}
+                      onChange={(e) => setEditNombre(e.target.value)}
+                      className={`${theme.input} px-4 py-3.5`}
+                    />
+                  </FieldBlock>
 
-                      <input
-                        type="text"
-                        value={
-                          editNombre
-                        }
-                        onChange={(e) =>
-                          setEditNombre(
-                            e.target.value
-                          )
-                        }
-                        className={
-                          inputClass
-                        }
-                      />
-
-                    </Campo>
-
-                    <Campo>
-
-                      <Label
-                        icon={
-                          <FaTag />
-                        }
-                      >
-                        Tipo de proyecto
-                      </Label>
-
-                      <select
-                        value={
-                          editTipo
-                        }
-                        onChange={(e) =>
-                          setEditTipo(
-                            e.target.value
-                          )
-                        }
-                        className={
-                          inputClass
-                        }
-                      >
-                        <option>
-                          Construcción
+                  <FieldBlock label="Tipo de solución" icon={<FaTag />} theme={theme}>
+                    <select
+                      value={editTipo}
+                      onChange={(e) => setEditTipo(e.target.value)}
+                      className={`${theme.input} px-4 py-3.5`}
+                    >
+                      {TIPOS_SOLUCION.map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {tipo}
                         </option>
+                      ))}
+                    </select>
+                  </FieldBlock>
 
-                        <option>
-                          Vidrio
-                        </option>
+                  <FieldBlock label="¿Qué necesitas realizar?" icon={<FaPen />} theme={theme}>
+                    <textarea
+                      rows={6}
+                      value={editDescripcion}
+                      onChange={(e) => setEditDescripcion(e.target.value)}
+                      maxLength={1000}
+                      className={`${theme.input} px-4 py-3.5 resize-none`}
+                    />
+                    <p className={`text-xs text-right mt-2 ${theme.muted}`}>
+                      {editDescripcion.length}/1000
+                    </p>
+                  </FieldBlock>
+                </div>
+              )}
 
-                        <option>
-                          Aluminio
-                        </option>
-
-                        <option>
-                          Vidrio y aluminio
-                        </option>
-
-                        <option>
-                          Remodelación
-                        </option>
-
-                        <option>
-                          Inmobiliario
-                        </option>
-
-                        <option>
-                          Otro
-                        </option>
-                      </select>
-
-                    </Campo>
-
-                    <Campo>
-
-                      <Label
-                        icon={
-                          <FaPen />
-                        }
-                      >
-                        ¿Qué necesitas realizar?
-                      </Label>
-
-                      <textarea
-                        rows={6}
-                        value={
-                          editDescripcion
-                        }
-                        onChange={(e) =>
-                          setEditDescripcion(
-                            e.target.value
-                          )
-                        }
-                        maxLength={
-                          1000
-                        }
-                        className={
-                          inputClass
-                        }
-                      />
-
-                      <p className="text-xs text-zinc-600 text-right mt-2">
-                        {
-                          editDescripcion.length
-                        }
-                        /1000
-                      </p>
-
-                    </Campo>
-
+              {pasoEditar === 2 && (
+                <div className="space-y-7">
+                  <div>
+                    <h2 className={`text-2xl font-black ${theme.title}`}>
+                      Detalles de tu proyecto
+                    </h2>
+                    <p className={`${theme.muted} mt-1`}>
+                      Ubicación, alcance, fecha deseada y presupuesto aproximado.
+                    </p>
                   </div>
-                )}
 
-                {/* =======================================
-                    PASO 2
-                ======================================= */}
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <FieldBlock
+                        label="Dirección o referencia"
+                        icon={<FaMapMarkerAlt />}
+                        theme={theme}
+                      >
+                        <div className="flex gap-2">
+                          <input
+                            value={editUbicacion}
+                            onChange={(e) => setEditUbicacion(e.target.value)}
+                            className={`${theme.input} px-4 py-3.5`}
+                          />
 
-                {pasoEditar ===
-                  2 && (
-                  <div className="space-y-7">
+                          <button
+                            type="button"
+                            onClick={buscarDireccionEditar}
+                            disabled={buscandoUbicacion}
+                            className={`px-5 rounded-2xl flex items-center justify-center transition disabled:opacity-60 ${theme.primaryBtn}`}
+                          >
+                            <FaSearch />
+                          </button>
+                        </div>
+                      </FieldBlock>
 
-                    <div>
+                      <button
+                        type="button"
+                        onClick={usarMiUbicacionEditar}
+                        disabled={obteniendoGPS}
+                        className={`w-full rounded-2xl px-4 py-3.5 font-semibold flex items-center justify-center gap-2 transition disabled:opacity-60 ${theme.secondaryBtn}`}
+                      >
+                        <FaCrosshairs className="text-sky-500" />
+                        {obteniendoGPS
+                          ? "Obteniendo ubicación..."
+                          : "Usar mi ubicación actual"}
+                      </button>
 
-                      <h2 className="text-2xl font-semibold">
-                        Detalles de tu espacio
-                      </h2>
+                      <div className={`${theme.cardSoft} rounded-2xl p-4`}>
+                        <p className={`text-xs uppercase tracking-[0.18em] font-bold ${theme.muted}`}>
+                          Coordenadas
+                        </p>
 
-                      <p className="text-zinc-400 mt-1">
-                        Actualiza ubicación, medidas, fecha o presupuesto.
-                      </p>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <p className={`text-xs ${theme.muted}`}>Latitud</p>
+                            <p className={`text-sm font-semibold ${theme.title}`}>
+                              {editPosicion.lat.toFixed(6)}
+                            </p>
+                          </div>
 
+                          <div>
+                            <p className={`text-xs ${theme.muted}`}>Longitud</p>
+                            <p className={`text-sm font-semibold ${theme.title}`}>
+                              {editPosicion.lng.toFixed(6)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid lg:grid-cols-2 gap-6">
+                    <div className="rounded-3xl overflow-hidden border border-slate-300 bg-white">
+                      <MapContainer
+                        center={[editPosicion.lat, editPosicion.lng]}
+                        zoom={15}
+                        scrollWheelZoom
+                        style={{ height: "390px", width: "100%" }}
+                      >
+                        <TileLayer
+                          attribution="&copy; OpenStreetMap contributors"
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
 
-                      <div className="space-y-4">
+                        <RecentrarMapa posicion={editPosicion} />
 
-                        <Campo>
+                        <SelectorUbicacionEditar
+                          posicion={editPosicion}
+                          setPosicion={setEditPosicion}
+                          setUbicacion={setEditUbicacion}
+                          setError={setErrorGeneral}
+                        />
+                      </MapContainer>
+                    </div>
+                  </div>
 
-                          <Label
-                            icon={
-                              <FaMapMarkerAlt />
-                            }
+                  <div className="grid md:grid-cols-2 gap-5">
+                    <FieldBlock
+                      label="Alcance o información técnica"
+                      icon={<FaRulerCombined />}
+                      theme={theme}
+                    >
+                      <input
+                        value={editMedidas}
+                        onChange={(e) => setEditMedidas(e.target.value)}
+                        placeholder="Ej: 1.20 x 2 m"
+                        className={`${theme.input} px-4 py-3.5`}
+                      />
+                    </FieldBlock>
+
+                    <FieldBlock label="Fecha deseada" icon={<FaCalendarAlt />} theme={theme}>
+                      <input
+                        type="date"
+                        value={editFechaDeseada}
+                        onChange={(e) => setEditFechaDeseada(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                      />
+                    </FieldBlock>
+                  </div>
+
+                  <FieldBlock label="Presupuesto aproximado" icon={<FaDollarSign />} theme={theme}>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editPresupuesto}
+                      onChange={(e) => setEditPresupuesto(e.target.value)}
+                      className={`${theme.input} px-4 py-3.5`}
+                    />
+                  </FieldBlock>
+                </div>
+              )}
+
+              {pasoEditar === 3 && (
+                <div className="space-y-8">
+                  <div>
+                    <h2 className={`text-2xl font-black ${theme.title}`}>
+                      Imágenes
+                    </h2>
+                    <p className={`${theme.muted} mt-1`}>
+                      Conserva, elimina o agrega fotografías de tu proyecto.
+                    </p>
+                  </div>
+
+                  {imagenesProyectoEdit.length > 0 && (
+                    <section>
+                      <div className="flex items-center gap-2">
+                        <FaImages className="text-sky-500" />
+                        <h3 className={`font-black ${theme.title}`}>
+                          Referencia seleccionada
+                        </h3>
+                      </div>
+
+                      <p className={`${theme.muted} text-xs mt-1`}>
+                        Estas imágenes pertenecen a la referencia original y se
+                        conservan.
+                      </p>
+
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                        {imagenesProyectoEdit.map((imagen, indice) => (
+                          <div
+                            key={`${imagen}-${indice}`}
+                            className="aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-100"
                           >
-                            Dirección o referencia
-                          </Label>
+                            <img
+                              src={imagen}
+                              alt="Referencia"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
-                          <div className="flex gap-2">
+                  {imagenesClienteEdit.length > 0 && (
+                    <section>
+                      <div className="flex items-center gap-2">
+                        <FaCamera className="text-blue-500" />
+                        <h3 className={`font-black ${theme.title}`}>
+                          Fotografías de tu espacio
+                        </h3>
+                      </div>
 
-                            <input
-                              value={
-                                editUbicacion
-                              }
-                              onChange={(e) =>
-                                setEditUbicacion(
-                                  e.target.value
-                                )
-                              }
-                              className={
-                                inputClass
-                              }
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                        {imagenesClienteEdit.map((imagen, indice) => (
+                          <div
+                            key={`${imagen}-${indice}`}
+                            className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-100"
+                          >
+                            <img
+                              src={imagen}
+                              alt="Cliente"
+                              className="w-full h-full object-cover"
                             />
 
                             <button
                               type="button"
-                              onClick={
-                                buscarDireccionEditar
-                              }
-                              disabled={
-                                buscandoUbicacion
-                              }
-                              className="
-                                px-5
-
-                                bg-yellow-500
-                                hover:bg-yellow-400
-
-                                text-black
-
-                                rounded-2xl
-
-                                flex
-                                items-center
-                                justify-center
-
-                                disabled:opacity-50
-                              "
+                              onClick={() => quitarImagenCliente(indice)}
+                              className="absolute top-2 right-2 w-9 h-9 bg-white/90 hover:bg-red-500 hover:text-white text-slate-700 rounded-full flex items-center justify-center transition"
                             >
-
-                              <FaSearch />
-
+                              <FaTimes />
                             </button>
-
                           </div>
-
-                        </Campo>
-
-                        <button
-                          type="button"
-                          onClick={
-                            usarMiUbicacionEditar
-                          }
-                          disabled={
-                            obteniendoGPS
-                          }
-                          className="
-                            w-full
-
-                            bg-zinc-800
-                            hover:bg-zinc-700
-
-                            border
-                            border-zinc-700
-
-                            rounded-2xl
-
-                            px-4
-                            py-3
-
-                            flex
-                            items-center
-                            justify-center
-                            gap-2
-                          "
-                        >
-
-                          <FaCrosshairs className="text-yellow-500" />
-
-                          {obteniendoGPS
-                            ? "Obteniendo ubicación..."
-                            : "Usar mi ubicación actual"}
-
-                        </button>
-
-                        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
-
-                          <p className="text-zinc-500 text-xs uppercase tracking-wider">
-                            Coordenadas
-                          </p>
-
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-
-                            <div>
-
-                              <p className="text-xs text-zinc-600">
-                                Latitud
-                              </p>
-
-                              <p className="text-sm">
-                                {editPosicion.lat.toFixed(
-                                  6
-                                )}
-                              </p>
-
-                            </div>
-
-                            <div>
-
-                              <p className="text-xs text-zinc-600">
-                                Longitud
-                              </p>
-
-                              <p className="text-sm">
-                                {editPosicion.lng.toFixed(
-                                  6
-                                )}
-                              </p>
-
-                            </div>
-
-                          </div>
-
-                        </div>
-
+                        ))}
                       </div>
+                    </section>
+                  )}
 
-                      <div className="rounded-3xl overflow-hidden border border-zinc-700">
+                  <label
+                    htmlFor="nuevasFotosCotizacion"
+                    className="block border-2 border-dashed border-sky-300 hover:border-sky-500 rounded-[28px] p-10 text-center cursor-pointer transition bg-sky-50"
+                  >
+                    <FaCloudUploadAlt className="text-sky-500 text-4xl mx-auto" />
+                    <p className={`font-black mt-3 ${theme.title}`}>
+                      Agregar fotografías
+                    </p>
+                    <p className={`${theme.muted} text-sm mt-2`}>
+                      Máximo 6 fotografías propias.
+                    </p>
 
-                        <MapContainer
-                          center={[
-                            editPosicion.lat,
-                            editPosicion.lng,
-                          ]}
-                          zoom={15}
-                          scrollWheelZoom
-                          style={{
-                            height:
-                              "390px",
+                    <input
+                      id="nuevasFotosCotizacion"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleNuevasImagenes}
+                      className="hidden"
+                    />
+                  </label>
 
-                            width:
-                              "100%",
-                          }}
-                        >
-
-                          <TileLayer
-                            attribution="&copy; OpenStreetMap contributors"
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          />
-
-                          <RecentrarMapa
-                            posicion={
-                              editPosicion
-                            }
-                          />
-
-                          <SelectorUbicacionEditar
-                            posicion={
-                              editPosicion
-                            }
-                            setPosicion={
-                              setEditPosicion
-                            }
-                            setUbicacion={
-                              setEditUbicacion
-                            }
-                            setError={
-                              setErrorGeneral
-                            }
-                          />
-
-                        </MapContainer>
-
-                      </div>
-
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-5">
-
-                      <Campo>
-
-                        <Label
-                          icon={
-                            <FaRulerCombined />
-                          }
-                        >
-                          Medidas aproximadas
-                        </Label>
-
-                        <input
-                          value={
-                            editMedidas
-                          }
-                          onChange={(e) =>
-                            setEditMedidas(
-                              e.target.value
-                            )
-                          }
-                          placeholder="Ej: 1.20 x 2 m"
-                          className={
-                            inputClass
-                          }
-                        />
-
-                      </Campo>
-
-                      <Campo>
-
-                        <Label
-                          icon={
-                            <FaCalendarAlt />
-                          }
-                        >
-                          Fecha deseada
-                        </Label>
-
-                        <input
-                          type="date"
-                          value={
-                            editFechaDeseada
-                          }
-                          onChange={(e) =>
-                            setEditFechaDeseada(
-                              e.target.value
-                            )
-                          }
-                          className={
-                            inputClass
-                          }
-                        />
-
-                      </Campo>
-
-                    </div>
-
-                    <Campo>
-
-                      <Label
-                        icon={
-                          <FaDollarSign />
-                        }
-                      >
-                        Presupuesto aproximado
-                      </Label>
-
-                      <input
-                        type="number"
-                        min={0}
-                        value={
-                          editPresupuesto
-                        }
-                        onChange={(e) =>
-                          setEditPresupuesto(
-                            e.target.value
-                          )
-                        }
-                        className={
-                          inputClass
-                        }
-                      />
-
-                    </Campo>
-
-                  </div>
-                )}
-
-                {/* =======================================
-                    PASO 3
-                ======================================= */}
-
-                {pasoEditar ===
-                  3 && (
-                  <div className="space-y-8">
-
+                  {previewsNuevos.length > 0 && (
                     <div>
-
-                      <h2 className="text-2xl font-semibold">
-                        Imágenes
-                      </h2>
-
-                      <p className="text-zinc-400 mt-1">
-                        Conserva, elimina o agrega fotografías de tu espacio.
-                      </p>
-
-                    </div>
-
-                    {imagenesProyectoEdit.length >
-                      0 && (
-                      <section>
-
-                        <div className="flex items-center gap-2">
-
-                          <FaImages className="text-yellow-500" />
-
-                          <h3 className="font-bold">
-                            Proyecto de referencia
-                          </h3>
-
-                        </div>
-
-                        <p className="text-zinc-500 text-xs mt-1">
-                          Estas imágenes pertenecen al proyecto original y se conservan.
-                        </p>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-
-                          {imagenesProyectoEdit.map(
-                            (
-                              imagen,
-                              indice
-                            ) => (
-                              <div
-                                key={`${imagen}-${indice}`}
-                                className="aspect-square rounded-2xl overflow-hidden border border-yellow-500/20"
-                              >
-
-                                <img
-                                  src={
-                                    imagen
-                                  }
-                                  alt="Referencia"
-                                  className="w-full h-full object-cover"
-                                />
-
-                              </div>
-                            )
-                          )}
-
-                        </div>
-
-                      </section>
-                    )}
-
-                    {imagenesClienteEdit.length >
-                      0 && (
-                      <section>
-
-                        <div className="flex items-center gap-2">
-
-                          <FaCamera className="text-blue-400" />
-
-                          <h3 className="font-bold">
-                            Fotografías de tu espacio
-                          </h3>
-
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-
-                          {imagenesClienteEdit.map(
-                            (
-                              imagen,
-                              indice
-                            ) => (
-                              <div
-                                key={`${imagen}-${indice}`}
-                                className="relative aspect-square rounded-2xl overflow-hidden border border-blue-500/20"
-                              >
-
-                                <img
-                                  src={
-                                    imagen
-                                  }
-                                  alt="Cliente"
-                                  className="w-full h-full object-cover"
-                                />
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    quitarImagenCliente(
-                                      indice
-                                    )
-                                  }
-                                  className="absolute top-2 right-2 w-9 h-9 bg-black/80 hover:bg-red-600 rounded-full flex items-center justify-center"
-                                >
-
-                                  <FaTimes />
-
-                                </button>
-
-                              </div>
-                            )
-                          )}
-
-                        </div>
-
-                      </section>
-                    )}
-
-                    <label
-                      htmlFor="nuevasFotosCotizacion"
-                      className="
-                        block
-
-                        border-2
-                        border-dashed
-                        border-zinc-700
-
-                        hover:border-yellow-500/60
-
-                        rounded-3xl
-
-                        p-10
-
-                        text-center
-
-                        cursor-pointer
-
-                        transition
-                      "
-                    >
-
-                      <FaCloudUploadAlt className="text-yellow-500 text-4xl mx-auto" />
-
-                      <p className="font-semibold mt-3">
-                        Agregar fotografías
-                      </p>
-
-                      <p className="text-zinc-500 text-sm mt-2">
-                        Máximo 6 fotografías propias.
-                      </p>
-
-                      <input
-                        id="nuevasFotosCotizacion"
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={
-                          handleNuevasImagenes
-                        }
-                        className="hidden"
-                      />
-
-                    </label>
-
-                    {previewsNuevos.length >
-                      0 && (
-                      <div>
-
-                        <h3 className="text-sm text-zinc-400 mb-3">
-                          Nuevas fotografías
-                        </h3>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
-                          {previewsNuevos.map(
-                            (
-                              preview,
-                              indice
-                            ) => (
-                              <div
-                                key={`${preview.file.name}-${indice}`}
-                                className="relative aspect-square rounded-2xl overflow-hidden border border-green-500/20"
-                              >
-
-                                <img
-                                  src={
-                                    preview.url
-                                  }
-                                  alt="Nueva"
-                                  className="w-full h-full object-cover"
-                                />
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    quitarNuevaImagen(
-                                      indice
-                                    )
-                                  }
-                                  className="absolute top-2 right-2 w-9 h-9 bg-black/80 hover:bg-red-600 rounded-full flex items-center justify-center"
-                                >
-
-                                  <FaTimes />
-
-                                </button>
-
-                              </div>
-                            )
-                          )}
-
-                        </div>
-
-                      </div>
-                    )}
-
-                  </div>
-                )}
-
-                {/* =======================================
-                    PASO 4
-                ======================================= */}
-
-                {pasoEditar ===
-                  4 && (
-                  <div className="space-y-7">
-
-                    <div>
-
-                      <h2 className="text-2xl font-semibold">
-                        Confirma los cambios
-                      </h2>
-
-                      <p className="text-zinc-400 mt-1">
-                        Revisa la información antes de guardar.
-                      </p>
-
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-5">
-
-                      <Campo>
-
-                        <Label
-                          icon={
-                            <FaPhone />
-                          }
-                        >
-                          Teléfono
-                        </Label>
-
-                        <input
-                          type="tel"
-                          value={
-                            editTelefono
-                          }
-                          onChange={(e) =>
-                            setEditTelefono(
-                              e.target.value
-                            )
-                          }
-                          className={
-                            inputClass
-                          }
-                        />
-
-                      </Campo>
-
-                      <Campo>
-
-                        <Label
-                          icon={
-                            <FaWhatsapp />
-                          }
-                        >
-                          Medio de contacto
-                        </Label>
-
-                        <select
-                          value={
-                            editMetodoContacto
-                          }
-                          onChange={(e) =>
-                            setEditMetodoContacto(
-                              e.target.value
-                            )
-                          }
-                          className={
-                            inputClass
-                          }
-                        >
-
-                          <option>
-                            WhatsApp
-                          </option>
-
-                          <option>
-                            Teléfono
-                          </option>
-
-                          <option>
-                            Correo electrónico
-                          </option>
-
-                        </select>
-
-                      </Campo>
-
-                    </div>
-
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-
-                      <p className="text-yellow-500 text-xs uppercase tracking-widest font-semibold">
-                        Resumen actualizado
-                      </p>
-
-                      <h3 className="text-xl font-bold mt-2">
-                        {
-                          editNombre
-                        }
+                      <h3 className={`text-sm mb-3 ${theme.muted}`}>
+                        Nuevas fotografías
                       </h3>
 
-                      <div className="space-y-4 mt-6">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {previewsNuevos.map((preview, indice) => (
+                          <div
+                            key={`${preview.file.name}-${indice}`}
+                            className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-100"
+                          >
+                            <img
+                              src={preview.url}
+                              alt="Nueva"
+                              className="w-full h-full object-cover"
+                            />
 
-                        <ResumenItem
-                          titulo="Tipo"
-                          valor={
-                            editTipo
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Descripción"
-                          valor={
-                            editDescripcion
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Ubicación"
-                          valor={
-                            editUbicacion
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Medidas"
-                          valor={
-                            editMedidas ||
-                            "No especificadas"
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Fecha"
-                          valor={
-                            editFechaDeseada ||
-                            "Sin fecha"
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Presupuesto"
-                          valor={
-                            editPresupuesto
-                              ? `$${Number(
-                                  editPresupuesto
-                                ).toLocaleString(
-                                  "es-MX"
-                                )} MXN`
-                              : "No especificado"
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Imágenes de referencia"
-                          valor={
-                            imagenesProyectoEdit.length
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Fotos propias"
-                          valor={
-                            imagenesClienteEdit.length +
-                            nuevasImagenes.length
-                          }
-                        />
-
-                        <ResumenItem
-                          titulo="Contacto"
-                          valor={`${editTelefono} · ${editMetodoContacto}`}
-                        />
-
+                            <button
+                              type="button"
+                              onClick={() => quitarNuevaImagen(indice)}
+                              className="absolute top-2 right-2 w-9 h-9 bg-white/90 hover:bg-red-500 hover:text-white text-slate-700 rounded-full flex items-center justify-center transition"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-4">
-
-                      <p className="text-zinc-300 text-sm">
-                        Wealth recibirá una notificación indicando que modificaste esta solicitud.
-                      </p>
-
-                    </div>
-
+              {pasoEditar === 4 && (
+                <div className="space-y-7">
+                  <div>
+                    <h2 className={`text-2xl font-black ${theme.title}`}>
+                      Confirma los cambios
+                    </h2>
+                    <p className={`${theme.muted} mt-1`}>
+                      Revisa la información final antes de guardar.
+                    </p>
                   </div>
+
+                  <div className="grid md:grid-cols-2 gap-5">
+                    <FieldBlock label="Teléfono" icon={<FaPhone />} theme={theme}>
+                      <input
+                        type="tel"
+                        value={editTelefono}
+                        onChange={(e) => setEditTelefono(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                      />
+                    </FieldBlock>
+
+                    <FieldBlock
+                      label="Medio de contacto"
+                      icon={<FaWhatsapp />}
+                      theme={theme}
+                    >
+                      <select
+                        value={editMetodoContacto}
+                        onChange={(e) => setEditMetodoContacto(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                      >
+                        <option>WhatsApp</option>
+                        <option>Teléfono</option>
+                        <option>Correo electrónico</option>
+                      </select>
+                    </FieldBlock>
+                  </div>
+
+                  <div className={`${theme.cardSoft} rounded-[26px] p-6`}>
+                    <p className="text-sky-500 text-xs uppercase tracking-[0.25em] font-extrabold">
+                      Resumen actualizado
+                    </p>
+
+                    <h3 className={`text-xl font-black mt-2 ${theme.title}`}>
+                      {editNombre}
+                    </h3>
+
+                    <div className="space-y-4 mt-6">
+                      <ResumenItem titulo="Tipo" valor={editTipo} theme={theme} />
+                      <ResumenItem
+                        titulo="Descripción"
+                        valor={editDescripcion}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Ubicación"
+                        valor={editUbicacion}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Medidas"
+                        valor={editMedidas || "No especificadas"}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Fecha"
+                        valor={editFechaDeseada || "Sin fecha"}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Presupuesto"
+                        valor={
+                          editPresupuesto
+                            ? `$${Number(editPresupuesto).toLocaleString(
+                                "es-MX"
+                              )} MXN`
+                            : "No especificado"
+                        }
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Imágenes de referencia"
+                        valor={imagenesProyectoEdit.length}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Fotos propias"
+                        valor={imagenesClienteEdit.length + nuevasImagenes.length}
+                        theme={theme}
+                      />
+                      <ResumenItem
+                        titulo="Contacto"
+                        valor={`${editTelefono} · ${editMetodoContacto}`}
+                        theme={theme}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-slate-700">
+                    Macro recibirá una notificación indicando que modificaste
+                    esta solicitud.
+                  </div>
+                </div>
+              )}
+
+              <div className={`flex flex-col-reverse sm:flex-row justify-between gap-3 mt-10 pt-6 border-t ${theme.line}`}>
+                {pasoEditar > 1 ? (
+                  <button
+                    type="button"
+                    onClick={anteriorEditar}
+                    disabled={procesando}
+                    className={`rounded-2xl px-6 py-4 font-bold flex items-center justify-center gap-2 transition ${theme.secondaryBtn}`}
+                  >
+                    <FaArrowLeft />
+                    Anterior
+                  </button>
+                ) : (
+                  <div />
                 )}
 
-                {/* NAVEGACIÓN */}
+                {pasoEditar < totalPasosEditar && (
+                  <button
+                    type="button"
+                    onClick={siguienteEditar}
+                    className={`rounded-2xl px-8 py-4 font-black flex items-center justify-center gap-2 transition ${theme.primaryBtn}`}
+                  >
+                    Continuar
+                    <FaArrowRight />
+                  </button>
+                )}
 
-                <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-10 pt-6 border-t border-zinc-800">
-
-                  {pasoEditar >
-                  1 ? (
-                    <button
-                      type="button"
-                      onClick={
-                        anteriorEditar
-                      }
-                      disabled={
-                        procesando
-                      }
-                      className="
-                        px-6
-                        py-4
-
-                        border
-                        border-zinc-700
-
-                        hover:bg-zinc-800
-
-                        rounded-2xl
-
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-                      "
-                    >
-
-                      <FaArrowLeft />
-
-                      Anterior
-
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-
-                  {pasoEditar <
-                    totalPasosEditar && (
-                    <button
-                      type="button"
-                      onClick={
-                        siguienteEditar
-                      }
-                      className="
-                        px-8
-                        py-4
-
-                        bg-yellow-500
-                        hover:bg-yellow-400
-
-                        text-black
-
-                        rounded-2xl
-
-                        font-bold
-
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-                      "
-                    >
-
-                      Continuar
-
-                      <FaArrowRight />
-
-                    </button>
-                  )}
-
-                  {pasoEditar ===
-                    totalPasosEditar && (
-                    <button
-                      type="button"
-                      onClick={
-                        guardarCambiosSolicitud
-                      }
-                      disabled={
-                        procesando
-                      }
-                      className="
-                        px-8
-                        py-4
-
-                        bg-yellow-500
-                        hover:bg-yellow-400
-
-                        text-black
-
-                        rounded-2xl
-
-                        font-bold
-
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-
-                        disabled:opacity-50
-                      "
-                    >
-
-                      <FaSave />
-
-                      {procesando
-                        ? "Guardando..."
-                        : "Guardar cambios"}
-
-                    </button>
-                  )}
-
-                </div>
-
+                {pasoEditar === totalPasosEditar && (
+                  <button
+                    type="button"
+                    onClick={guardarCambiosSolicitud}
+                    disabled={procesando}
+                    className={`rounded-2xl px-8 py-4 font-black flex items-center justify-center gap-2 transition disabled:opacity-60 ${theme.primaryBtn}`}
+                  >
+                    <FaSave />
+                    {procesando ? "Guardando..." : "Guardar cambios"}
+                  </button>
+                )}
               </div>
-
             </div>
-
           </div>
-
-        </div>
+        </ModalOverlay>
       )}
 
       {/* =================================================
           MODAL DETALLES
       ================================================= */}
 
-      {propuestaOpen &&
-        cotizacionSeleccionada && (
-        <div
-          className="fixed inset-0 z-[90] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() =>
-            setPropuestaOpen(
-              false
-            )
-          }
+      {propuestaOpen && cotizacionSeleccionada && (
+        <ModalOverlay
+          onClose={() => setPropuestaOpen(false)}
+          theme={theme}
+          z="z-[90]"
         >
-
           <div
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-zinc-950 border border-zinc-700 rounded-3xl"
+            className={`${theme.card} w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[30px]`}
           >
-
             {(() => {
-              const c =
-                cotizacionSeleccionada;
-
-              const estado =
-                obtenerEstado(
-                  c.estado
-                );
-
-              const propuesta =
-                obtenerPropuestaActual(
-                  c
-                );
-
-              const precio =
-                propuesta.precioTotal;
-
-              const puedeResponder =
-                [
-                  "cotizada",
-                  "propuesta_enviada",
-                  "propuesta_modificada",
-                ].includes(
-                  c.estado
-                );
+              const c = cotizacionSeleccionada;
+              const estado = obtenerEstado(c.estado);
+              const propuesta = obtenerPropuestaActual(c);
+              const precio = propuesta.precioTotal;
+              const puedeResponder = ESTADOS_RESPUESTA_PROPUESTA.includes(
+                c.estado
+              );
 
               return (
                 <>
-
-                  <header className="p-6 md:p-8 border-b border-zinc-800 flex justify-between gap-4">
-
+                  <header
+                    className={`p-6 md:p-8 border-b ${theme.line} flex justify-between gap-4`}
+                  >
                     <div>
-
-                      <p className="text-yellow-500 text-xs uppercase tracking-widest font-bold">
-                        Cotización Wealth
+                      <p className="text-sky-500 text-xs uppercase tracking-[0.25em] font-extrabold">
+                        Cotización Macro
                       </p>
 
-                      <h2 className="text-3xl font-bold mt-2">
-                        {
-                          c.nombre
-                        }
+                      <h2
+                        className={`text-3xl font-black mt-2 ${theme.title}`}
+                      >
+                        {c.nombre}
                       </h2>
 
                       <span
-                        className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold ${estado.color}`}
+                        className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold ${estado.clase}`}
                       >
-
-                        {
-                          estado.texto
-                        }
-
+                        {estado.texto}
                       </span>
-
                     </div>
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setPropuestaOpen(
-                          false
-                        )
-                      }
-                      className="text-zinc-400 hover:text-white text-3xl"
+                      onClick={() => setPropuestaOpen(false)}
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center transition ${theme.secondaryBtn}`}
                     >
-                      ×
+                      <FaTimes />
                     </button>
-
                   </header>
 
                   <div className="p-6 md:p-8">
-
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-
-                      <p className="text-xs text-zinc-500 uppercase tracking-wider">
+                    <div className={`${theme.cardSoft} rounded-2xl p-5`}>
+                      <p
+                        className={`text-xs uppercase tracking-[0.18em] font-bold ${theme.muted}`}
+                      >
                         Tu solicitud
                       </p>
 
-                      <p className="text-zinc-300 mt-3 whitespace-pre-line">
-                        {
-                          c.descripcion
-                        }
+                      <p className={`${theme.text} mt-3 whitespace-pre-line`}>
+                        {c.descripcion}
                       </p>
-
                     </div>
 
-                    {puedeEditarSolicitud(
-                      c
-                    ) && (
+                    {puedeEditarSolicitud(c) && (
                       <div className="grid md:grid-cols-2 gap-3 mt-5">
-
                         <button
                           type="button"
                           onClick={() => {
-                            setPropuestaOpen(
-                              false
-                            );
-
-                            abrirEdicion(
-                              c
-                            );
+                            setPropuestaOpen(false);
+                            abrirEdicion(c);
                           }}
-                          className="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                          className="rounded-2xl py-4 font-bold flex items-center justify-center gap-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
                         >
-
                           <FaEdit />
-
                           Modificar solicitud
-
                         </button>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            cancelarSolicitud(
-                              c
-                            )
-                          }
-                          className="bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                          onClick={() => cancelarSolicitud(c)}
+                          className="rounded-2xl py-4 font-bold flex items-center justify-center gap-2 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition"
                         >
-
                           <FaTimesCircle />
-
                           Cancelar solicitud
-
                         </button>
-
                       </div>
                     )}
 
-                    {precio !==
-                      undefined &&
-                      precio !==
-                      null && (
+                    {precio !== undefined && precio !== null && (
                       <section className="mt-6">
-
                         <div className="mb-4">
-
-                          <p className="text-xs uppercase tracking-[0.2em] text-yellow-500 font-bold">
-                            Propuesta de Wealth
+                          <p className="text-xs uppercase tracking-[0.2em] text-sky-500 font-black">
+                            Propuesta de Macro
                           </p>
 
-                          <p className="text-zinc-500 text-sm mt-1">
+                          <p className={`${theme.muted} text-sm mt-1`}>
                             Versión {propuesta.version}
                           </p>
-
                         </div>
 
                         <div className="grid sm:grid-cols-3 gap-4">
+                          <SummaryCard
+                            title="Precio total"
+                            value={moneda(propuesta.precioTotal)}
+                            theme={theme}
+                          />
 
-                          <div className="bg-black border border-zinc-800 rounded-2xl p-5">
-                            <p className="text-zinc-500 text-xs uppercase tracking-wider">
-                              Precio total
-                            </p>
-                            <p className="text-2xl font-bold mt-2">
-                              {moneda(propuesta.precioTotal)}
-                            </p>
-                          </div>
+                          <SummaryCard
+                            title="Anticipo"
+                            value={moneda(propuesta.anticipo)}
+                            caption={
+                              propuesta.porcentajeAnticipo !== null
+                                ? `${propuesta.porcentajeAnticipo}% del total`
+                                : ""
+                            }
+                            theme={theme}
+                          />
 
-                          <div className="bg-black border border-zinc-800 rounded-2xl p-5">
-                            <p className="text-zinc-500 text-xs uppercase tracking-wider">
-                              Anticipo
-                            </p>
-                            <p className="text-xl font-bold mt-2">
-                              {moneda(propuesta.anticipo)}
-                            </p>
-                            {propuesta.porcentajeAnticipo !== null && (
-                              <p className="text-yellow-500 text-xs mt-2">
-                                {propuesta.porcentajeAnticipo}% del total
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="bg-black border border-zinc-800 rounded-2xl p-5">
-                            <p className="text-zinc-500 text-xs uppercase tracking-wider">
-                              Saldo
-                            </p>
-                            <p className="text-xl font-bold mt-2">
-                              {moneda(propuesta.saldo)}
-                            </p>
-                          </div>
-
+                          <SummaryCard
+                            title="Saldo"
+                            value={moneda(propuesta.saldo)}
+                            theme={theme}
+                          />
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4 mt-4">
+                          <SummaryCard
+                            title="Tiempo estimado"
+                            value={propuesta.tiempoEstimado || "No especificado"}
+                            theme={theme}
+                          />
 
-                          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                            <p className="text-zinc-500 text-sm">
-                              Tiempo estimado
-                            </p>
-                            <p className="text-white font-semibold mt-2">
-                              {propuesta.tiempoEstimado || "No especificado"}
-                            </p>
-                          </div>
-
-                          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                            <p className="text-zinc-500 text-sm">
-                              Garantía
-                            </p>
-                            <p className="text-white font-semibold mt-2">
-                              {propuesta.garantia || "No especificada"}
-                            </p>
-                          </div>
-
+                          <SummaryCard
+                            title="Garantía"
+                            value={propuesta.garantia || "No especificada"}
+                            theme={theme}
+                          />
                         </div>
 
                         {propuesta.observaciones && (
-                          <div className="mt-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-5">
-
-                            <p className="text-xs uppercase tracking-wider text-yellow-500 font-bold">
-                              Observaciones de Wealth
+                          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                            <p className="text-xs uppercase tracking-[0.18em] text-sky-600 font-black">
+                              Observaciones de Macro
                             </p>
 
-                            <p className="text-zinc-300 mt-3 whitespace-pre-wrap leading-relaxed">
+                            <p className="text-slate-700 mt-3 whitespace-pre-wrap leading-relaxed">
                               {propuesta.observaciones}
                             </p>
-
                           </div>
                         )}
 
                         {propuesta.fecha && (
-                          <p className="text-xs text-zinc-500 mt-4">
+                          <p className={`${theme.muted} text-xs mt-4`}>
                             Actualizada: {formatearFecha(propuesta.fecha)}
                           </p>
                         )}
-
                       </section>
                     )}
 
                     {puedeResponder && (
-                      <div className="mt-8 pt-6 border-t border-zinc-800">
-
-                        <h3 className="text-xl font-bold">
+                      <div className={`mt-8 pt-6 border-t ${theme.line}`}>
+                        <h3 className={`text-xl font-black ${theme.title}`}>
                           ¿Qué deseas hacer?
                         </h3>
 
                         <button
                           type="button"
-                          onClick={
-                            confirmarPropuesta
-                          }
-                          disabled={
-                            procesando
-                          }
-                          className="w-full bg-green-600 hover:bg-green-500 mt-5 py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                          onClick={confirmarPropuesta}
+                          disabled={procesando}
+                          className={`w-full rounded-2xl mt-5 py-4 font-black flex items-center justify-center gap-2 transition disabled:opacity-60 ${theme.successBtn}`}
                         >
-
                           <FaCheckCircle />
-
                           Aceptar propuesta
-
                         </button>
 
                         <div className="grid md:grid-cols-2 gap-3 mt-3">
-
                           <button
                             type="button"
-                            onClick={
-                              solicitarModificacion
-                            }
-                            className="bg-orange-500/10 border border-orange-500/40 text-orange-400 py-4 rounded-2xl font-semibold"
+                            onClick={solicitarModificacion}
+                            className={`rounded-2xl py-4 font-bold transition ${theme.warningBtn}`}
                           >
                             Solicitar modificación
                           </button>
 
                           <button
                             type="button"
-                            onClick={
-                              rechazarPropuesta
-                            }
-                            className="bg-red-500/10 border border-red-500/40 text-red-400 py-4 rounded-2xl font-semibold"
+                            onClick={rechazarPropuesta}
+                            className={`rounded-2xl py-4 font-bold transition ${theme.dangerBtn}`}
                           >
                             Rechazar propuesta
                           </button>
-
                         </div>
-
                       </div>
                     )}
 
-                    {Array.isArray(
-                      c.historialPropuestas
-                    ) &&
-                      c.historialPropuestas.length >
-                        0 && (
-                        <div className="mt-8 pt-6 border-t border-zinc-800">
-
+                    {Array.isArray(c.historialPropuestas) &&
+                      c.historialPropuestas.length > 0 && (
+                        <div className={`mt-8 pt-6 border-t ${theme.line}`}>
                           <div className="flex items-center gap-2">
-
-                            <FaHistory className="text-yellow-500" />
-
-                            <h3 className="font-bold">
+                            <FaHistory className="text-sky-500" />
+                            <h3 className={`font-black ${theme.title}`}>
                               Historial de propuestas
                             </h3>
-
                           </div>
 
                           <div className="space-y-3 mt-4">
+                            {c.historialPropuestas.map((propuestaHist, indice) => (
+                              <div
+                                key={indice}
+                                className={`${theme.cardSoft} rounded-2xl p-4`}
+                              >
+                                <p className={`font-bold ${theme.title}`}>
+                                  Propuesta #{propuestaHist.version ?? indice + 1}
+                                </p>
 
-                            {c.historialPropuestas.map(
-                              (
-                                propuesta,
-                                indice
-                              ) => (
-                                <div
-                                  key={
-                                    indice
-                                  }
-                                  className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
-                                >
-
-                                  <p className="font-semibold">
-                                    Propuesta #
-                                    {propuesta.version ??
-                                      indice +
-                                        1}
+                                {propuestaHist.fecha && (
+                                  <p className={`${theme.muted} text-xs mt-1`}>
+                                    {formatearFecha(propuestaHist.fecha)}
                                   </p>
-
-                                  {propuesta.fecha && (
-                                    <p className="text-xs text-zinc-500 mt-1">
-
-                                      {formatearFecha(
-                                        propuesta.fecha
-                                      )}
-
-                                    </p>
-                                  )}
-
-                                </div>
-                              )
-                            )}
-
+                                )}
+                              </div>
+                            ))}
                           </div>
-
                         </div>
                       )}
-
                   </div>
-
                 </>
               );
             })()}
-
           </div>
-
-        </div>
+        </ModalOverlay>
       )}
 
       {/* =================================================
-          HISTORIAL / LÍNEA DE TIEMPO
+          MODAL HISTORIAL
       ================================================= */}
 
-      {historialOpen &&
-        cotizacionHistorial && (
-        <div
-          className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm overflow-y-auto p-4"
-          onClick={() =>
-            setHistorialOpen(
-              false
-            )
-          }
+      {historialOpen && cotizacionHistorial && (
+        <ModalOverlay
+          onClose={() => setHistorialOpen(false)}
+          theme={theme}
+          z="z-[120]"
         >
-
-          <div
-            className="w-full max-w-2xl mx-auto my-8 bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            <header className="p-6 md:p-8 border-b border-zinc-800 flex items-start justify-between gap-4">
-
+          <div className={`${theme.card} w-full max-w-2xl rounded-[30px] overflow-hidden`}>
+            <header
+              className={`p-6 md:p-8 border-b ${theme.line} flex items-start justify-between gap-4`}
+            >
               <div>
-
-                <p className="text-yellow-500 text-xs uppercase tracking-[0.2em] font-bold">
-                  Seguimiento Wealth
+                <p className="text-sky-500 text-xs uppercase tracking-[0.2em] font-black">
+                  Seguimiento del proyecto
                 </p>
 
-                <h2 className="text-2xl md:text-3xl font-bold mt-2">
+                <h2 className={`text-2xl md:text-3xl font-black mt-2 ${theme.title}`}>
                   Historial del proyecto
                 </h2>
 
-                <p className="text-zinc-500 mt-1">
-                  {cotizacionHistorial.nombre ||
-                    "Cotización"}
+                <p className={`${theme.muted} mt-1`}>
+                  {cotizacionHistorial.nombre || "Cotización"}
                 </p>
-
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setHistorialOpen(
-                    false
-                  )
-                }
-                className="w-11 h-11 bg-black border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white"
+                onClick={() => setHistorialOpen(false)}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition ${theme.secondaryBtn}`}
               >
-
                 <FaTimes />
-
               </button>
-
             </header>
 
-            <div className="p-6 md:p-8">
-
-              {obtenerHistorialVisible(
-                cotizacionHistorial
-              ).length ===
-              0 ? (
-                <div className="bg-black border border-zinc-800 rounded-2xl p-8 text-center text-zinc-500">
+            <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
+              {obtenerHistorialVisible(cotizacionHistorial).length === 0 ? (
+                <div className={`${theme.cardSoft} rounded-2xl p-8 text-center ${theme.muted}`}>
                   Todavía no hay movimientos registrados.
                 </div>
               ) : (
                 <div className="relative">
-
-                  <div className="absolute left-[11px] top-2 bottom-2 w-px bg-zinc-800" />
+                  <div className="absolute left-[11px] top-2 bottom-2 w-px bg-sky-200" />
 
                   <div className="space-y-6">
-
-                    {obtenerHistorialVisible(
-                      cotizacionHistorial
-                    ).map(
-                      (
-                        evento,
-                        indice
-                      ) => (
+                    {obtenerHistorialVisible(cotizacionHistorial).map(
+                      (evento, indice) => (
                         <div
                           key={`${evento.tipo}-${obtenerMillis(
                             evento.fecha
                           )}-${indice}`}
                           className="relative pl-10"
                         >
-
-                          <div className="absolute left-0 top-1.5 w-[23px] h-[23px] rounded-full bg-black border-2 border-yellow-500 flex items-center justify-center">
-
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-
+                          <div className="absolute left-0 top-1.5 w-[23px] h-[23px] rounded-full bg-white border-2 border-sky-500 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-sky-500 rounded-full" />
                           </div>
 
-                          <div className="bg-black border border-zinc-800 rounded-2xl p-4">
-
+                          <div className={`${theme.cardSoft} rounded-2xl p-4`}>
                             <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-
                               <div>
-
-                                <p className="font-bold">
-                                  {
-                                    evento.titulo
-                                  }
+                                <p className={`font-black ${theme.title}`}>
+                                  {evento.titulo}
                                 </p>
 
                                 {evento.descripcion && (
-                                  <p className="text-zinc-400 text-sm mt-1">
-                                    {
-                                      evento.descripcion
-                                    }
+                                  <p className={`${theme.text} text-sm mt-1`}>
+                                    {evento.descripcion}
                                   </p>
                                 )}
-
                               </div>
 
-                              <span className="text-zinc-600 text-xs shrink-0">
-                                {evento.actor ===
-                                "cliente"
-                                  ? "Tú"
-                                  : "Wealth"}
+                              <span className={`${theme.muted} text-xs shrink-0`}>
+                                {evento.actor === "cliente" ? "Tú" : "Macro"}
                               </span>
-
                             </div>
 
-                            <p className="text-yellow-500/80 text-xs mt-3">
-                              {
-                                formatearFecha(
-                                  evento.fecha
-                                )
-                              }
+                            <p className="text-sky-600 text-xs mt-3">
+                              {formatearFecha(evento.fecha)}
                             </p>
 
                             {evento.fechaInicioInstalacion &&
                               evento.fechaFinInstalacion && (
-                                <p className="text-cyan-400 text-xs mt-2">
-
-                                  Instalación:{" "}
-                                  {
-                                    evento.fechaInicioInstalacion
-                                  }{" "}
-                                  →{" "}
-                                  {
-                                    evento.fechaFinInstalacion
-                                  }
-
+                                <p className="text-cyan-600 text-xs mt-2">
+                                  Instalación: {evento.fechaInicioInstalacion} →{" "}
+                                  {evento.fechaFinInstalacion}
                                 </p>
                               )}
-
                           </div>
-
                         </div>
                       )
                     )}
-
                   </div>
-
                 </div>
               )}
-
             </div>
-
           </div>
-
-        </div>
+        </ModalOverlay>
       )}
 
       {/* =================================================
-          GALERÍA GRANDE
+          GALERÍA
       ================================================= */}
 
-      {galeriaOpen &&
-        imgs.length >
-          0 && (
+      {galeriaOpen && imgs.length > 0 && (
         <div
-          className="fixed inset-0 z-[130] bg-black/95 flex items-center justify-center"
-          onClick={() =>
-            setGaleriaOpen(
-              false
-            )
-          }
+          className="fixed inset-0 z-[130] bg-slate-950/95 flex items-center justify-center"
+          onClick={() => setGaleriaOpen(false)}
         >
-
-          {imgs.length >
-            1 && (
+          {imgs.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-
                 anteriorImagen();
               }}
               className="absolute left-5 text-white text-5xl z-10"
@@ -5767,23 +2827,17 @@ function Cotizaciones() {
           )}
 
           <img
-            src={
-              imgs[index]
-            }
+            src={imgs[index]}
             alt="Cotización"
             className="max-w-[90%] max-h-[90%] object-contain rounded-xl"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           />
 
-          {imgs.length >
-            1 && (
+          {imgs.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-
                 siguienteImagen();
               }}
               className="absolute right-5 text-white text-5xl z-10"
@@ -5794,19 +2848,13 @@ function Cotizaciones() {
 
           <button
             type="button"
-            onClick={() =>
-              setGaleriaOpen(
-                false
-              )
-            }
+            onClick={() => setGaleriaOpen(false)}
             className="absolute top-5 right-5 text-white text-5xl"
           >
             ×
           </button>
-
         </div>
       )}
-
     </div>
   );
 }
@@ -5815,79 +2863,84 @@ function Cotizaciones() {
    COMPONENTES AUXILIARES
 ====================================================== */
 
-function Campo({
-  children,
-}) {
+function ModalOverlay({ children, onClose, theme, z = "z-[100]" }) {
+  return (
+    <div
+      className={`fixed inset-0 ${z} ${theme.overlay} backdrop-blur-sm overflow-y-auto p-4`}
+    >
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative min-h-full flex items-center justify-center py-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldBlock({ label, icon, children, theme }) {
   return (
     <div>
+      <label className={`text-sm font-bold flex items-center gap-2 mb-2 ${theme.text}`}>
+        <span className="text-sky-500">{icon}</span>
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-function Label({
-  children,
-  icon,
-}) {
+function MiniStat({ theme, label, value, icon, accent = false }) {
   return (
-    <label className="text-sm text-zinc-400 flex items-center gap-2 mb-2">
-
-      <span className="text-yellow-500">
+    <div
+      className={`rounded-[22px] p-4 ${
+        accent
+          ? "bg-red-50 border border-red-200"
+          : theme.card
+      }`}
+    >
+      <div
+        className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+          accent
+            ? "bg-red-100 text-red-600"
+            : "bg-sky-100 text-sky-600"
+        }`}
+      >
         {icon}
-      </span>
+      </div>
 
-      {children}
+      <p className={`text-[11px] uppercase tracking-[0.18em] font-bold mt-4 ${theme.muted}`}>
+        {label}
+      </p>
 
-    </label>
+      <p className={`text-2xl font-black mt-2 ${accent ? "text-red-600" : theme.title}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 
-function ResumenItem({
-  titulo,
-  valor,
-}) {
+function SummaryCard({ title, value, caption = "", theme }) {
+  return (
+    <div className={`${theme.cardSoft} rounded-2xl p-5`}>
+      <p className={`text-xs uppercase tracking-[0.16em] font-bold ${theme.muted}`}>
+        {title}
+      </p>
+
+      <p className={`text-xl md:text-2xl font-black mt-2 ${theme.title}`}>
+        {value}
+      </p>
+
+      {caption ? <p className="text-sky-600 text-xs mt-2">{caption}</p> : null}
+    </div>
+  );
+}
+
+function ResumenItem({ titulo, valor, theme }) {
   return (
     <div className="grid sm:grid-cols-[190px_1fr] gap-1 sm:gap-4 text-sm">
-
-      <span className="text-zinc-500">
-        {titulo}
-      </span>
-
-      <span className="text-zinc-200 break-words">
-        {valor}
-      </span>
-
+      <span className={theme.muted}>{titulo}</span>
+      <span className={`${theme.text} break-words`}>{valor}</span>
     </div>
   );
 }
-
-/* ======================================================
-   ESTILO INPUT
-====================================================== */
-
-const inputClass = `
-  w-full
-
-  p-4
-
-  rounded-2xl
-
-  bg-zinc-800
-
-  border
-  border-zinc-700
-
-  text-white
-
-  placeholder:text-zinc-600
-
-  outline-none
-
-  focus:border-yellow-500
-  focus:ring-2
-  focus:ring-yellow-500/10
-
-  transition
-`;
 
 export default Cotizaciones;

@@ -50,148 +50,243 @@ import {
   FaUserLock,
 } from "react-icons/fa";
 
+
 /* ======================================================
    CONFIGURACIÓN
 ====================================================== */
 
-const DOMINIO_INTERNO = "wealth.local";
-const SEGUNDOS_REENVIO = 60;
+const DOMINIO_INTERNO =
+  "macro.local";
+
+const SEGUNDOS_REENVIO =
+  60;
+
 
 /* ======================================================
-   HELPERS TELÉFONO
+   TELÉFONO
 ====================================================== */
 
-const normalizarTelefonoMexico = (valor) => {
-  const limpio = String(valor || "")
-    .trim()
-    .replace(/[\s()-]/g, "");
+const normalizarTelefonoMexico =
+  (valor) => {
+    const limpio =
+      String(
+        valor || ""
+      )
+        .trim()
+        .replace(
+          /[\s()-]/g,
+          ""
+        );
 
-  if (limpio.startsWith("+")) {
-    const numeros = limpio.slice(1).replace(/\D/g, "");
 
-    if (/^\d{10,15}$/.test(numeros)) {
-      return `+${numeros}`;
+    if (
+      limpio.startsWith("+")
+    ) {
+      const numeros =
+        limpio
+          .slice(1)
+          .replace(
+            /\D/g,
+            ""
+          );
+
+
+      if (
+        /^\d{10,15}$/.test(
+          numeros
+        )
+      ) {
+        return `+${numeros}`;
+      }
+
+
+      return null;
     }
 
+
+    const soloNumeros =
+      limpio.replace(
+        /\D/g,
+        ""
+      );
+
+
+    if (
+      soloNumeros.length ===
+      10
+    ) {
+      return `+52${soloNumeros}`;
+    }
+
+
+    if (
+      soloNumeros.length ===
+        12 &&
+      soloNumeros.startsWith(
+        "52"
+      )
+    ) {
+      return `+${soloNumeros}`;
+    }
+
+
     return null;
-  }
+  };
 
-  const soloNumeros = limpio.replace(/\D/g, "");
 
-  if (soloNumeros.length === 10) {
-    return `+52${soloNumeros}`;
-  }
+const telefonoAEmailInterno =
+  (telefonoE164) => {
+    const numeros =
+      String(
+        telefonoE164 || ""
+      ).replace(
+        /\D/g,
+        ""
+      );
 
-  if (
-    soloNumeros.length === 12 &&
-    soloNumeros.startsWith("52")
-  ) {
-    return `+${soloNumeros}`;
-  }
 
-  return null;
-};
+    return `${numeros}@${DOMINIO_INTERNO}`;
+  };
 
-const telefonoAEmailInterno = (telefonoE164) => {
-  const numeros = String(telefonoE164 || "")
-    .replace(/\D/g, "");
-
-  return `${numeros}@${DOMINIO_INTERNO}`;
-};
 
 /* ======================================================
-   COMPONENTE
+   LOGIN
 ====================================================== */
 
 function Login() {
-  const { modoOscuro = false } = useOutletContext() || {};
+  const {
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
 
-  const navigate = useNavigate();
+
+  const navigate =
+    useNavigate();
+
 
   /* ======================================================
      MODOS
   ====================================================== */
 
-  const [modo, setModo] =
-    useState("opciones");
+  const [
+    modo,
+    setModo,
+  ] = useState(
+    "opciones"
+  );
+
 
   /* ======================================================
      CORREO
   ====================================================== */
 
-  const [correo, setCorreo] =
-    useState("");
+  const [
+    correo,
+    setCorreo,
+  ] = useState("");
 
-  const [passwordCorreo, setPasswordCorreo] =
-    useState("");
+
+  const [
+    passwordCorreo,
+    setPasswordCorreo,
+  ] = useState("");
+
 
   const [
     mostrarPasswordCorreo,
     setMostrarPasswordCorreo,
   ] = useState(false);
 
+
   /* ======================================================
-     TELÉFONO + CONTRASEÑA
+     TELÉFONO
   ====================================================== */
 
-  const [telefono, setTelefono] =
-    useState("");
+  const [
+    telefono,
+    setTelefono,
+  ] = useState("");
 
-  const [passwordTelefono, setPasswordTelefono] =
-    useState("");
+
+  const [
+    passwordTelefono,
+    setPasswordTelefono,
+  ] = useState("");
+
 
   const [
     mostrarPasswordTelefono,
     setMostrarPasswordTelefono,
   ] = useState(false);
 
+
   /* ======================================================
      RECUPERACIÓN TELÉFONO
   ====================================================== */
 
-  const [codigo, setCodigo] =
-    useState("");
+  const [
+    codigo,
+    setCodigo,
+  ] = useState("");
+
 
   const [
     confirmationResult,
     setConfirmationResult,
   ] = useState(null);
 
+
   const [
     numeroVerificando,
     setNumeroVerificando,
   ] = useState("");
 
-  const [contador, setContador] =
-    useState(0);
+
+  const [
+    contador,
+    setContador,
+  ] = useState(0);
+
 
   const [
     nuevaPassword,
     setNuevaPassword,
   ] = useState("");
 
+
   const [
     confirmarNuevaPassword,
     setConfirmarNuevaPassword,
   ] = useState("");
+
 
   const [
     mostrarNuevaPassword,
     setMostrarNuevaPassword,
   ] = useState(false);
 
+
   /* ======================================================
-     LOADING / MENSAJES
+     UI
   ====================================================== */
 
-  const [loading, setLoading] =
-    useState(false);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  const [error, setError] =
-    useState("");
 
-  const [mensaje, setMensaje] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  const [
+    mensaje,
+    setMensaje,
+  ] = useState("");
+
 
   /* ======================================================
      RECAPTCHA
@@ -200,73 +295,100 @@ function Login() {
   const recaptchaRef =
     useRef(null);
 
+
   const recaptchaWidgetIdRef =
     useRef(null);
+
 
   /* ======================================================
      TEMPORIZADOR
   ====================================================== */
 
   useEffect(() => {
-    if (contador <= 0) {
+    if (
+      contador <= 0
+    ) {
       return;
     }
 
-    const timer = setInterval(
-      () => {
-        setContador(
-          (actual) =>
-            actual > 0
-              ? actual - 1
-              : 0
-        );
-      },
-      1000
-    );
+
+    const timer =
+      setInterval(
+        () => {
+          setContador(
+            (actual) =>
+              actual > 0
+                ? actual - 1
+                : 0
+          );
+        },
+        1000
+      );
+
 
     return () =>
-      clearInterval(timer);
-  }, [contador]);
+      clearInterval(
+        timer
+      );
+
+  }, [
+    contador,
+  ]);
+
 
   /* ======================================================
      RECAPTCHA
   ====================================================== */
 
-  const resetearRecaptcha = () => {
-    try {
-      if (
-        typeof window !== "undefined" &&
-        window.grecaptcha &&
-        recaptchaWidgetIdRef.current !== null
-      ) {
-        window.grecaptcha.reset(
-          recaptchaWidgetIdRef.current
+  const resetearRecaptcha =
+    () => {
+      try {
+        if (
+          typeof window !==
+            "undefined" &&
+          window.grecaptcha &&
+          recaptchaWidgetIdRef.current !==
+            null
+        ) {
+          window.grecaptcha.reset(
+            recaptchaWidgetIdRef.current
+          );
+        }
+
+      } catch (err) {
+        console.warn(
+          "No se pudo resetear reCAPTCHA:",
+          err
         );
       }
-    } catch (resetError) {
-      console.warn(
-        "No se pudo resetear reCAPTCHA:",
-        resetError
-      );
-    }
-  };
+    };
 
-  const destruirRecaptcha = () => {
-    try {
-      recaptchaRef.current?.clear();
-    } catch {
-      // Ignorar.
-    }
 
-    recaptchaRef.current = null;
-    recaptchaWidgetIdRef.current = null;
-  };
+  const destruirRecaptcha =
+    () => {
+      try {
+        recaptchaRef.current?.clear();
+
+      } catch {
+        // ignorar
+      }
+
+
+      recaptchaRef.current =
+        null;
+
+
+      recaptchaWidgetIdRef.current =
+        null;
+    };
+
 
   useEffect(() => {
-    return () => {
+    return () =>
       destruirRecaptcha();
-    };
+
   }, []);
+
 
   const prepararRecaptcha =
     async () => {
@@ -276,10 +398,12 @@ function Login() {
         return recaptchaRef.current;
       }
 
+
       const container =
         document.getElementById(
           "recaptcha-login"
         );
+
 
       if (!container) {
         throw new Error(
@@ -287,14 +411,17 @@ function Login() {
         );
       }
 
+
       const verifier =
         new RecaptchaVerifier(
           auth,
           "recaptcha-login",
           {
-            size: "invisible",
+            size:
+              "invisible",
 
-            callback: () => {},
+            callback:
+              () => {},
 
             "expired-callback":
               () => {
@@ -303,21 +430,31 @@ function Login() {
           }
         );
 
+
       recaptchaRef.current =
         verifier;
+
 
       recaptchaWidgetIdRef.current =
         await verifier.render();
 
+
       return verifier;
     };
 
+
   /* ======================================================
-     PERFIL FIRESTORE
+     FIRESTORE
+     OBTENER PERFIL
   ====================================================== */
 
   const obtenerPerfil =
     async (user) => {
+      if (!user) {
+        return null;
+      }
+
+
       const ref =
         doc(
           db,
@@ -325,41 +462,339 @@ function Login() {
           user.uid
         );
 
+
       const snap =
-        await getDoc(ref);
+        await getDoc(
+          ref
+        );
+
 
       if (!snap.exists()) {
         return null;
       }
 
+
       return {
-        id: snap.id,
+        id:
+          snap.id,
+
         ...snap.data(),
       };
     };
 
-  const actualizarUltimoAcceso =
-    async (user) => {
-      if (!user) return;
 
-      await setDoc(
+  /* ======================================================
+     CREAR / REPARAR PERFIL AUTOMÁTICAMENTE
+  ====================================================== */
+
+  const asegurarPerfilUsuario =
+    async (
+      user,
+      proveedor = "password",
+      datosExtra = {}
+    ) => {
+      if (!user) {
+        throw new Error(
+          "No existe un usuario autenticado."
+        );
+      }
+
+
+      const ref =
         doc(
           db,
           "users",
           user.uid
-        ),
-        {
-          ultimoAcceso:
+        );
+
+
+      const snap =
+        await getDoc(
+          ref
+        );
+
+
+      /* =====================================
+         PROVEEDORES
+      ===================================== */
+
+      let proveedores = [
+        "password",
+      ];
+
+
+      if (
+        proveedor ===
+        "google"
+      ) {
+        proveedores = [
+          "google",
+        ];
+      }
+
+
+      if (
+        proveedor ===
+        "telefono_password"
+      ) {
+        proveedores = [
+          "phone",
+          "password",
+        ];
+      }
+
+
+      /* =====================================
+         CREAR SI NO EXISTE
+      ===================================== */
+
+      if (
+        !snap.exists()
+      ) {
+        const telefonoFinal =
+          user.phoneNumber ||
+          datosExtra.telefono ||
+          "";
+
+
+        const perfilNuevo = {
+          uid:
+            user.uid,
+
+          nombre:
+            user.displayName ||
+            datosExtra.nombre ||
+            "Usuario",
+
+          correo:
+            proveedor ===
+            "telefono_password"
+              ? ""
+              : user.email ||
+                "",
+
+          telefono:
+            telefonoFinal,
+
+          role:
+            "cliente",
+
+          estadoCuenta:
+            "activa",
+
+          temaPreferido:
+            "claro",
+
+          proveedor,
+
+          proveedores,
+
+          emailVerificado:
+            Boolean(
+              user.emailVerified
+            ),
+
+          telefonoVerificado:
+            Boolean(
+              telefonoFinal
+            ),
+
+          fechaRegistro:
             serverTimestamp(),
 
           fechaActualizacion:
             serverTimestamp(),
-        },
+
+          ultimoAcceso:
+            serverTimestamp(),
+        };
+
+
+        if (
+          proveedor ===
+          "telefono_password"
+        ) {
+          perfilNuevo.telefonoNacional =
+            telefonoFinal.replace(
+              /^\+52/,
+              ""
+            );
+
+
+          perfilNuevo.correoInterno =
+            datosExtra.correoInterno ||
+            user.email ||
+            "";
+        }
+
+
+        await setDoc(
+          ref,
+          perfilNuevo
+        );
+
+
+        return {
+          ...perfilNuevo,
+
+          role:
+            "cliente",
+        };
+      }
+
+
+      /* =====================================
+         PERFIL YA EXISTE
+      ===================================== */
+
+      const perfilActual =
+        snap.data();
+
+
+      /*
+        MUY IMPORTANTE:
+
+        Si ya es admin, conservamos admin.
+        Nunca reemplazamos admin por cliente.
+      */
+
+      const roleActual =
+        perfilActual.role ||
+        "cliente";
+
+
+      const telefonoFinal =
+        perfilActual.telefono ||
+        user.phoneNumber ||
+        datosExtra.telefono ||
+        "";
+
+
+      const actualizacion = {
+        uid:
+          user.uid,
+
+        nombre:
+          perfilActual.nombre ||
+          user.displayName ||
+          datosExtra.nombre ||
+          "Usuario",
+
+        correo:
+          perfilActual.correo ||
+          (
+            proveedor ===
+            "telefono_password"
+              ? ""
+              : user.email ||
+                ""
+          ),
+
+        telefono:
+          telefonoFinal,
+
+        role:
+          roleActual,
+
+        estadoCuenta:
+          perfilActual.estadoCuenta ||
+          "activa",
+
+        temaPreferido:
+          perfilActual.temaPreferido ||
+          "claro",
+
+        proveedor:
+          perfilActual.proveedor ||
+          proveedor,
+
+        proveedores:
+          Array.isArray(
+            perfilActual.proveedores
+          ) &&
+          perfilActual
+            .proveedores
+            .length >
+            0
+            ? perfilActual.proveedores
+            : proveedores,
+
+        emailVerificado:
+          Boolean(
+            user.emailVerified ||
+            perfilActual.emailVerificado
+          ),
+
+        telefonoVerificado:
+          Boolean(
+            telefonoFinal ||
+            perfilActual
+              .telefonoVerificado
+          ),
+
+        fechaActualizacion:
+          serverTimestamp(),
+
+        ultimoAcceso:
+          serverTimestamp(),
+      };
+
+
+      if (
+        proveedor ===
+        "telefono_password"
+      ) {
+        if (
+          !perfilActual
+            .telefonoNacional
+        ) {
+          actualizacion.telefonoNacional =
+            telefonoFinal.replace(
+              /^\+52/,
+              ""
+            );
+        }
+
+
+        if (
+          !perfilActual
+            .correoInterno
+        ) {
+          actualizacion.correoInterno =
+            datosExtra.correoInterno ||
+            user.email ||
+            "";
+        }
+      }
+
+
+      await setDoc(
+        ref,
+        actualizacion,
         {
-          merge: true,
+          merge:
+            true,
         }
       );
+
+
+      return {
+        id:
+          snap.id,
+
+        ...perfilActual,
+
+        ...actualizacion,
+
+        role:
+          roleActual,
+      };
     };
+
+
+  /* ======================================================
+     REDIRECCIÓN SEGÚN ROLE
+  ====================================================== */
 
   const redirigirSegunRol =
     (perfil) => {
@@ -370,20 +805,24 @@ function Login() {
         navigate(
           "/admin",
           {
-            replace: true,
+            replace:
+              true,
           }
         );
 
         return;
       }
 
+
       navigate(
         "/cliente",
         {
-          replace: true,
+          replace:
+            true,
         }
       );
     };
+
 
   /* ======================================================
      ERRORES SMS
@@ -396,37 +835,47 @@ function Login() {
         firebaseError
       );
 
+
       switch (
         firebaseError?.code
       ) {
         case "auth/invalid-phone-number":
           return "El número de teléfono no es válido.";
 
+
         case "auth/too-many-requests":
-          return "Se hicieron demasiados intentos. Espera un momento e inténtalo nuevamente.";
+          return "Se hicieron demasiados intentos. Espera un momento.";
+
 
         case "auth/quota-exceeded":
           return "Se alcanzó temporalmente el límite de SMS.";
 
+
         case "auth/invalid-verification-id":
-          return "La verificación SMS ya no es válida. Solicita un código nuevo.";
+          return "La verificación SMS ya no es válida.";
+
 
         case "auth/app-not-authorized":
           return "Esta aplicación no está autorizada para usar Firebase Authentication.";
 
+
         case "auth/billing-not-enabled":
-          return "Firebase todavía no tiene habilitada la facturación para SMS reales.";
+          return "Firebase todavía no tiene habilitada la facturación para SMS.";
+
 
         case "auth/operation-not-allowed":
-          return "El acceso por teléfono no está habilitado en Firebase.";
+          return "El acceso por teléfono no está habilitado.";
+
 
         case "auth/unauthorized-domain":
-          return "Este dominio todavía no está autorizado en Firebase Authentication.";
+          return "Este dominio todavía no está autorizado.";
+
 
         case "auth/captcha-check-failed":
         case "auth/invalid-app-credential":
         case "auth/missing-app-credential":
-          return "No se pudo validar reCAPTCHA. Inténtalo nuevamente.";
+          return "No se pudo validar reCAPTCHA.";
+
 
         default:
           return (
@@ -435,6 +884,7 @@ function Login() {
           );
       }
     };
+
 
   /* ======================================================
      GOOGLE
@@ -445,8 +895,12 @@ function Login() {
       setError("");
       setMensaje("");
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const result =
           await signInWithPopup(
@@ -454,116 +908,71 @@ function Login() {
             provider
           );
 
-        const user =
-          result.user;
 
-        let perfil =
-          await obtenerPerfil(
-            user
+        const perfil =
+          await asegurarPerfilUsuario(
+            result.user,
+            "google"
           );
 
-        if (!perfil) {
-          await setDoc(
-            doc(
-              db,
-              "users",
-              user.uid
-            ),
-            {
-              uid: user.uid,
-
-              nombre:
-                user.displayName ||
-                "Usuario",
-
-              correo:
-                user.email ||
-                "",
-
-              telefono:
-                user.phoneNumber ||
-                "",
-
-              role:
-                "cliente",
-
-              proveedor:
-                "google",
-
-              proveedores: [
-                "google",
-              ],
-
-              emailVerificado:
-                user.emailVerified ||
-                false,
-
-              fechaRegistro:
-                serverTimestamp(),
-
-              fechaActualizacion:
-                serverTimestamp(),
-
-              ultimoAcceso:
-                serverTimestamp(),
-            }
-          );
-
-          perfil = {
-            role:
-              "cliente",
-          };
-        } else {
-          await actualizarUltimoAcceso(
-            user
-          );
-        }
 
         redirigirSegunRol(
           perfil
         );
+
       } catch (firebaseError) {
         console.error(
           "Error Google:",
           firebaseError
         );
 
+
         if (
           firebaseError?.code ===
           "auth/popup-closed-by-user"
         ) {
           setError(
-            "La ventana de Google fue cerrada antes de completar el acceso."
+            "La ventana de Google fue cerrada."
           );
+
         } else if (
           firebaseError?.code ===
           "auth/account-exists-with-different-credential"
         ) {
           setError(
-            "Ya existe una cuenta con ese correo usando otro método de acceso."
+            "Ya existe una cuenta con ese correo usando otro método."
           );
+
         } else {
           setError(
             "No se pudo iniciar sesión con Google."
           );
         }
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
 
+
   /* ======================================================
-     CORREO + CONTRASEÑA
+     CORREO
   ====================================================== */
 
   const loginCorreo =
     async (e) => {
       e.preventDefault();
 
+
       setError("");
       setMensaje("");
 
-      if (!correo.trim()) {
+
+      if (
+        !correo.trim()
+      ) {
         setError(
           "Escribe tu correo electrónico."
         );
@@ -571,7 +980,10 @@ function Login() {
         return;
       }
 
-      if (!passwordCorreo) {
+
+      if (
+        !passwordCorreo
+      ) {
         setError(
           "Escribe tu contraseña."
         );
@@ -579,8 +991,12 @@ function Login() {
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const result =
           await signInWithEmailAndPassword(
@@ -591,33 +1007,30 @@ function Login() {
             passwordCorreo
           );
 
+
+        /*
+          Si existe en Authentication
+          pero NO en Firestore,
+          se crea automáticamente.
+        */
+
         const perfil =
-          await obtenerPerfil(
-            result.user
+          await asegurarPerfilUsuario(
+            result.user,
+            "password"
           );
 
-        if (!perfil) {
-          await signOut(auth);
-
-          setError(
-            "No encontramos tu perfil Wealth. Regístrate primero."
-          );
-
-          return;
-        }
-
-        await actualizarUltimoAcceso(
-          result.user
-        );
 
         redirigirSegunRol(
           perfil
         );
+
       } catch (firebaseError) {
         console.error(
           "Error correo:",
           firebaseError
         );
+
 
         if (
           [
@@ -631,38 +1044,55 @@ function Login() {
           setError(
             "Correo o contraseña incorrectos."
           );
+
         } else if (
           firebaseError?.code ===
           "auth/too-many-requests"
         ) {
           setError(
-            "Demasiados intentos. Intenta nuevamente más tarde."
+            "Demasiados intentos. Intenta más tarde."
           );
+
         } else {
           setError(
             "No se pudo iniciar sesión."
           );
         }
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
+
+
+  /* ======================================================
+     RECUPERAR CORREO
+  ====================================================== */
 
   const recuperarCorreo =
     async () => {
       setError("");
       setMensaje("");
 
-      if (!correo.trim()) {
+
+      if (
+        !correo.trim()
+      ) {
         setError(
-          "Escribe primero tu correo electrónico."
+          "Escribe primero tu correo."
         );
 
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         await sendPasswordResetEmail(
           auth,
@@ -671,48 +1101,61 @@ function Login() {
             .toLowerCase()
         );
 
+
         setMensaje(
-          `Enviamos un enlace de recuperación a ${correo.trim()}.`
+          `Enviamos un enlace a ${correo.trim()}.`
         );
+
       } catch (firebaseError) {
         console.error(
           "Recuperación correo:",
           firebaseError
         );
 
+
         setError(
           "No se pudo enviar el correo de recuperación."
         );
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
 
+
   /* ======================================================
-     TELÉFONO + CONTRASEÑA
+     LOGIN TELÉFONO
   ====================================================== */
 
   const loginTelefono =
     async (e) => {
       e.preventDefault();
 
+
       setError("");
       setMensaje("");
+
 
       const telefonoE164 =
         normalizarTelefonoMexico(
           telefono
         );
 
+
       if (!telefonoE164) {
         setError(
-          "Escribe un teléfono válido de México de 10 dígitos."
+          "Escribe un teléfono válido de México."
         );
 
         return;
       }
 
-      if (!passwordTelefono) {
+
+      if (
+        !passwordTelefono
+      ) {
         setError(
           "Escribe tu contraseña."
         );
@@ -720,13 +1163,18 @@ function Login() {
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const emailInterno =
           telefonoAEmailInterno(
             telefonoE164
           );
+
 
         const result =
           await signInWithEmailAndPassword(
@@ -735,65 +1183,46 @@ function Login() {
             passwordTelefono
           );
 
+
         const perfil =
-          await obtenerPerfil(
-            result.user
+          await asegurarPerfilUsuario(
+            result.user,
+            "telefono_password",
+            {
+              telefono:
+                telefonoE164,
+
+              correoInterno:
+                emailInterno,
+            }
           );
 
-        if (!perfil) {
-          await signOut(auth);
-
-          setError(
-            "No encontramos tu perfil Wealth."
-          );
-
-          return;
-        }
-
-        await actualizarUltimoAcceso(
-          result.user
-        );
 
         redirigirSegunRol(
           perfil
         );
+
       } catch (firebaseError) {
         console.error(
-          "Error teléfono + contraseña:",
+          "Error login teléfono:",
           firebaseError
         );
 
-        if (
-          [
-            "auth/invalid-credential",
-            "auth/wrong-password",
-            "auth/user-not-found",
-          ].includes(
-            firebaseError?.code
-          )
-        ) {
-          setError(
-            "Teléfono o contraseña incorrectos."
-          );
-        } else if (
-          firebaseError?.code ===
-          "auth/too-many-requests"
-        ) {
-          setError(
-            "Demasiados intentos. Espera un momento."
-          );
-        } else {
-          setError(
-            "No se pudo iniciar sesión."
-          );
-        }
+
+        setError(
+          "Teléfono o contraseña incorrectos."
+        );
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
 
+
   /* ======================================================
-     RECUPERACIÓN POR SMS
+     RECUPERACIÓN TELÉFONO
   ====================================================== */
 
   const iniciarRecuperacionTelefono =
@@ -801,10 +1230,12 @@ function Login() {
       setError("");
       setMensaje("");
 
+
       const telefonoE164 =
         normalizarTelefonoMexico(
           telefono
         );
+
 
       if (!telefonoE164) {
         setError(
@@ -814,13 +1245,19 @@ function Login() {
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const verifier =
           await prepararRecaptcha();
 
+
         resetearRecaptcha();
+
 
         const resultado =
           await signInWithPhoneNumber(
@@ -829,27 +1266,34 @@ function Login() {
             verifier
           );
 
+
         setConfirmationResult(
           resultado
         );
+
 
         setNumeroVerificando(
           telefonoE164
         );
 
+
         setCodigo("");
+
 
         setContador(
           SEGUNDOS_REENVIO
         );
 
+
         setModo(
           "recuperarTelefonoCodigo"
         );
 
+
         setMensaje(
-          "Enviamos un código de seguridad a tu teléfono."
+          "Enviamos un código de seguridad."
         );
+
       } catch (firebaseError) {
         setError(
           mensajeErrorSMS(
@@ -857,20 +1301,33 @@ function Login() {
           )
         );
 
+
         resetearRecaptcha();
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
+
+
+  /* ======================================================
+     VERIFICAR CÓDIGO RECUPERACIÓN
+  ====================================================== */
 
   const verificarCodigoRecuperacion =
     async () => {
       setError("");
       setMensaje("");
 
+
       const codigoLimpio =
-        codigo
-          .replace(/\D/g, "");
+        codigo.replace(
+          /\D/g,
+          ""
+        );
+
 
       if (
         codigoLimpio.length !==
@@ -883,7 +1340,10 @@ function Login() {
         return;
       }
 
-      if (!confirmationResult) {
+
+      if (
+        !confirmationResult
+      ) {
         setError(
           "Solicita un nuevo código."
         );
@@ -891,45 +1351,55 @@ function Login() {
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const result =
           await confirmationResult.confirm(
             codigoLimpio
           );
 
-        const perfil =
-          await obtenerPerfil(
-            result.user
-          );
 
-        if (!perfil) {
-          await signOut(auth);
+        /*
+          Si por alguna razón el usuario
+          estaba en Authentication pero no
+          tenía users/{uid}, también se crea.
+        */
 
-          setError(
-            "Este teléfono no tiene un perfil Wealth registrado."
-          );
+        await asegurarPerfilUsuario(
+          result.user,
+          "telefono_password",
+          {
+            telefono:
+              numeroVerificando,
 
-          setModo(
-            "telefono"
-          );
+            correoInterno:
+              telefonoAEmailInterno(
+                numeroVerificando
+              ),
+          }
+        );
 
-          return;
-        }
 
         setModo(
           "recuperarTelefonoPassword"
         );
 
+
         setMensaje(
-          "Teléfono verificado. Ahora crea una nueva contraseña."
+          "Teléfono verificado. Crea una nueva contraseña."
         );
+
       } catch (firebaseError) {
         console.error(
-          "Error verificando SMS:",
+          "Verificar recuperación:",
           firebaseError
         );
+
 
         if (
           firebaseError?.code ===
@@ -938,6 +1408,7 @@ function Login() {
           setError(
             "El código es incorrecto."
           );
+
         } else if (
           [
             "auth/code-expired",
@@ -949,15 +1420,24 @@ function Login() {
           setError(
             "El código expiró. Solicita uno nuevo."
           );
+
         } else {
           setError(
             "No se pudo verificar el código."
           );
         }
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
+
+
+  /* ======================================================
+     REENVIAR CÓDIGO
+  ====================================================== */
 
   const reenviarCodigo =
     async () => {
@@ -968,16 +1448,23 @@ function Login() {
         return;
       }
 
+
       setError("");
       setMensaje("");
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         const verifier =
           await prepararRecaptcha();
 
+
         resetearRecaptcha();
+
 
         const resultado =
           await signInWithPhoneNumber(
@@ -986,19 +1473,24 @@ function Login() {
             verifier
           );
 
+
         setConfirmationResult(
           resultado
         );
 
+
         setCodigo("");
+
 
         setContador(
           SEGUNDOS_REENVIO
         );
 
+
         setMensaje(
           "Enviamos un nuevo código."
         );
+
       } catch (firebaseError) {
         setError(
           mensajeErrorSMS(
@@ -1006,16 +1498,26 @@ function Login() {
           )
         );
 
+
         resetearRecaptcha();
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
+
+
+  /* ======================================================
+     GUARDAR NUEVA PASSWORD
+  ====================================================== */
 
   const guardarNuevaPassword =
     async () => {
       setError("");
       setMensaje("");
+
 
       if (
         nuevaPassword.length <
@@ -1028,6 +1530,7 @@ function Login() {
         return;
       }
 
+
       if (
         nuevaPassword !==
         confirmarNuevaPassword
@@ -1039,7 +1542,10 @@ function Login() {
         return;
       }
 
-      if (!auth.currentUser) {
+
+      if (
+        !auth.currentUser
+      ) {
         setError(
           "La sesión de recuperación expiró."
         );
@@ -1047,13 +1553,18 @@ function Login() {
         return;
       }
 
+
       try {
-        setLoading(true);
+        setLoading(
+          true
+        );
+
 
         await updatePassword(
           auth.currentUser,
           nuevaPassword
         );
+
 
         await setDoc(
           doc(
@@ -1072,18 +1583,32 @@ function Login() {
               serverTimestamp(),
           },
           {
-            merge: true,
+            merge:
+              true,
           }
         );
 
+
         const perfil =
-          await obtenerPerfil(
-            auth.currentUser
+          await asegurarPerfilUsuario(
+            auth.currentUser,
+            "telefono_password",
+            {
+              telefono:
+                numeroVerificando,
+
+              correoInterno:
+                telefonoAEmailInterno(
+                  numeroVerificando
+                ),
+            }
           );
+
 
         setMensaje(
           "Contraseña actualizada correctamente."
         );
+
 
         setTimeout(
           () => {
@@ -1093,19 +1618,25 @@ function Login() {
           },
           700
         );
+
       } catch (firebaseError) {
         console.error(
-          "Error actualizando password:",
+          "Actualizar contraseña:",
           firebaseError
         );
 
+
         setError(
-          "No se pudo actualizar la contraseña. Solicita un nuevo código."
+          "No se pudo actualizar la contraseña."
         );
+
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
+
 
   /* ======================================================
      VOLVER
@@ -1120,196 +1651,392 @@ function Login() {
           ) &&
           auth.currentUser
         ) {
-          await signOut(auth);
+          await signOut(
+            auth
+          );
         }
+
       } catch {
-        // Ignorar.
+        // ignorar
       }
 
+
       resetearRecaptcha();
+
 
       setModo(
         "opciones"
       );
 
+
       setError("");
       setMensaje("");
+
 
       setPasswordCorreo("");
       setPasswordTelefono("");
 
-      setCodigo("");
-      setConfirmationResult(null);
-      setNumeroVerificando("");
-      setContador(0);
 
-      setNuevaPassword("");
-      setConfirmarNuevaPassword("");
+      setCodigo("");
+
+
+      setConfirmationResult(
+        null
+      );
+
+
+      setNumeroVerificando(
+        ""
+      );
+
+
+      setContador(
+        0
+      );
+
+
+      setNuevaPassword(
+        ""
+      );
+
+
+      setConfirmarNuevaPassword(
+        ""
+      );
     };
+
 
   /* ======================================================
      RENDER
   ====================================================== */
 
   return (
-    <div className={`min-h-screen overflow-hidden relative transition-colors duration-300 ${modoOscuro ? "bg-black text-white" : "wealth-light bg-gray-50 text-gray-900"}`}>
-      <style>{temaClaroCss}</style>
+    <div
+      className={`
+        min-h-screen
+        relative
+        overflow-hidden
+
+        ${
+          modoOscuro
+            ? "bg-slate-950 text-white"
+            : "bg-sky-50 text-slate-900"
+        }
+      `}
+    >
 
       {/* FONDO */}
 
       <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1800&auto=format&fit=crop"
-          alt="Edificios corporativos"
-          className="w-full h-full object-cover"
+
+        <div
+          className={`
+            absolute
+            inset-0
+
+            ${
+              modoOscuro
+                ? "bg-gradient-to-br from-slate-950 via-sky-950 to-slate-950"
+                : "bg-gradient-to-br from-sky-50 via-white to-blue-100"
+            }
+          `}
         />
 
-        <div className="absolute inset-0 bg-black/70" />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/50" />
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-sky-300/30 rounded-full blur-3xl" />
+
+
+        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-blue-300/30 rounded-full blur-3xl" />
+
       </div>
 
-      {/* CONTENIDO */}
 
-      <div className="relative z-20 min-h-screen flex items-center justify-center px-4 py-10">
-        <div className={`w-full max-w-md backdrop-blur-xl border rounded-[30px] p-6 sm:p-8 shadow-2xl ${modoOscuro ? "bg-zinc-950/95 border-zinc-700" : "bg-white/95 border-gray-200"}`}>
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
 
-          {/* HEADER */}
+        <div
+          className={`
+            w-full
+            max-w-md
 
-          <div className="text-center mb-7">
-            <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto">
-              <FaUserLock size={23} />
+            rounded-[32px]
+
+            border
+
+            p-7
+            sm:p-9
+
+            shadow-2xl
+
+            backdrop-blur-xl
+
+            ${
+              modoOscuro
+                ? "bg-slate-900/90 border-slate-700"
+                : "bg-white/90 border-sky-100"
+            }
+          `}
+        >
+
+          {/* LOGO */}
+
+          <div className="text-center mb-8">
+
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-sky-100 text-sky-500 flex items-center justify-center shadow-sm">
+
+              <FaUserLock
+                size={26}
+              />
+
             </div>
 
-            <p className="text-yellow-500 uppercase tracking-[0.28em] text-[11px] font-semibold mt-5">
-              Wealth
+
+            <p className="mt-5 text-xs uppercase tracking-[0.35em] font-bold text-sky-500">
+
+              Macro
+
             </p>
 
-            <p className="text-zinc-500 uppercase tracking-[0.25em] text-[10px] mt-1">
-              Grupo Empresarial
-            </p>
 
-            <h1 className="text-3xl md:text-4xl font-bold mt-5">
-              {modo === "opciones"
+            <h1 className="text-3xl font-bold mt-3">
+
+              {modo ===
+              "opciones"
                 ? "Bienvenido"
-                : modo.startsWith("recuperarTelefono")
+                : modo.startsWith(
+                    "recuperarTelefono"
+                  )
                 ? "Recuperar acceso"
-                : "Iniciar sesión"}
+                : "Iniciar sesión"
+              }
+
             </h1>
 
-            <p className="text-zinc-500 text-sm mt-2">
-              {modo === "opciones"
-                ? "Elige cómo deseas acceder a Wealth."
-                : modo === "telefono"
+
+            <p className="text-sm mt-2 text-slate-500">
+
+              {modo ===
+              "opciones"
+                ? "Elige cómo quieres ingresar."
+                : modo ===
+                  "telefono"
                 ? "Ingresa con tu teléfono y contraseña."
-                : modo === "correo"
+                : modo ===
+                  "correo"
                 ? "Ingresa con tu correo y contraseña."
-                : "Verificaremos tu identidad de forma segura."}
+                : "Verificaremos tu identidad de forma segura."
+              }
+
             </p>
+
           </div>
 
-          {/* MENSAJES */}
+
+          {/* ALERTAS */}
 
           {error && (
-            <Alerta tipo="error">
+
+            <Alerta
+              tipo="error"
+            >
+
               <FaExclamationTriangle />
-              <span>{error}</span>
+
+              <span>
+                {error}
+              </span>
+
             </Alerta>
+
           )}
+
 
           {mensaje && (
-            <Alerta tipo="ok">
+
+            <Alerta
+              tipo="ok"
+            >
+
               <FaCheckCircle />
-              <span>{mensaje}</span>
+
+              <span>
+                {mensaje}
+              </span>
+
             </Alerta>
+
           )}
 
-          {/* OPCIONES */}
 
-          {modo === "opciones" && (
+          {/* ======================================================
+              OPCIONES
+          ====================================================== */}
+
+          {modo ===
+            "opciones" && (
+
             <div className="space-y-3">
-
-              {/* GOOGLE */}
 
               <button
                 type="button"
-                onClick={loginGoogle}
-                disabled={loading}
-                className="w-full bg-white hover:bg-zinc-100 text-black px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition disabled:opacity-50"
+                onClick={
+                  loginGoogle
+                }
+                disabled={
+                  loading
+                }
+                className="
+                  w-full
+
+                  bg-white
+                  border
+                  border-slate-200
+
+                  hover:bg-slate-50
+
+                  text-slate-800
+
+                  px-5
+                  py-4
+
+                  rounded-2xl
+
+                  font-semibold
+
+                  flex
+                  items-center
+                  justify-center
+                  gap-3
+
+                  transition
+
+                  shadow-sm
+
+                  disabled:opacity-50
+                "
               >
+
                 <img
                   src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
                   alt="Google"
                   className="w-5 h-5"
                 />
 
+
                 Continuar con Google
+
               </button>
 
-              {/* TELÉFONO */}
 
               <button
                 type="button"
                 onClick={() => {
-                  setModo("telefono");
+                  setModo(
+                    "telefono"
+                  );
+
                   setError("");
                   setMensaje("");
                 }}
-                className="w-full bg-green-500/5 border border-green-500/40 hover:bg-green-500/10 text-green-400 px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition"
+                className={
+                  botonOpcion
+                }
               >
+
                 <FaPhone />
+
                 Teléfono + contraseña
+
                 <FaArrowRight />
+
               </button>
 
-              {/* CORREO */}
 
               <button
                 type="button"
                 onClick={() => {
-                  setModo("correo");
+                  setModo(
+                    "correo"
+                  );
+
                   setError("");
                   setMensaje("");
                 }}
-                className="w-full bg-yellow-500/5 border border-yellow-500/40 hover:bg-yellow-500/10 text-yellow-500 px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 transition"
+                className={
+                  botonOpcion
+                }
               >
+
                 <FaEnvelope />
+
                 Correo + contraseña
+
                 <FaArrowRight />
+
               </button>
+
             </div>
+
           )}
 
-          {/* LOGIN CORREO */}
 
-          {modo === "correo" && (
+          {/* ======================================================
+              CORREO
+          ====================================================== */}
+
+          {modo ===
+            "correo" && (
+
             <form
-              onSubmit={loginCorreo}
+              onSubmit={
+                loginCorreo
+              }
               className="space-y-5"
             >
+
               <Campo
                 label="Correo electrónico"
-                icon={<FaEnvelope />}
+                icon={
+                  <FaEnvelope />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <input
                   type="email"
                   autoComplete="email"
-                  value={correo}
+                  value={
+                    correo
+                  }
                   onChange={(e) =>
                     setCorreo(
                       e.target.value
                     )
                   }
                   placeholder="correo@ejemplo.com"
-                  className={inputClass}
+                  className={
+                    inputClass(
+                      modoOscuro
+                    )
+                  }
                 />
+
               </Campo>
+
 
               <Campo
                 label="Contraseña"
-                icon={<FaLock />}
+                icon={
+                  <FaLock />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <div className="relative">
+
                   <input
                     type={
                       mostrarPasswordCorreo
@@ -1317,109 +2044,198 @@ function Login() {
                         : "password"
                     }
                     autoComplete="current-password"
-                    value={passwordCorreo}
+                    value={
+                      passwordCorreo
+                    }
                     onChange={(e) =>
                       setPasswordCorreo(
                         e.target.value
                       )
                     }
                     placeholder="Tu contraseña"
-                    className={`${inputClass} pr-12`}
+                    className={`${inputClass(
+                      modoOscuro
+                    )} pr-12`}
                   />
+
 
                   <button
                     type="button"
                     onClick={() =>
                       setMostrarPasswordCorreo(
-                        (actual) =>
+                        (
+                          actual
+                        ) =>
                           !actual
                       )
                     }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-yellow-500"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                   >
-                    {mostrarPasswordCorreo ? (
-                      <FaEyeSlash />
-                    ) : (
-                      <FaEye />
-                    )}
+
+                    {mostrarPasswordCorreo
+                      ? <FaEyeSlash />
+                      : <FaEye />
+                    }
+
                   </button>
+
                 </div>
+
               </Campo>
+
 
               <button
                 type="submit"
-                disabled={loading}
-                className={botonPrincipal}
+                disabled={
+                  loading
+                }
+                className={
+                  botonPrincipal
+                }
               >
+
                 <FaUserLock />
+
 
                 {loading
                   ? "Ingresando..."
-                  : "Iniciar sesión"}
+                  : "Iniciar sesión"
+                }
+
 
                 {!loading && (
                   <FaArrowRight />
                 )}
+
               </button>
+
 
               <button
                 type="button"
-                onClick={recuperarCorreo}
-                disabled={loading}
-                className="w-full py-2 text-sm text-zinc-500 hover:text-yellow-500 flex items-center justify-center gap-2"
+                onClick={
+                  recuperarCorreo
+                }
+                disabled={
+                  loading
+                }
+                className="w-full text-sm text-slate-500 hover:text-sky-500 flex items-center justify-center gap-2"
               >
+
                 <FaKey />
+
                 ¿Olvidaste tu contraseña?
+
               </button>
+
 
               <button
                 type="button"
-                onClick={volverOpciones}
-                className={botonVolver}
+                onClick={
+                  volverOpciones
+                }
+                className={
+                  botonVolver
+                }
               >
+
                 <FaArrowLeft />
+
                 Volver
+
               </button>
+
             </form>
+
           )}
 
-          {/* LOGIN TELÉFONO */}
 
-          {modo === "telefono" && (
+          {/* ======================================================
+              TELÉFONO
+          ====================================================== */}
+
+          {modo ===
+            "telefono" && (
+
             <form
-              onSubmit={loginTelefono}
+              onSubmit={
+                loginTelefono
+              }
               className="space-y-5"
             >
+
               <Campo
                 label="Número de teléfono"
-                icon={<FaPhone />}
+                icon={
+                  <FaPhone />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <div className="flex gap-2">
-                  <div className="bg-black border border-zinc-700 rounded-2xl px-4 flex items-center text-zinc-400 font-semibold">
+
+                  <div
+                    className={`
+                      border
+                      rounded-2xl
+                      px-4
+
+                      flex
+                      items-center
+
+                      font-semibold
+
+                      ${
+                        modoOscuro
+                          ? "bg-slate-950 border-slate-700 text-slate-300"
+                          : "bg-sky-50 border-sky-200 text-sky-700"
+                      }
+                    `}
+                  >
+
                     +52
+
                   </div>
+
 
                   <input
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel"
-                    value={telefono}
+                    value={
+                      telefono
+                    }
                     onChange={(e) =>
                       setTelefono(
                         e.target.value
                       )
                     }
                     placeholder="981 123 4567"
-                    className={inputClass}
+                    className={
+                      inputClass(
+                        modoOscuro
+                      )
+                    }
                   />
+
                 </div>
+
               </Campo>
+
 
               <Campo
                 label="Contraseña"
-                icon={<FaLock />}
+                icon={
+                  <FaLock />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <div className="relative">
+
                   <input
                     type={
                       mostrarPasswordTelefono
@@ -1427,163 +2243,272 @@ function Login() {
                         : "password"
                     }
                     autoComplete="current-password"
-                    value={passwordTelefono}
+                    value={
+                      passwordTelefono
+                    }
                     onChange={(e) =>
                       setPasswordTelefono(
                         e.target.value
                       )
                     }
                     placeholder="Tu contraseña"
-                    className={`${inputClass} pr-12`}
+                    className={`${inputClass(
+                      modoOscuro
+                    )} pr-12`}
                   />
+
 
                   <button
                     type="button"
                     onClick={() =>
                       setMostrarPasswordTelefono(
-                        (actual) =>
+                        (
+                          actual
+                        ) =>
                           !actual
                       )
                     }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-green-400"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                   >
-                    {mostrarPasswordTelefono ? (
-                      <FaEyeSlash />
-                    ) : (
-                      <FaEye />
-                    )}
+
+                    {mostrarPasswordTelefono
+                      ? <FaEyeSlash />
+                      : <FaEye />
+                    }
+
                   </button>
+
                 </div>
+
               </Campo>
+
 
               <button
                 type="submit"
-                disabled={loading}
-                className={botonPrincipal}
+                disabled={
+                  loading
+                }
+                className={
+                  botonPrincipal
+                }
               >
+
                 <FaPhone />
+
 
                 {loading
                   ? "Ingresando..."
-                  : "Iniciar sesión"}
+                  : "Iniciar sesión"
+                }
+
 
                 {!loading && (
                   <FaArrowRight />
                 )}
+
               </button>
+
 
               <button
                 type="button"
                 onClick={
                   iniciarRecuperacionTelefono
                 }
-                disabled={loading}
-                className="w-full py-2 text-sm text-zinc-500 hover:text-green-400 flex items-center justify-center gap-2"
+                disabled={
+                  loading
+                }
+                className="w-full text-sm text-slate-500 hover:text-sky-500 flex items-center justify-center gap-2"
               >
+
                 <FaKey />
+
                 ¿Olvidaste tu contraseña?
+
               </button>
+
 
               <button
                 type="button"
-                onClick={volverOpciones}
-                className={botonVolver}
+                onClick={
+                  volverOpciones
+                }
+                className={
+                  botonVolver
+                }
               >
+
                 <FaArrowLeft />
+
                 Volver
+
               </button>
+
             </form>
+
           )}
 
-          {/* RECUPERACIÓN TELÉFONO - CÓDIGO */}
+
+          {/* ======================================================
+              CÓDIGO SMS
+          ====================================================== */}
 
           {modo ===
             "recuperarTelefonoCodigo" && (
+
             <div className="space-y-5">
-              <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4">
-                <p className="text-green-400 font-semibold">
+
+              <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4">
+
+                <p className="text-sky-600 font-semibold">
+
                   Código enviado
+
                 </p>
 
-                <p className="text-zinc-400 text-sm mt-1">
+
+                <p className="text-slate-500 text-sm mt-1">
+
                   {numeroVerificando}
+
                 </p>
+
               </div>
+
 
               <Campo
                 label="Código SMS"
-                icon={<FaSms />}
+                icon={
+                  <FaSms />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <input
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={6}
-                  value={codigo}
+                  value={
+                    codigo
+                  }
                   onChange={(e) =>
                     setCodigo(
                       e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 6)
+                        .replace(
+                          /\D/g,
+                          ""
+                        )
+                        .slice(
+                          0,
+                          6
+                        )
                     )
                   }
                   placeholder="000000"
-                  className={`${inputClass} text-center text-2xl tracking-[0.35em]`}
+                  className={`${inputClass(
+                    modoOscuro
+                  )} text-center text-2xl tracking-[0.35em]`}
                 />
+
               </Campo>
+
 
               <button
                 type="button"
                 onClick={
                   verificarCodigoRecuperacion
                 }
-                disabled={loading}
-                className={botonPrincipal}
+                disabled={
+                  loading
+                }
+                className={
+                  botonPrincipal
+                }
               >
+
                 <FaCheckCircle />
+
 
                 {loading
                   ? "Verificando..."
-                  : "Verificar código"}
+                  : "Verificar código"
+                }
+
               </button>
+
 
               <button
                 type="button"
-                onClick={reenviarCodigo}
+                onClick={
+                  reenviarCodigo
+                }
                 disabled={
-                  contador > 0 ||
+                  contador >
+                    0 ||
                   loading
                 }
-                className={botonSecundario}
+                className={
+                  botonSecundario(
+                    modoOscuro
+                  )
+                }
               >
+
                 <FaRedo />
+
 
                 {contador > 0
                   ? `Reenviar en ${contador}s`
-                  : "Reenviar código"}
+                  : "Reenviar código"
+                }
+
               </button>
+
 
               <button
                 type="button"
-                onClick={volverOpciones}
-                className={botonVolver}
+                onClick={
+                  volverOpciones
+                }
+                className={
+                  botonVolver
+                }
               >
+
                 <FaArrowLeft />
+
                 Cancelar
+
               </button>
+
             </div>
+
           )}
 
-          {/* RECUPERACIÓN TELÉFONO - NUEVA PASSWORD */}
+
+          {/* ======================================================
+              NUEVA CONTRASEÑA
+          ====================================================== */}
 
           {modo ===
             "recuperarTelefonoPassword" && (
+
             <div className="space-y-5">
+
               <Campo
                 label="Nueva contraseña"
-                icon={<FaLock />}
+                icon={
+                  <FaLock />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <div className="relative">
+
                   <input
                     type={
                       mostrarNuevaPassword
@@ -1591,39 +2516,56 @@ function Login() {
                         : "password"
                     }
                     autoComplete="new-password"
-                    value={nuevaPassword}
+                    value={
+                      nuevaPassword
+                    }
                     onChange={(e) =>
                       setNuevaPassword(
                         e.target.value
                       )
                     }
                     placeholder="Mínimo 8 caracteres"
-                    className={`${inputClass} pr-12`}
+                    className={`${inputClass(
+                      modoOscuro
+                    )} pr-12`}
                   />
+
 
                   <button
                     type="button"
                     onClick={() =>
                       setMostrarNuevaPassword(
-                        (actual) =>
+                        (
+                          actual
+                        ) =>
                           !actual
                       )
                     }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-green-400"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
                   >
-                    {mostrarNuevaPassword ? (
-                      <FaEyeSlash />
-                    ) : (
-                      <FaEye />
-                    )}
+
+                    {mostrarNuevaPassword
+                      ? <FaEyeSlash />
+                      : <FaEye />
+                    }
+
                   </button>
+
                 </div>
+
               </Campo>
+
 
               <Campo
                 label="Confirmar contraseña"
-                icon={<FaShieldAlt />}
+                icon={
+                  <FaShieldAlt />
+                }
+                modoOscuro={
+                  modoOscuro
+                }
               >
+
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -1636,64 +2578,120 @@ function Login() {
                     )
                   }
                   placeholder="Repite la contraseña"
-                  className={inputClass}
+                  className={
+                    inputClass(
+                      modoOscuro
+                    )
+                  }
                 />
+
               </Campo>
+
 
               <button
                 type="button"
                 onClick={
                   guardarNuevaPassword
                 }
-                disabled={loading}
-                className={botonPrincipal}
+                disabled={
+                  loading
+                }
+                className={
+                  botonPrincipal
+                }
               >
+
                 <FaCheckCircle />
+
 
                 {loading
                   ? "Guardando..."
-                  : "Guardar nueva contraseña"}
+                  : "Guardar contraseña"
+                }
+
               </button>
+
 
               <button
                 type="button"
-                onClick={volverOpciones}
-                className={botonVolver}
+                onClick={
+                  volverOpciones
+                }
+                className={
+                  botonVolver
+                }
               >
+
                 <FaArrowLeft />
+
                 Cancelar
+
               </button>
+
             </div>
+
           )}
 
-          {/* RECAPTCHA */}
 
-          <div id="recaptcha-login" />
+          <div
+            id="recaptcha-login"
+          />
+
 
           {/* REGISTRO */}
 
-          <div className="mt-7 pt-6 border-t border-zinc-800 text-center">
-            <p className="text-sm text-zinc-500">
-              ¿No tienes cuenta?
+          <div
+            className={`
+              mt-8
+              pt-6
+
+              border-t
+
+              text-center
+
+              ${
+                modoOscuro
+                  ? "border-slate-700"
+                  : "border-slate-200"
+              }
+            `}
+          >
+
+            <p className="text-sm text-slate-500">
+
+              ¿No tienes una cuenta?
+
 
               <Link
                 to="/register"
-                className="text-yellow-500 hover:text-yellow-400 ml-2 font-bold"
+                className="text-sky-500 hover:text-sky-600 ml-2 font-bold"
               >
+
                 Registrarse
+
               </Link>
+
             </p>
+
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-600 mt-5">
+
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-5">
+
             <FaShieldAlt />
-            Acceso seguro · Wealth
+
+            Acceso seguro · Macro
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }
+
 
 /* ======================================================
    COMPONENTES
@@ -1703,21 +2701,47 @@ function Campo({
   label,
   icon,
   children,
+  modoOscuro,
 }) {
   return (
     <div>
-      <label className="text-sm text-zinc-400 flex items-center gap-2 mb-2">
-        <span className="text-yellow-500">
+
+      <label
+        className={`
+          text-sm
+
+          flex
+          items-center
+          gap-2
+
+          mb-2
+
+          ${
+            modoOscuro
+              ? "text-slate-300"
+              : "text-slate-600"
+          }
+        `}
+      >
+
+        <span className="text-sky-500">
+
           {icon}
+
         </span>
 
+
         {label}
+
       </label>
 
+
       {children}
+
     </div>
   );
 }
+
 
 function Alerta({
   tipo,
@@ -1725,147 +2749,197 @@ function Alerta({
 }) {
   const clase =
     tipo === "error"
-      ? "bg-red-500/5 border-red-500/30 text-red-300"
-      : "bg-green-500/5 border-green-500/30 text-green-300";
+      ? "bg-red-50 border-red-200 text-red-600"
+      : "bg-emerald-50 border-emerald-200 text-emerald-600";
+
 
   return (
     <div
-      className={`mb-5 border rounded-2xl p-4 text-sm flex items-start gap-3 ${clase}`}
+      className={`
+        mb-5
+
+        border
+
+        rounded-2xl
+
+        p-4
+
+        text-sm
+
+        flex
+        items-start
+        gap-3
+
+        ${clase}
+      `}
     >
+
       {children}
+
     </div>
   );
 }
+
 
 /* ======================================================
    ESTILOS
 ====================================================== */
 
-const inputClass = `
-  w-full
-  bg-black
-  border
-  border-zinc-700
-  rounded-2xl
-  px-4
-  py-3.5
-  text-white
-  placeholder:text-zinc-600
-  outline-none
-  focus:border-yellow-500/70
-  focus:ring-2
-  focus:ring-yellow-500/10
-  transition
-`;
+const inputClass =
+  (modoOscuro) => `
+    w-full
+
+    border
+
+    rounded-2xl
+
+    px-4
+    py-3.5
+
+    outline-none
+
+    focus:border-sky-400
+    focus:ring-4
+    focus:ring-sky-100
+
+    transition
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-950
+          border-slate-700
+          text-white
+          placeholder:text-slate-500
+        `
+        : `
+          bg-white
+          border-slate-200
+          text-slate-900
+          placeholder:text-slate-400
+        `
+    }
+  `;
+
 
 const botonPrincipal = `
   w-full
-  bg-yellow-500
-  hover:bg-yellow-400
-  text-black
+
+  bg-sky-400
+  hover:bg-sky-500
+
+  text-white
+
   px-5
   py-4
+
   rounded-2xl
+
   font-bold
+
   flex
   items-center
   justify-center
   gap-3
+
   transition
+
+  shadow-lg
+  shadow-sky-200/40
+
   disabled:opacity-50
   disabled:cursor-not-allowed
 `;
 
-const botonSecundario = `
+
+const botonOpcion = `
   w-full
-  bg-zinc-900
+
+  bg-sky-50
+
   border
-  border-zinc-700
-  hover:border-yellow-500/40
+  border-sky-200
+
+  hover:bg-sky-100
+
+  text-sky-700
+
   px-5
-  py-3.5
+  py-4
+
   rounded-2xl
+
   font-semibold
+
   flex
   items-center
   justify-center
-  gap-2
-  disabled:opacity-40
+  gap-3
+
+  transition
 `;
+
+
+const botonSecundario =
+  (modoOscuro) => `
+    w-full
+
+    border
+
+    px-5
+    py-3.5
+
+    rounded-2xl
+
+    font-semibold
+
+    flex
+    items-center
+    justify-center
+    gap-2
+
+    transition
+
+    disabled:opacity-40
+
+    ${
+      modoOscuro
+        ? `
+          bg-slate-950
+          border-slate-700
+          text-slate-300
+
+          hover:border-sky-400
+        `
+        : `
+          bg-slate-50
+          border-slate-200
+          text-slate-600
+
+          hover:bg-sky-50
+          hover:border-sky-300
+        `
+    }
+  `;
+
 
 const botonVolver = `
   w-full
+
   py-3
+
   text-sm
-  text-zinc-500
-  hover:text-white
+  text-slate-500
+
+  hover:text-sky-500
+
   flex
   items-center
   justify-center
   gap-2
+
+  transition
 `;
 
-
-const temaClaroCss = `
-  .wealth-light .bg-black { background-color: #ffffff !important; }
-  .wealth-light .bg-zinc-950 { background-color: #ffffff !important; }
-  .wealth-light .bg-zinc-900 { background-color: #f9fafb !important; }
-  .wealth-light .bg-zinc-800 { background-color: #f3f4f6 !important; }
-  .wealth-light .bg-zinc-700 { background-color: #e5e7eb !important; }
-
-  .wealth-light .bg-zinc-950\\/95 { background-color: rgba(255,255,255,.95) !important; }
-  .wealth-light .bg-zinc-950\\/70 { background-color: rgba(255,255,255,.92) !important; }
-  .wealth-light .bg-zinc-950\\/60 { background-color: rgba(255,255,255,.88) !important; }
-  .wealth-light .bg-zinc-900\\/90 { background-color: rgba(249,250,251,.95) !important; }
-  .wealth-light .bg-zinc-900\\/70 { background-color: rgba(249,250,251,.90) !important; }
-  .wealth-light .bg-zinc-900\\/60 { background-color: rgba(249,250,251,.88) !important; }
-  .wealth-light .bg-zinc-800\\/70 { background-color: rgba(243,244,246,.90) !important; }
-  .wealth-light .bg-zinc-800\\/40 { background-color: rgba(243,244,246,.75) !important; }
-
-  .wealth-light .text-white { color: #111827 !important; }
-  .wealth-light .text-zinc-100 { color: #111827 !important; }
-  .wealth-light .text-zinc-200 { color: #1f2937 !important; }
-  .wealth-light .text-zinc-300 { color: #374151 !important; }
-  .wealth-light .text-zinc-400 { color: #4b5563 !important; }
-  .wealth-light .text-zinc-500 { color: #6b7280 !important; }
-  .wealth-light .text-zinc-600 { color: #9ca3af !important; }
-  .wealth-light .text-zinc-700 { color: #9ca3af !important; }
-  .wealth-light .text-zinc-800 { color: #6b7280 !important; }
-
-  .wealth-light .border-zinc-900 { border-color: #e5e7eb !important; }
-  .wealth-light .border-zinc-800 { border-color: #e5e7eb !important; }
-  .wealth-light .border-zinc-700 { border-color: #d1d5db !important; }
-  .wealth-light .border-zinc-600 { border-color: #d1d5db !important; }
-  .wealth-light .border-white\\/10 { border-color: rgba(17,24,39,.10) !important; }
-  .wealth-light .border-white\\/20 { border-color: rgba(17,24,39,.15) !important; }
-  .wealth-light .border-white\\/30 { border-color: rgba(17,24,39,.20) !important; }
-
-  .wealth-light .hover\\:bg-zinc-900:hover { background-color: #f3f4f6 !important; }
-  .wealth-light .hover\\:bg-zinc-800:hover { background-color: #e5e7eb !important; }
-  .wealth-light .hover\\:bg-zinc-700:hover { background-color: #d1d5db !important; }
-  .wealth-light .hover\\:text-white:hover { color: #111827 !important; }
-  .wealth-light .hover\\:border-zinc-500:hover { border-color: #9ca3af !important; }
-  .wealth-light .hover\\:border-zinc-600:hover { border-color: #9ca3af !important; }
-
-  .wealth-light input,
-  .wealth-light textarea,
-  .wealth-light select {
-    color: #111827;
-    color-scheme: light;
-  }
-
-  .wealth-light input::placeholder,
-  .wealth-light textarea::placeholder {
-    color: #9ca3af !important;
-  }
-
-  .wealth-light option {
-    background-color: #ffffff;
-    color: #111827;
-  }
-
-  /* Los visores de imágenes y overlays con transparencia se mantienen oscuros
-     intencionalmente para conservar contraste sobre fotografías. */
-`;
 
 export default Login;

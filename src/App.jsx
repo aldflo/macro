@@ -1,51 +1,73 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Layout from "./components/Layout";
+
+
+/* ======================================================
+   PÚBLICO
+====================================================== */
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Contacto from "./pages/Contacto";
-
-import WealthConstrucciones from "./pages/WealthConstrucciones";
-import WealthInmobiliario from "./pages/WealthInmobiliario";
-import WealthVyA from "./pages/WealthVyA";
-
 import Ubicacion from "./pages/Ubicacion";
+
+
+/* ======================================================
+   CLIENTES
+====================================================== */
+
+import MenuCliente from "./pages/MenuCliente";
+import Cotizaciones from "./pages/cotizaciones";
+import CrearCotizacion from "./pages/CrearCotizacion";
+import MisProyectos from "./pages/MisProyectos";
+import Favoritos from "./pages/favoritos";
+import ChatIA from "./pages/ChatIA";
+import Perfil from "./pages/Perfil";
+import Carrito from "./pages/Carrito";
+
+
+/* ======================================================
+   ADMIN
+====================================================== */
+
+import MenuAdmin from "./pages/MenuAdmin";
 import Clientes from "./pages/Clientes";
+import CotizacionesAdmin from "./pages/CotizacionesAdmin";
+import ProyectosTerminadosAdmin from "./pages/ProyectosTerminadosAdmin";
+
+
+/* ======================================================
+   PROYECTOS
+====================================================== */
 
 import Proyectos from "./pages/Proyectos";
 import SubirProyecto from "./pages/SubirProyecto";
 import DetalleProyecto from "./pages/DetalleProyecto";
 
-import Cotizaciones from "./pages/cotizaciones";
-import CrearCotizacion from "./pages/CrearCotizacion";
-import CotizacionesAdmin from "./pages/CotizacionesAdmin";
 
-import Galeria from "./pages/Galeria";
-import Subirgaleria from "./pages/Subirgaleria";
+/* ======================================================
+   TIENDA MACRO
+====================================================== */
 
-import MenuCliente from "./pages/MenuCliente";
-import MenuAdmin from "./pages/MenuAdmin";
-
-import Favoritos from "./pages/favoritos";
-import ChatIA from "./pages/ChatIA";
-import Perfil from "./pages/Perfil";
-import PerfilAdmin from "./pages/PerfilAdmin";
-
-import MisProyectos from "./pages/MisProyectos";
-import ProyectosTerminadosAdmin from "./pages/ProyectosTerminadosAdmin";
+import Tienda from "./pages/Tienda";
+import SubirProducto from "./pages/SubirProducto";
+import DetalleProducto from "./pages/DetalleProducto";
 
 
 function App() {
   return (
     <Routes>
 
-      {/* TODO DENTRO DE LAYOUT */}
       <Route element={<Layout />}>
 
         {/* ================================================= */}
-        {/* PUBLICO */}
+        {/* PÚBLICO */}
         {/* ================================================= */}
 
         <Route
@@ -73,29 +95,39 @@ function App() {
           element={<Ubicacion />}
         />
 
+
+        {/* ================================================= */}
+        {/* TIENDA MACRO */}
+        {/* ================================================= */}
+
         <Route
-          path="/favoritos"
-          element={<Favoritos />}
+          path="/tienda"
+          element={<Tienda />}
+        />
+
+        <Route
+          path="/producto/:id"
+          element={<DetalleProducto />}
+        />
+
+        <Route
+          path="/carrito"
+          element={<Carrito />}
         />
 
 
         {/* ================================================= */}
-        {/* EMPRESAS */}
+        {/* PROYECTOS */}
         {/* ================================================= */}
 
         <Route
-          path="/construcciones"
-          element={<WealthConstrucciones />}
+          path="/proyectos"
+          element={<Proyectos />}
         />
 
         <Route
-          path="/inmobiliaria"
-          element={<WealthInmobiliario />}
-        />
-
-        <Route
-          path="/aluminios"
-          element={<WealthVyA />}
+          path="/proyecto/:id"
+          element={<DetalleProyecto />}
         />
 
 
@@ -107,8 +139,6 @@ function App() {
           path="/cliente"
           element={<MenuCliente />}
         />
-
-        {/* RUTAS CANÓNICAS DEL CLIENTE */}
 
         <Route
           path="/cliente/cotizaciones"
@@ -126,6 +156,11 @@ function App() {
         />
 
         <Route
+          path="/favoritos"
+          element={<Favoritos />}
+        />
+
+        <Route
           path="/chat-ia"
           element={<ChatIA />}
         />
@@ -136,7 +171,51 @@ function App() {
         />
 
 
-        {/* COMPATIBILIDAD CON LINKS ANTIGUOS */}
+        {/* ================================================= */}
+        {/* ADMIN */}
+        {/* ================================================= */}
+
+        <Route
+          path="/admin"
+          element={<MenuAdmin />}
+        />
+
+        <Route
+          path="/admin/clientes"
+          element={<Clientes />}
+        />
+
+        <Route
+          path="/admin/cotizaciones"
+          element={<CotizacionesAdmin />}
+        />
+
+        {/* MISMO PERFIL PARA ADMIN */}
+
+        <Route
+          path="/admin/perfil"
+          element={<Perfil />}
+        />
+
+        <Route
+          path="/admin/proyectos-terminados"
+          element={<ProyectosTerminadosAdmin />}
+        />
+
+        <Route
+          path="/admin/subir-proyecto"
+          element={<SubirProyecto />}
+        />
+
+        <Route
+          path="/admin/subir-producto"
+          element={<SubirProducto />}
+        />
+
+
+        {/* ================================================= */}
+        {/* REDIRECCIONES ANTIGUAS */}
+        {/* ================================================= */}
 
         <Route
           path="/cotizaciones"
@@ -158,69 +237,49 @@ function App() {
           }
         />
 
-
-        {/* ================================================= */}
-        {/* ADMIN */}
-        {/* ================================================= */}
-
-        <Route
-          path="/admin"
-          element={<MenuAdmin />}
-        />
-
-        <Route
-          path="/admin/perfil"
-          element={<PerfilAdmin />}
-        />
-
-        <Route
-          path="/admin/clientes"
-          element={<Clientes />}
-        />
-
-        <Route
-          path="/admin/cotizaciones"
-          element={<CotizacionesAdmin />}
-        />
-
-        <Route
-          path="/admin/proyectos-terminados"
-          element={<ProyectosTerminadosAdmin />}
-        />
-
-        <Route
-          path="/admin/subir-proyecto"
-          element={<SubirProyecto />}
-        />
-
-
-        {/* ================================================= */}
-        {/* PROYECTOS / CATÁLOGO */}
-        {/* ================================================= */}
-
-        <Route
-          path="/proyectos"
-          element={<Proyectos />}
-        />
-
-        <Route
-          path="/proyecto/:id"
-          element={<DetalleProyecto />}
-        />
-
-
-        {/* ================================================= */}
-        {/* GALERÍA */}
-        {/* ================================================= */}
-
         <Route
           path="/galeria"
-          element={<Galeria />}
+          element={
+            <Navigate
+              to="/tienda"
+              replace
+            />
+          }
         />
 
         <Route
           path="/subir-galeria"
-          element={<Subirgaleria />}
+          element={
+            <Navigate
+              to="/admin/subir-producto"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="/admin/productos"
+          element={
+            <Navigate
+              to="/admin/subir-producto"
+              replace
+            />
+          }
+        />
+
+
+        {/* ================================================= */}
+        {/* RUTA DESCONOCIDA */}
+        {/* ================================================= */}
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
 
       </Route>

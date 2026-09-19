@@ -26,6 +26,7 @@ import {
   FaArrowLeft,
   FaCheck,
   FaCheckCircle,
+  FaCode,
   FaEnvelope,
   FaLock,
   FaMoon,
@@ -34,7 +35,6 @@ import {
   FaShieldAlt,
   FaSun,
   FaUser,
-  FaUserCircle,
 } from "react-icons/fa";
 
 import {
@@ -44,15 +44,14 @@ import {
 
 
 function Perfil() {
-
   const navigate =
     useNavigate();
-
 
   const {
     modoOscuro,
     actualizarTema,
-  } = useOutletContext();
+  } =
+    useOutletContext() || {};
 
 
   /* ======================================================
@@ -141,7 +140,7 @@ function Perfil() {
 
 
   /* ======================================================
-     TEMA SELECCIONADO
+     TEMA
   ====================================================== */
 
   const [
@@ -155,7 +154,6 @@ function Perfil() {
 
 
   useEffect(() => {
-
     setTemaSeleccionado(
       modoOscuro
         ? "oscuro"
@@ -172,17 +170,12 @@ function Perfil() {
   ====================================================== */
 
   useEffect(() => {
-
-    const unsub =
+    const unsubscribe =
       onAuthStateChanged(
         auth,
 
-        async (
-          user
-        ) => {
-
+        async (user) => {
           if (!user) {
-
             setUsuarioAuth(
               null
             );
@@ -192,18 +185,16 @@ function Perfil() {
             );
 
             return;
-
           }
 
 
           try {
-
             setUsuarioAuth(
               user
             );
 
 
-            const ref =
+            const referencia =
               doc(
                 db,
                 "users",
@@ -211,18 +202,17 @@ function Perfil() {
               );
 
 
-            const snap =
+            const snapshot =
               await getDoc(
-                ref
+                referencia
               );
 
 
             if (
-              snap.exists()
+              snapshot.exists()
             ) {
-
               const data =
-                snap.data();
+                snapshot.data();
 
 
               setNombre(
@@ -244,16 +234,13 @@ function Perfil() {
               );
 
             } else {
-
               setCorreo(
                 user.email ||
                 ""
               );
-
             }
 
           } catch (error) {
-
             console.error(
               "Error cargando perfil:",
               error
@@ -265,19 +252,16 @@ function Perfil() {
             );
 
           } finally {
-
             setCargando(
               false
             );
-
           }
-
         }
       );
 
 
     return () =>
-      unsub();
+      unsubscribe();
 
   }, []);
 
@@ -288,7 +272,6 @@ function Perfil() {
 
   const guardarPerfil =
     async () => {
-
       if (
         !usuarioAuth
       ) {
@@ -296,13 +279,8 @@ function Perfil() {
       }
 
 
-      setMensaje(
-        ""
-      );
-
-      setError(
-        ""
-      );
+      setMensaje("");
+      setError("");
 
 
       if (
@@ -311,13 +289,11 @@ function Perfil() {
           .length <
         3
       ) {
-
         setError(
           "Escribe tu nombre completo."
         );
 
         return;
-
       }
 
 
@@ -333,18 +309,15 @@ function Perfil() {
         telefonoLimpio.length <
           10
       ) {
-
         setError(
           "Escribe un teléfono válido de al menos 10 dígitos."
         );
 
         return;
-
       }
 
 
       try {
-
         setGuardando(
           true
         );
@@ -397,7 +370,6 @@ function Perfil() {
         );
 
       } catch (error) {
-
         console.error(
           "Error actualizando perfil:",
           error
@@ -409,13 +381,10 @@ function Perfil() {
         );
 
       } finally {
-
         setGuardando(
           false
         );
-
       }
-
     };
 
 
@@ -427,7 +396,6 @@ function Perfil() {
     async (
       nuevoTema
     ) => {
-
       if (
         !usuarioAuth ||
         cambiandoTema
@@ -446,21 +414,9 @@ function Perfil() {
       }
 
 
-      setMensaje(
-        ""
-      );
+      setMensaje("");
+      setError("");
 
-      setError(
-        ""
-      );
-
-
-      /*
-        CAMBIO INMEDIATO EN ESTE DISPOSITIVO.
-
-        Layout guarda:
-        tema_UID = claro / oscuro
-      */
 
       actualizarTema?.(
         nuevoTema
@@ -473,19 +429,10 @@ function Perfil() {
 
 
       try {
-
         setCambiandoTema(
           true
         );
 
-
-        /*
-          FIRESTORE queda como preferencia general.
-
-          Si el usuario entra por primera vez
-          desde otro dispositivo, Layout puede
-          usar este valor como configuración inicial.
-        */
 
         await setDoc(
           doc(
@@ -517,7 +464,6 @@ function Perfil() {
         );
 
       } catch (error) {
-
         console.error(
           "Error guardando apariencia:",
           error
@@ -529,13 +475,10 @@ function Perfil() {
         );
 
       } finally {
-
         setCambiandoTema(
           false
         );
-
       }
-
     };
 
 
@@ -545,7 +488,6 @@ function Perfil() {
 
   const cambiarPassword =
     async () => {
-
       if (
         !usuarioAuth
       ) {
@@ -553,38 +495,29 @@ function Perfil() {
       }
 
 
-      setMensaje(
-        ""
-      );
-
-      setError(
-        ""
-      );
+      setMensaje("");
+      setError("");
 
 
       if (
         !usuarioAuth.email
       ) {
-
         setError(
           "Esta cuenta no tiene un correo disponible para cambiar la contraseña."
         );
 
         return;
-
       }
 
 
       if (
         !passwordActual
       ) {
-
         setError(
           "Escribe tu contraseña actual."
         );
 
         return;
-
       }
 
 
@@ -592,13 +525,11 @@ function Perfil() {
         passwordNueva.length <
         6
       ) {
-
         setError(
           "La nueva contraseña debe tener al menos 6 caracteres."
         );
 
         return;
-
       }
 
 
@@ -606,18 +537,15 @@ function Perfil() {
         passwordNueva !==
         passwordConfirmar
       ) {
-
         setError(
           "Las nuevas contraseñas no coinciden."
         );
 
         return;
-
       }
 
 
       try {
-
         setCambiandoPassword(
           true
         );
@@ -642,17 +570,9 @@ function Perfil() {
         );
 
 
-        setPasswordActual(
-          ""
-        );
-
-        setPasswordNueva(
-          ""
-        );
-
-        setPasswordConfirmar(
-          ""
-        );
+        setPasswordActual("");
+        setPasswordNueva("");
+        setPasswordConfirmar("");
 
 
         setMensaje(
@@ -660,7 +580,6 @@ function Perfil() {
         );
 
       } catch (error) {
-
         console.error(
           "Error cambiando contraseña:",
           error
@@ -669,29 +588,33 @@ function Perfil() {
 
         if (
           error.code ===
-          "auth/invalid-credential"
+          "auth/invalid-credential" ||
+          error.code ===
+          "auth/wrong-password"
         ) {
-
           setError(
             "La contraseña actual no es correcta."
           );
 
-        } else {
+        } else if (
+          error.code ===
+          "auth/requires-recent-login"
+        ) {
+          setError(
+            "Por seguridad, vuelve a iniciar sesión antes de cambiar tu contraseña."
+          );
 
+        } else {
           setError(
             "No se pudo cambiar la contraseña."
           );
-
         }
 
       } finally {
-
         setCambiandoPassword(
           false
         );
-
       }
-
     };
 
 
@@ -701,11 +624,10 @@ function Perfil() {
 
   const obtenerIniciales =
     () => {
-
       if (
         !nombre.trim()
       ) {
-        return "W";
+        return "M";
       }
 
 
@@ -720,14 +642,12 @@ function Perfil() {
         partes.length ===
         1
       ) {
-
         return partes[0]
           .slice(
             0,
             2
           )
           .toUpperCase();
-
       }
 
 
@@ -739,7 +659,6 @@ function Perfil() {
           ][0]
         }`
       ).toUpperCase();
-
     };
 
 
@@ -750,7 +669,6 @@ function Perfil() {
   if (
     cargando
   ) {
-
     return (
       <div
         className={`
@@ -766,12 +684,12 @@ function Perfil() {
           ${
             modoOscuro
               ? `
-                bg-black
+                bg-[#050b18]
                 text-white
               `
               : `
-                bg-gray-50
-                text-gray-900
+                bg-[#f4f8fc]
+                text-slate-900
               `
           }
         `}
@@ -781,11 +699,11 @@ function Perfil() {
 
           <div
             className={`
-              w-11
-              h-11
+              w-12
+              h-12
 
               border-4
-              border-t-yellow-500
+              border-t-sky-500
 
               rounded-full
               animate-spin
@@ -794,11 +712,12 @@ function Perfil() {
 
               ${
                 modoOscuro
-                  ? "border-zinc-800"
-                  : "border-gray-200"
+                  ? "border-slate-800"
+                  : "border-sky-100"
               }
             `}
           />
+
 
           <p
             className={`
@@ -806,8 +725,8 @@ function Perfil() {
 
               ${
                 modoOscuro
-                  ? "text-zinc-500"
-                  : "text-gray-500"
+                  ? "text-slate-500"
+                  : "text-slate-500"
               }
             `}
           >
@@ -818,7 +737,6 @@ function Perfil() {
 
       </div>
     );
-
   }
 
 
@@ -829,7 +747,6 @@ function Perfil() {
   if (
     !usuarioAuth
   ) {
-
     return (
       <div
         className={`
@@ -844,12 +761,12 @@ function Perfil() {
           ${
             modoOscuro
               ? `
-                bg-black
+                bg-[#050b18]
                 text-white
               `
               : `
-                bg-gray-50
-                text-gray-900
+                bg-[#f4f8fc]
+                text-slate-900
               `
           }
         `}
@@ -862,22 +779,23 @@ function Perfil() {
 
             border
 
-            rounded-[30px]
+            rounded-[32px]
 
-            p-8
+            p-9
 
             text-center
 
             ${
               modoOscuro
                 ? `
-                  bg-zinc-950
-                  border-zinc-800
+                  bg-[#0b1424]
+                  border-slate-800
                 `
                 : `
                   bg-white
-                  border-gray-200
+                  border-sky-100
                   shadow-xl
+                  shadow-sky-950/5
                 `
             }
           `}
@@ -890,9 +808,10 @@ function Perfil() {
 
               rounded-2xl
 
-              bg-yellow-500/10
+              bg-sky-500/10
+
               border
-              border-yellow-500/20
+              border-sky-500/20
 
               flex
               items-center
@@ -902,52 +821,75 @@ function Perfil() {
             "
           >
 
-            <FaShieldAlt className="text-yellow-500 text-2xl" />
+            <FaShieldAlt
+              className="
+                text-sky-500
+                text-2xl
+              "
+            />
 
           </div>
 
 
-          <h1 className="text-2xl font-bold mt-5">
+          <p
+            className="
+              text-xs
+              uppercase
+              tracking-[0.22em]
+              text-sky-500
+              font-black
+              mt-6
+            "
+          >
+            Macro
+          </p>
+
+
+          <h1
+            className="
+              text-3xl
+              font-black
+              mt-2
+            "
+          >
             Inicia sesión
           </h1>
 
 
           <p
             className={`
-              mt-2
+              mt-3
 
               ${
                 modoOscuro
-                  ? "text-zinc-500"
-                  : "text-gray-500"
+                  ? "text-slate-400"
+                  : "text-slate-500"
               }
             `}
           >
-            Debes iniciar sesión para consultar y configurar tu perfil.
+            Accede a tu cuenta para consultar y configurar tu perfil.
           </p>
 
 
           <button
             type="button"
-
             onClick={() =>
               navigate(
                 "/login"
               )
             }
-
             className="
-              mt-6
+              mt-7
 
               w-full
 
-              bg-yellow-500
-              hover:bg-yellow-400
+              bg-sky-500
+              hover:bg-sky-600
 
-              text-black
+              text-white
 
               px-6
-              py-3.5
+              py-4
 
               rounded-2xl
 
@@ -956,14 +898,13 @@ function Perfil() {
               transition
             "
           >
-            Ir a iniciar sesión
+            Iniciar sesión
           </button>
 
         </div>
 
       </div>
     );
-
   }
 
 
@@ -988,19 +929,23 @@ function Perfil() {
         ${
           modoOscuro
             ? `
-              bg-black
+              bg-[#050b18]
               text-white
             `
             : `
-              bg-gray-50
-              text-gray-900
+              bg-[#f4f8fc]
+              text-slate-950
             `
         }
       `}
     >
 
-      <div className="max-w-6xl mx-auto">
-
+      <div
+        className="
+          max-w-6xl
+          mx-auto
+        "
+      >
 
         {/* ==================================================
             VOLVER
@@ -1008,32 +953,28 @@ function Perfil() {
 
         <button
           type="button"
-
           onClick={() =>
-            navigate(
-              -1
-            )
+            navigate(-1)
           }
-
           className={`
             flex
             items-center
             gap-2
 
             text-sm
-            font-medium
+            font-semibold
 
             transition
 
             ${
               modoOscuro
                 ? `
-                  text-zinc-500
+                  text-slate-400
                   hover:text-white
                 `
                 : `
-                  text-gray-500
-                  hover:text-gray-900
+                  text-slate-500
+                  hover:text-slate-900
                 `
             }
           `}
@@ -1047,7 +988,7 @@ function Perfil() {
 
 
         {/* ==================================================
-            CABECERA PREMIUM
+            CABECERA
         ================================================== */}
 
         <section
@@ -1060,25 +1001,25 @@ function Perfil() {
 
             border
 
-            rounded-[32px]
+            rounded-[34px]
 
             ${
               modoOscuro
                 ? `
                   bg-gradient-to-br
-                  from-zinc-950
-                  via-zinc-950
-                  to-[#151109]
+                  from-[#0b1424]
+                  via-[#08111f]
+                  to-[#062747]
 
-                  border-zinc-800
+                  border-slate-800
                 `
                 : `
                   bg-gradient-to-br
                   from-white
                   via-white
-                  to-yellow-50
+                  to-sky-50
 
-                  border-gray-200
+                  border-sky-100
 
                   shadow-sm
                 `
@@ -1094,12 +1035,32 @@ function Perfil() {
               -right-24
               -top-24
 
-              w-72
-              h-72
+              w-80
+              h-80
 
               rounded-full
 
-              bg-yellow-500/10
+              bg-sky-500/15
+
+              blur-3xl
+
+              pointer-events-none
+            "
+          />
+
+
+          <div
+            className="
+              absolute
+              right-32
+              -bottom-32
+
+              w-64
+              h-64
+
+              rounded-full
+
+              bg-cyan-400/10
 
               blur-3xl
 
@@ -1134,6 +1095,8 @@ function Perfil() {
 
               <div
                 className="
+                  relative
+
                   w-24
                   h-24
 
@@ -1142,10 +1105,11 @@ function Perfil() {
                   rounded-[28px]
 
                   bg-gradient-to-br
-                  from-[#e5be60]
-                  to-[#a87820]
+                  from-sky-400
+                  via-sky-500
+                  to-blue-700
 
-                  text-black
+                  text-white
 
                   flex
                   items-center
@@ -1155,17 +1119,54 @@ function Perfil() {
                   font-black
 
                   shadow-xl
+                  shadow-sky-500/20
                 "
               >
-                {
-                  obtenerIniciales()
-                }
+
+                {obtenerIniciales()}
+
+
+                <div
+                  className="
+                    absolute
+                    -bottom-2
+                    -right-2
+
+                    w-9
+                    h-9
+
+                    rounded-xl
+
+                    bg-[#071221]
+
+                    border-2
+                    border-white
+
+                    text-sky-400
+
+                    flex
+                    items-center
+                    justify-center
+
+                    text-sm
+                  "
+                >
+
+                  <FaCode />
+
+                </div>
+
               </div>
 
 
               {/* INFORMACIÓN */}
 
-              <div className="min-w-0 flex-1">
+              <div
+                className="
+                  min-w-0
+                  flex-1
+                "
+              >
 
                 <p
                   className="
@@ -1174,12 +1175,12 @@ function Perfil() {
 
                     tracking-[0.25em]
 
-                    text-yellow-500
+                    text-sky-500
 
-                    font-bold
+                    font-black
                   "
                 >
-                  Cuenta Wealth
+                  Cuenta Macro
                 </p>
 
 
@@ -1189,6 +1190,8 @@ function Perfil() {
                     md:text-4xl
 
                     font-black
+
+                    tracking-[-0.04em]
 
                     mt-2
 
@@ -1200,6 +1203,23 @@ function Perfil() {
                 </h1>
 
 
+                <p
+                  className={`
+                    mt-2
+
+                    text-sm
+
+                    ${
+                      modoOscuro
+                        ? "text-slate-400"
+                        : "text-slate-500"
+                    }
+                  `}
+                >
+                  Administra tu información personal, seguridad y preferencias.
+                </p>
+
+
                 <div
                   className={`
                     flex
@@ -1208,37 +1228,61 @@ function Perfil() {
                     gap-x-5
                     gap-y-2
 
-                    mt-4
+                    mt-5
 
                     text-sm
 
                     ${
                       modoOscuro
-                        ? "text-zinc-400"
-                        : "text-gray-600"
+                        ? "text-slate-400"
+                        : "text-slate-600"
                     }
                   `}
                 >
 
                   {correo && (
-                    <span className="flex items-center gap-2">
 
-                      <FaEnvelope className="text-yellow-500" />
+                    <span
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                      "
+                    >
+
+                      <FaEnvelope
+                        className="
+                          text-sky-500
+                        "
+                      />
 
                       {correo}
 
                     </span>
+
                   )}
 
 
                   {telefono && (
-                    <span className="flex items-center gap-2">
 
-                      <FaPhone className="text-yellow-500" />
+                    <span
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                      "
+                    >
+
+                      <FaPhone
+                        className="
+                          text-sky-500
+                        "
+                      />
 
                       {telefono}
 
                     </span>
+
                   )}
 
                 </div>
@@ -1269,14 +1313,14 @@ function Perfil() {
                   ${
                     modoOscuro
                       ? `
-                        bg-green-500/10
-                        border-green-500/20
-                        text-green-400
+                        bg-emerald-500/10
+                        border-emerald-500/20
+                        text-emerald-400
                       `
                       : `
-                        bg-green-50
-                        border-green-200
-                        text-green-700
+                        bg-emerald-50
+                        border-emerald-200
+                        text-emerald-700
                       `
                   }
                 `}
@@ -1289,7 +1333,7 @@ function Perfil() {
 
                     rounded-full
 
-                    bg-green-500
+                    bg-emerald-500
                   "
                 />
 
@@ -1309,14 +1353,15 @@ function Perfil() {
         ================================================== */}
 
         {mensaje && (
+
           <div
             className={`
               mt-6
 
               border
-              border-green-500/30
+              border-emerald-500/30
 
-              bg-green-500/10
+              bg-emerald-500/10
 
               rounded-2xl
 
@@ -1328,21 +1373,27 @@ function Perfil() {
 
               ${
                 modoOscuro
-                  ? "text-green-300"
-                  : "text-green-700"
+                  ? "text-emerald-300"
+                  : "text-emerald-700"
               }
             `}
           >
 
-            <FaCheckCircle className="shrink-0" />
+            <FaCheckCircle
+              className="
+                shrink-0
+              "
+            />
 
             {mensaje}
 
           </div>
+
         )}
 
 
         {error && (
+
           <div
             className={`
               mt-6
@@ -1365,6 +1416,7 @@ function Perfil() {
           >
             {error}
           </div>
+
         )}
 
 
@@ -1375,6 +1427,7 @@ function Perfil() {
         <div
           className="
             grid
+
             lg:grid-cols-[1.25fr_.75fr]
 
             gap-7
@@ -1383,48 +1436,27 @@ function Perfil() {
           "
         >
 
-
           {/* ==================================================
               DATOS PERSONALES
           ================================================== */}
 
           <section
-            className={`
-              border
-              rounded-[28px]
-
-              p-6
-              md:p-8
-
-              ${
+            className={
+              cardClass(
                 modoOscuro
-                  ? `
-                    bg-zinc-950
-                    border-zinc-800
-                  `
-                  : `
-                    bg-white
-                    border-gray-200
-                    shadow-sm
-                  `
-              }
-            `}
+              )
+            }
           >
 
             <CabeceraSeccion
               modoOscuro={
                 modoOscuro
               }
-
               icon={
                 <FaUser />
               }
-
-              color="yellow"
-
               titulo="Datos personales"
-
-              descripcion="Información asociada a tus cotizaciones, proyectos y contacto."
+              descripcion="Información que Macro utilizará para tu cuenta, solicitudes, compras y proyectos."
             />
 
 
@@ -1443,9 +1475,7 @@ function Perfil() {
                 modoOscuro={
                   modoOscuro
                 }
-
                 titulo="Nombre completo"
-
                 icon={
                   <FaUser />
                 }
@@ -1453,19 +1483,15 @@ function Perfil() {
 
                 <input
                   type="text"
-
                   value={
                     nombre
                   }
-
                   onChange={(e) =>
                     setNombre(
                       e.target.value
                     )
                   }
-
                   placeholder="Tu nombre completo"
-
                   className={
                     inputClass(
                       modoOscuro
@@ -1480,9 +1506,7 @@ function Perfil() {
                 modoOscuro={
                   modoOscuro
                 }
-
                 titulo="Teléfono"
-
                 icon={
                   <FaPhone />
                 }
@@ -1490,19 +1514,15 @@ function Perfil() {
 
                 <input
                   type="tel"
-
                   value={
                     telefono
                   }
-
                   onChange={(e) =>
                     setTelefono(
                       e.target.value
                     )
                   }
-
                   placeholder="9811234567"
-
                   className={
                     inputClass(
                       modoOscuro
@@ -1521,9 +1541,7 @@ function Perfil() {
                 modoOscuro={
                   modoOscuro
                 }
-
                 titulo="Correo electrónico"
-
                 icon={
                   <FaEnvelope />
                 }
@@ -1531,13 +1549,10 @@ function Perfil() {
 
                 <input
                   type="email"
-
                   value={
                     correo
                   }
-
                   readOnly
-
                   className={`
                     ${inputClass(
                       modoOscuro
@@ -1556,12 +1571,12 @@ function Perfil() {
 
                     ${
                       modoOscuro
-                        ? "text-zinc-600"
-                        : "text-gray-400"
+                        ? "text-slate-600"
+                        : "text-slate-400"
                     }
                   `}
                 >
-                  El correo utilizado para iniciar sesión no se modifica desde esta pantalla.
+                  Este correo está asociado a tu acceso a Macro y no puede modificarse desde esta pantalla.
                 </p>
 
               </Campo>
@@ -1580,23 +1595,20 @@ function Perfil() {
 
               <button
                 type="button"
-
                 onClick={
                   guardarPerfil
                 }
-
                 disabled={
                   guardando
                 }
-
                 className="
                   w-full
                   sm:w-auto
 
-                  bg-yellow-500
-                  hover:bg-yellow-400
+                  bg-sky-500
+                  hover:bg-sky-600
 
-                  text-black
+                  text-white
 
                   px-7
                   py-3.5
@@ -1621,7 +1633,8 @@ function Perfil() {
 
                 {guardando
                   ? "Guardando..."
-                  : "Guardar cambios"}
+                  : "Guardar cambios"
+                }
 
               </button>
 
@@ -1635,69 +1648,54 @@ function Perfil() {
           ================================================== */}
 
           <section
-            className={`
-              border
-
-              rounded-[28px]
-
-              p-6
-              md:p-8
-
-              ${
+            className={
+              cardClass(
                 modoOscuro
-                  ? `
-                    bg-zinc-950
-                    border-zinc-800
-                  `
-                  : `
-                    bg-white
-                    border-gray-200
-                    shadow-sm
-                  `
-              }
-            `}
+              )
+            }
           >
 
             <CabeceraSeccion
               modoOscuro={
                 modoOscuro
               }
-
               icon={
                 modoOscuro
                   ? <FaMoon />
                   : <FaSun />
               }
-
-              color="yellow"
-
               titulo="Apariencia"
-
-              descripcion="Elige cómo quieres ver Wealth en este dispositivo."
+              descripcion="Personaliza cómo quieres ver Macro."
             />
 
 
-            <div className="grid grid-cols-2 gap-4 mt-8">
+            <div
+              className="
+                grid
+                grid-cols-2
+
+                gap-4
+
+                mt-8
+              "
+            >
 
               {/* CLARO */}
 
               <button
                 type="button"
-
                 onClick={() =>
                   cambiarTemaPerfil(
                     "claro"
                   )
                 }
-
                 disabled={
                   cambiandoTema
                 }
-
                 className={`
                   relative
 
-                  min-h-[170px]
+                  min-h-[175px]
 
                   rounded-[24px]
 
@@ -1716,25 +1714,26 @@ function Perfil() {
                     temaSeleccionado ===
                     "claro"
                       ? `
-                        border-yellow-500
+                        border-sky-500
+
                         ring-4
-                        ring-yellow-500/10
+                        ring-sky-500/10
                       `
                       : modoOscuro
                       ? `
-                        border-zinc-800
-                        hover:border-zinc-600
+                        border-slate-800
+                        hover:border-slate-600
                       `
                       : `
-                        border-gray-200
-                        hover:border-gray-300
+                        border-slate-200
+                        hover:border-sky-200
                       `
                   }
 
                   ${
                     modoOscuro
-                      ? "bg-zinc-900"
-                      : "bg-gray-50"
+                      ? "bg-[#071221]"
+                      : "bg-[#f8fbff]"
                   }
                 `}
               >
@@ -1742,31 +1741,7 @@ function Perfil() {
                 {temaSeleccionado ===
                   "claro" && (
 
-                  <div
-                    className="
-                      absolute
-
-                      top-4
-                      right-4
-
-                      w-7
-                      h-7
-
-                      rounded-full
-
-                      bg-yellow-500
-
-                      text-black
-
-                      flex
-                      items-center
-                      justify-center
-
-                      text-xs
-                    "
-                  >
-                    <FaCheck />
-                  </div>
+                  <Seleccionado />
 
                 )}
 
@@ -1778,9 +1753,9 @@ function Perfil() {
 
                     rounded-2xl
 
-                    bg-yellow-500/15
+                    bg-sky-500/10
 
-                    text-yellow-500
+                    text-sky-500
 
                     flex
                     items-center
@@ -1795,7 +1770,12 @@ function Perfil() {
                 </div>
 
 
-                <p className="font-bold mt-5">
+                <p
+                  className="
+                    font-black
+                    mt-5
+                  "
+                >
                   Claro
                 </p>
 
@@ -1808,12 +1788,12 @@ function Perfil() {
 
                     ${
                       modoOscuro
-                        ? "text-zinc-500"
-                        : "text-gray-500"
+                        ? "text-slate-500"
+                        : "text-slate-500"
                     }
                   `}
                 >
-                  Fondos luminosos y alto contraste.
+                  Fondo claro y limpio para el uso diario.
                 </p>
 
               </button>
@@ -1823,21 +1803,18 @@ function Perfil() {
 
               <button
                 type="button"
-
                 onClick={() =>
                   cambiarTemaPerfil(
                     "oscuro"
                   )
                 }
-
                 disabled={
                   cambiandoTema
                 }
-
                 className={`
                   relative
 
-                  min-h-[170px]
+                  min-h-[175px]
 
                   rounded-[24px]
 
@@ -1856,57 +1833,30 @@ function Perfil() {
                     temaSeleccionado ===
                     "oscuro"
                       ? `
-                        border-yellow-500
+                        border-sky-500
+
                         ring-4
-                        ring-yellow-500/10
+                        ring-sky-500/10
                       `
                       : modoOscuro
                       ? `
-                        border-zinc-800
-                        hover:border-zinc-600
+                        border-slate-800
                       `
                       : `
-                        border-gray-200
-                        hover:border-gray-300
+                        border-slate-200
                       `
                   }
 
-                  ${
-                    modoOscuro
-                      ? "bg-black"
-                      : "bg-[#151517]"
-                  }
+                  bg-[#071221]
+
+                  text-white
                 `}
               >
 
                 {temaSeleccionado ===
                   "oscuro" && (
 
-                  <div
-                    className="
-                      absolute
-
-                      top-4
-                      right-4
-
-                      w-7
-                      h-7
-
-                      rounded-full
-
-                      bg-yellow-500
-
-                      text-black
-
-                      flex
-                      items-center
-                      justify-center
-
-                      text-xs
-                    "
-                  >
-                    <FaCheck />
-                  </div>
+                  <Seleccionado />
 
                 )}
 
@@ -1918,9 +1868,9 @@ function Perfil() {
 
                     rounded-2xl
 
-                    bg-yellow-500/15
+                    bg-sky-500/15
 
-                    text-yellow-400
+                    text-sky-400
 
                     flex
                     items-center
@@ -1935,13 +1885,25 @@ function Perfil() {
                 </div>
 
 
-                <p className="font-bold mt-5 text-white">
+                <p
+                  className="
+                    font-black
+                    mt-5
+                    text-white
+                  "
+                >
                   Oscuro
                 </p>
 
 
-                <p className="text-xs mt-1 text-zinc-500">
-                  Una apariencia elegante con menor luminosidad.
+                <p
+                  className="
+                    text-xs
+                    mt-1
+                    text-slate-500
+                  "
+                >
+                  Azul oscuro con menor luminosidad.
                 </p>
 
               </button>
@@ -1962,12 +1924,12 @@ function Perfil() {
                 ${
                   modoOscuro
                     ? `
-                      bg-black/40
-                      border-zinc-800
+                      bg-[#071221]
+                      border-slate-800
                     `
                     : `
-                      bg-gray-50
-                      border-gray-200
+                      bg-sky-50/60
+                      border-sky-100
                     `
                 }
               `}
@@ -1976,17 +1938,16 @@ function Perfil() {
               <p
                 className={`
                   text-xs
-
                   leading-relaxed
 
                   ${
                     modoOscuro
-                      ? "text-zinc-500"
-                      : "text-gray-500"
+                      ? "text-slate-500"
+                      : "text-slate-500"
                   }
                 `}
               >
-                Esta preferencia se guarda para tu cuenta en este dispositivo. Si utilizas Wealth por primera vez en otro equipo, utilizaremos tu preferencia general como configuración inicial.
+                Guardaremos esta preferencia en tu cuenta para que Macro pueda utilizarla como configuración inicial cuando inicies sesión desde otro dispositivo.
               </p>
 
             </div>
@@ -2004,25 +1965,9 @@ function Perfil() {
           className={`
             mt-7
 
-            border
-
-            rounded-[28px]
-
-            p-6
-            md:p-8
-
-            ${
+            ${cardClass(
               modoOscuro
-                ? `
-                  bg-zinc-950
-                  border-zinc-800
-                `
-                : `
-                  bg-white
-                  border-gray-200
-                  shadow-sm
-                `
-            }
+            )}
           `}
         >
 
@@ -2030,16 +1975,11 @@ function Perfil() {
             modoOscuro={
               modoOscuro
             }
-
             icon={
               <FaLock />
             }
-
-            color="blue"
-
             titulo="Seguridad"
-
-            descripcion="Actualiza tu contraseña para mantener protegida tu cuenta."
+            descripcion="Actualiza tu contraseña para mantener protegida tu cuenta Macro."
           />
 
 
@@ -2058,9 +1998,7 @@ function Perfil() {
               modoOscuro={
                 modoOscuro
               }
-
               titulo="Contraseña actual"
-
               icon={
                 <FaLock />
               }
@@ -2068,21 +2006,16 @@ function Perfil() {
 
               <input
                 type="password"
-
                 value={
                   passwordActual
                 }
-
                 onChange={(e) =>
                   setPasswordActual(
                     e.target.value
                   )
                 }
-
                 autoComplete="current-password"
-
                 placeholder="••••••••"
-
                 className={
                   inputClass(
                     modoOscuro
@@ -2097,9 +2030,7 @@ function Perfil() {
               modoOscuro={
                 modoOscuro
               }
-
               titulo="Nueva contraseña"
-
               icon={
                 <FaLock />
               }
@@ -2107,21 +2038,16 @@ function Perfil() {
 
               <input
                 type="password"
-
                 value={
                   passwordNueva
                 }
-
                 onChange={(e) =>
                   setPasswordNueva(
                     e.target.value
                   )
                 }
-
                 autoComplete="new-password"
-
                 placeholder="Mínimo 6 caracteres"
-
                 className={
                   inputClass(
                     modoOscuro
@@ -2136,9 +2062,7 @@ function Perfil() {
               modoOscuro={
                 modoOscuro
               }
-
               titulo="Confirmar contraseña"
-
               icon={
                 <FaShieldAlt />
               }
@@ -2146,21 +2070,16 @@ function Perfil() {
 
               <input
                 type="password"
-
                 value={
                   passwordConfirmar
                 }
-
                 onChange={(e) =>
                   setPasswordConfirmar(
                     e.target.value
                   )
                 }
-
                 autoComplete="new-password"
-
                 placeholder="Repite la contraseña"
-
                 className={
                   inputClass(
                     modoOscuro
@@ -2184,15 +2103,12 @@ function Perfil() {
 
             <button
               type="button"
-
               onClick={
                 cambiarPassword
               }
-
               disabled={
                 cambiandoPassword
               }
-
               className={`
                 w-full
                 sm:w-auto
@@ -2219,32 +2135,36 @@ function Perfil() {
                 ${
                   modoOscuro
                     ? `
-                      bg-zinc-900
-                      hover:bg-zinc-800
+                      bg-[#071221]
+                      hover:bg-[#0b1b31]
 
-                      border-zinc-700
-                      hover:border-blue-500/40
+                      border-slate-700
+                      hover:border-sky-500/40
 
                       text-white
                     `
                     : `
-                      bg-gray-50
-                      hover:bg-gray-100
+                      bg-sky-50
+                      hover:bg-sky-100
 
-                      border-gray-300
-                      hover:border-blue-400
+                      border-sky-200
 
-                      text-gray-800
+                      text-sky-700
                     `
                 }
               `}
             >
 
-              <FaShieldAlt className="text-blue-400" />
+              <FaShieldAlt
+                className="
+                  text-sky-500
+                "
+              />
 
               {cambiandoPassword
                 ? "Actualizando..."
-                : "Cambiar contraseña"}
+                : "Cambiar contraseña"
+              }
 
             </button>
 
@@ -2259,7 +2179,8 @@ function Perfil() {
 
         <div
           className={`
-            mt-7
+            mt-8
+            mb-3
 
             flex
             items-center
@@ -2271,19 +2192,56 @@ function Perfil() {
 
             ${
               modoOscuro
-                ? "text-zinc-700"
-                : "text-gray-400"
+                ? "text-slate-600"
+                : "text-slate-400"
             }
           `}
         >
 
           <FaShieldAlt />
 
-          Tu información está asociada a tu cuenta Wealth.
+          Tu información está protegida y asociada a tu cuenta Macro.
 
         </div>
 
       </div>
+
+    </div>
+  );
+}
+
+
+/* ======================================================
+   SELECCIONADO
+====================================================== */
+
+function Seleccionado() {
+  return (
+    <div
+      className="
+        absolute
+
+        top-4
+        right-4
+
+        w-7
+        h-7
+
+        rounded-full
+
+        bg-sky-500
+
+        text-white
+
+        flex
+        items-center
+        justify-center
+
+        text-xs
+      "
+    >
+
+      <FaCheck />
 
     </div>
   );
@@ -2299,31 +2257,18 @@ function CabeceraSeccion({
   icon,
   titulo,
   descripcion,
-  color = "yellow",
 }) {
-
-  const colores = {
-
-    yellow: `
-      bg-yellow-500/10
-      border-yellow-500/20
-      text-yellow-500
-    `,
-
-    blue: `
-      bg-blue-500/10
-      border-blue-500/20
-      text-blue-400
-    `,
-
-  };
-
-
   return (
-    <div className="flex items-start gap-4">
+    <div
+      className="
+        flex
+        items-start
+        gap-4
+      "
+    >
 
       <div
-        className={`
+        className="
           w-12
           h-12
 
@@ -2332,13 +2277,16 @@ function CabeceraSeccion({
           rounded-2xl
 
           border
+          border-sky-500/20
+
+          bg-sky-500/10
+
+          text-sky-500
 
           flex
           items-center
           justify-center
-
-          ${colores[color]}
-        `}
+        "
       >
         {icon}
       </div>
@@ -2346,7 +2294,12 @@ function CabeceraSeccion({
 
       <div>
 
-        <h2 className="text-xl font-bold">
+        <h2
+          className="
+            text-xl
+            font-black
+          "
+        >
           {titulo}
         </h2>
 
@@ -2359,8 +2312,8 @@ function CabeceraSeccion({
 
             ${
               modoOscuro
-                ? "text-zinc-500"
-                : "text-gray-500"
+                ? "text-slate-500"
+                : "text-slate-500"
             }
           `}
         >
@@ -2384,7 +2337,6 @@ function Campo({
   children,
   modoOscuro,
 }) {
-
   return (
     <div>
 
@@ -2398,17 +2350,21 @@ function Campo({
 
           mb-2.5
 
-          font-medium
+          font-semibold
 
           ${
             modoOscuro
-              ? "text-zinc-400"
-              : "text-gray-600"
+              ? "text-slate-400"
+              : "text-slate-600"
           }
         `}
       >
 
-        <span className="text-yellow-500">
+        <span
+          className="
+            text-sky-500
+          "
+        >
           {icon}
         </span>
 
@@ -2424,6 +2380,36 @@ function Campo({
 
 
 /* ======================================================
+   CARD
+====================================================== */
+
+const cardClass =
+  (
+    modoOscuro
+  ) => `
+    border
+
+    rounded-[28px]
+
+    p-6
+    md:p-8
+
+    ${
+      modoOscuro
+        ? `
+          bg-[#0b1424]
+          border-slate-800
+        `
+        : `
+          bg-white
+          border-sky-100
+          shadow-sm
+        `
+    }
+  `;
+
+
+/* ======================================================
    INPUT
 ====================================================== */
 
@@ -2436,20 +2422,20 @@ const inputClass =
     ${
       modoOscuro
         ? `
-          bg-black
-          border-zinc-700
+          bg-[#071221]
+          border-slate-700
 
           text-white
 
-          placeholder:text-zinc-700
+          placeholder:text-slate-600
         `
         : `
-          bg-gray-50
-          border-gray-300
+          bg-[#f8fbff]
+          border-sky-100
 
-          text-gray-900
+          text-slate-900
 
-          placeholder:text-gray-400
+          placeholder:text-slate-400
         `
     }
 
@@ -2462,10 +2448,10 @@ const inputClass =
 
     outline-none
 
-    focus:border-yellow-500/70
+    focus:border-sky-500
 
-    focus:ring-2
-    focus:ring-yellow-500/10
+    focus:ring-4
+    focus:ring-sky-500/10
 
     transition
   `;

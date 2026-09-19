@@ -1,18 +1,26 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams, useOutletContext } from "react-router-dom";
-
-import { db, auth } from "../firebase.config";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-  collection,
+  useNavigate,
+  useOutletContext,
+  useParams,
+} from "react-router-dom";
+
+import {
+  auth,
+  db,
+} from "../firebase.config";
+
+import {
   deleteDoc,
   doc,
   getDoc,
-  onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
-  where,
 } from "firebase/firestore";
 
 import {
@@ -21,366 +29,199 @@ import {
 
 import {
   FaArrowLeft,
-  FaFileInvoiceDollar,
-  FaMapMarkerAlt,
-  FaPhone,
-  FaWhatsapp,
-  FaImages,
+  FaArrowRight,
+  FaBullhorn,
+  FaCamera,
+  FaCheckCircle,
+  FaCode,
+  FaExternalLinkAlt,
+  FaGlobe,
   FaHeart,
+  FaImages,
+  FaLaptopCode,
+  FaMobileAlt,
   FaRegHeart,
+  FaRocket,
+  FaStar,
+  FaStore,
+  FaTools,
 } from "react-icons/fa";
 
 
-const ESTILOS_TEMA_CLARO = `
-  .wealth-light-page {
-    background-color: #f9fafb !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .bg-black {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-950 {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-900 {
-    background-color: #f9fafb !important;
-  }
-
-  .wealth-light-page .bg-zinc-800 {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .bg-zinc-700 {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-950/70"],
-  .wealth-light-page [class~="bg-zinc-950/60"] {
-    background-color: rgba(255, 255, 255, 0.92) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-900/80"],
-  .wealth-light-page [class~="bg-zinc-900/60"] {
-    background-color: rgba(249, 250, 251, 0.94) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-800/70"],
-  .wealth-light-page [class~="bg-zinc-800/60"],
-  .wealth-light-page [class~="bg-zinc-800/40"] {
-    background-color: rgba(243, 244, 246, 0.9) !important;
-  }
-
-  .wealth-light-page .border-zinc-900,
-  .wealth-light-page .border-zinc-800 {
-    border-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .border-zinc-700,
-  .wealth-light-page .border-zinc-600 {
-    border-color: #d1d5db !important;
-  }
-
-  .wealth-light-page .text-white {
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .text-zinc-100,
-  .wealth-light-page .text-zinc-200 {
-    color: #1f2937 !important;
-  }
-
-  .wealth-light-page .text-zinc-300 {
-    color: #374151 !important;
-  }
-
-  .wealth-light-page .text-zinc-400 {
-    color: #4b5563 !important;
-  }
-
-  .wealth-light-page .text-zinc-500,
-  .wealth-light-page .text-zinc-600 {
-    color: #6b7280 !important;
-  }
-
-  .wealth-light-page .text-zinc-700 {
-    color: #9ca3af !important;
-  }
-
-  .wealth-light-page input,
-  .wealth-light-page textarea,
-  .wealth-light-page select {
-    color: #111827;
-  }
-
-  .wealth-light-page input::placeholder,
-  .wealth-light-page textarea::placeholder {
-    color: #9ca3af;
-  }
-
-  .wealth-light-page option {
-    background: #ffffff;
-    color: #111827;
-  }
-
-  .wealth-light-page .inputAdmin {
-    background: #ffffff !important;
-    border-color: #d1d5db !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-900:hover {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-800:hover {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-700:hover {
-    background-color: #d1d5db !important;
-  }
-
-  /* Mantener texto blanco en botones/estados de color intenso */
-  .wealth-light-page [class*="bg-red-"][class~="text-white"],
-  .wealth-light-page [class*="bg-green-"][class~="text-white"],
-  .wealth-light-page [class*="bg-emerald-"][class~="text-white"],
-  .wealth-light-page [class*="bg-blue-"][class~="text-white"],
-  .wealth-light-page [class*="bg-purple-"][class~="text-white"],
-  .wealth-light-page [class*="bg-cyan-"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-
-  /* Overlays fotográficos siguen oscuros */
-  .wealth-light-page [class*="bg-black/"][class~="text-white"],
-  .wealth-light-page [class*="from-black"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-`;
+/* ======================================================
+   DETALLE PROYECTO - MACRO
+====================================================== */
 
 function DetalleProyecto() {
-  const { modoOscuro } = useOutletContext();
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const {
+    modoOscuro = false,
+  } =
+    useOutletContext() || {};
 
-  const [proyecto, setProyecto] = useState(null);
-  const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
 
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [imagenModal, setImagenModal] = useState("");
+  const {
+    id,
+  } =
+    useParams();
 
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
+
+  const navigate =
+    useNavigate();
+
+
+  /* ======================================================
+     ESTADOS
+  ====================================================== */
+
+  const [
+    proyecto,
+    setProyecto,
+  ] = useState(null);
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    index,
+    setIndex,
+  ] = useState(0);
+
+
+  const [
+    modalAbierto,
+    setModalAbierto,
+  ] = useState(false);
+
+
+  const [
+    imagenModal,
+    setImagenModal,
+  ] = useState("");
+
 
   const [
     usuario,
     setUsuario,
   ] = useState(null);
 
+
   const [
     esFavorito,
     setEsFavorito,
   ] = useState(false);
+
 
   const [
     guardandoFavorito,
     setGuardandoFavorito,
   ] = useState(false);
 
-  const [
-    referenciasGaleria,
-    setReferenciasGaleria,
-  ] = useState([]);
 
   const [
-    cargandoReferencias,
-    setCargandoReferencias,
-  ] = useState(true);
+    touchStart,
+    setTouchStart,
+  ] = useState(null);
 
-  const minSwipeDistance = 50;
 
-  // ======================================================
-  // CARGAR PROYECTO
-  // ======================================================
+  const [
+    touchEnd,
+    setTouchEnd,
+  ] = useState(null);
 
-  useEffect(() => {
-    const cargarProyecto = async () => {
-      try {
-        setLoading(true);
 
-        const ref = doc(
-          db,
-          "proyectos",
-          id
-        );
+  const minSwipeDistance =
+    50;
 
-        const snap =
-          await getDoc(ref);
 
-        if (snap.exists()) {
-          setProyecto({
-            id: snap.id,
-            ...snap.data(),
-          });
-        } else {
-          setProyecto(null);
-        }
-      } catch (error) {
-        console.error(
-          "Error cargando proyecto:",
-          error
-        );
-
-        setProyecto(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarProyecto();
-  }, [id]);
-
-  // ======================================================
-  // REFERENCIAS DE GALERÍA
-  // ======================================================
-
-  const normalizarCategoria =
-    (categoria = "") => {
-      const texto =
-        String(categoria)
-          .trim()
-          .toLowerCase();
-
-      if (
-        texto ===
-        "vidrio y aluminio"
-      ) {
-        return "aluminios y vidrios";
-      }
-
-      return texto;
-    };
+  /* ======================================================
+     CARGAR PROYECTO
+  ====================================================== */
 
   useEffect(() => {
-    const unsub =
-      onSnapshot(
-        collection(
-          db,
-          "galeria"
-        ),
-
-        (snapshot) => {
-          const grupos =
-            snapshot.docs.map(
-              (documento) => ({
-                id:
-                  documento.id,
-
-                ...documento.data(),
-              })
-            );
-
-          const categoriaProyecto =
-            normalizarCategoria(
-              proyecto?.categoria ||
-              ""
-            );
-
-          const porCategoria =
-            grupos.filter(
-              (grupo) =>
-                normalizarCategoria(
-                  grupo.categoria ||
-                  ""
-                ) ===
-                categoriaProyecto
-            );
-
-          const fuente =
-            porCategoria.length > 0
-              ? porCategoria
-              : grupos;
-
-          const fotos = [];
-
-          fuente.forEach(
-            (grupo) => {
-              const imagenesGrupo =
-                Array.isArray(
-                  grupo.imagenes
-                )
-                  ? grupo.imagenes
-                  : [];
-
-              imagenesGrupo.forEach(
-                (
-                  imagen,
-                  indice
-                ) => {
-                  if (
-                    !imagen ||
-                    fotos.length >= 4
-                  ) {
-                    return;
-                  }
-
-                  fotos.push({
-                    id:
-                      `${grupo.id}_${indice}`,
-
-                    imagen,
-
-                    categoria:
-                      grupo.categoria ||
-                      "Wealth",
-
-                    subcategoria:
-                      grupo.subcategoria ||
-                      grupo.nombre ||
-                      "Referencia",
-                  });
-                }
-              );
-            }
+    const cargarProyecto =
+      async () => {
+        if (!id) {
+          setProyecto(
+            null
           );
 
-          setReferenciasGaleria(
-            fotos
-          );
-
-          setCargandoReferencias(
+          setLoading(
             false
           );
-        },
 
-        (error) => {
+          return;
+        }
+
+
+        try {
+          setLoading(
+            true
+          );
+
+
+          const ref =
+            doc(
+              db,
+              "proyectos",
+              id
+            );
+
+
+          const snap =
+            await getDoc(
+              ref
+            );
+
+
+          if (
+            snap.exists()
+          ) {
+            setProyecto({
+              id:
+                snap.id,
+
+              ...snap.data(),
+            });
+
+          } else {
+            setProyecto(
+              null
+            );
+          }
+
+        } catch (error) {
           console.error(
-            "Error cargando referencias de galería:",
+            "Error cargando proyecto:",
             error
           );
 
-          setReferenciasGaleria(
-            []
+
+          setProyecto(
+            null
           );
 
-          setCargandoReferencias(
+        } finally {
+          setLoading(
             false
           );
         }
-      );
+      };
 
-    return () => unsub();
+
+    cargarProyecto();
 
   }, [
-    proyecto?.categoria,
+    id,
   ]);
 
-  // ======================================================
-  // SESIÓN
-  // ======================================================
+
+  /* ======================================================
+     SESIÓN
+  ====================================================== */
 
   useEffect(() => {
     const unsub =
@@ -391,6 +232,7 @@ function DetalleProyecto() {
             user || null
           );
 
+
           if (!user) {
             setEsFavorito(
               false
@@ -399,12 +241,82 @@ function DetalleProyecto() {
         }
       );
 
-    return () => unsub();
+
+    return () =>
+      unsub();
+
   }, []);
 
-  // ======================================================
-  // FAVORITO DEL USUARIO ACTUAL
-  // ======================================================
+
+  /* ======================================================
+     IMÁGENES
+  ====================================================== */
+
+  const imagenes =
+    useMemo(() => {
+      if (!proyecto) {
+        return [];
+      }
+
+
+      return [
+        ...new Set(
+          [
+            proyecto.imagen,
+
+            ...(
+              Array.isArray(
+                proyecto.imagenes
+              )
+                ? proyecto.imagenes
+                : []
+            ),
+          ].filter(
+            Boolean
+          )
+        ),
+      ];
+
+    }, [
+      proyecto,
+    ]);
+
+
+  const galeria =
+    useMemo(() => {
+      if (!proyecto) {
+        return [];
+      }
+
+
+      return [
+        ...new Set(
+          (
+            Array.isArray(
+              proyecto.galeria
+            )
+              ? proyecto.galeria
+              : []
+          ).filter(
+            Boolean
+          )
+        ),
+      ];
+
+    }, [
+      proyecto,
+    ]);
+
+
+  const imagenPrincipal =
+    imagenes[
+      index
+    ] || null;
+
+
+  /* ======================================================
+     FAVORITO
+  ====================================================== */
 
   useEffect(() => {
     if (
@@ -418,251 +330,404 @@ function DetalleProyecto() {
       return;
     }
 
-    const q = query(
-      collection(
-        db,
-        "favoritos"
-      ),
-      where(
-        "uid",
-        "==",
-        usuario.uid
-      ),
-      where(
-        "proyectoId",
-        "==",
-        id
-      )
-    );
 
-    const unsub =
-      onSnapshot(
-        q,
-        (snapshot) => {
+    const comprobar =
+      async () => {
+        try {
+          const favoritoRef =
+            doc(
+              db,
+              "favoritos",
+              `${usuario.uid}_${id}`
+            );
+
+
+          const snap =
+            await getDoc(
+              favoritoRef
+            );
+
+
           setEsFavorito(
-            !snapshot.empty
+            snap.exists()
           );
-        },
-        (error) => {
+
+        } catch (error) {
           console.error(
-            "Error verificando favorito:",
+            "Error comprobando favorito:",
             error
           );
         }
-      );
+      };
 
-    return () => unsub();
+
+    comprobar();
 
   }, [
     usuario,
     id,
   ]);
 
-  // ======================================================
-  // LOADING
-  // ======================================================
 
-  if (loading) {
-    return (
-      <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-[70vh] bg-black text-white flex items-center justify-center`}>
-        {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
-        <div className="text-center">
-          <div className="w-11 h-11 border-4 border-zinc-800 border-t-yellow-500 rounded-full animate-spin mx-auto" />
+  /* ======================================================
+     URL
+  ====================================================== */
 
-          <p className="text-zinc-500 mt-4">
-            Cargando proyecto...
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const obtenerUrlProyecto =
+    () => {
+      if (!proyecto) {
+        return "";
+      }
 
-  // ======================================================
-  // NO ENCONTRADO
-  // ======================================================
 
-  if (!proyecto) {
-    return (
-      <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-[70vh] bg-black text-white flex items-center justify-center px-5`}>
-        {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">
-            Proyecto no encontrado
-          </h1>
+      return String(
+        proyecto.url ||
+        proyecto.urlProyecto ||
+        proyecto.enlace ||
+        proyecto.sitioWeb ||
+        proyecto.link ||
+        ""
+      ).trim();
+    };
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/proyectos")
-            }
-            className="mt-5 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-xl font-bold transition"
-          >
-            Volver a proyectos
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  // ======================================================
-  // IMÁGENES
-  // ======================================================
+  const normalizarUrl =
+    (url) => {
+      if (!url) {
+        return "";
+      }
 
-  const imagenes = [
-    ...new Set(
-      [
-        ...(Array.isArray(
-          proyecto.imagenes
+
+      if (
+        /^https?:\/\//i.test(
+          url
         )
-          ? proyecto.imagenes
-          : []),
+      ) {
+        return url;
+      }
 
-        proyecto.imagen,
-      ].filter(Boolean)
-    ),
-  ];
 
-  const imagenPrincipal =
-    imagenes[index] ||
-    null;
+      return `https://${url}`;
+    };
 
-  // ======================================================
-  // CAMBIAR IMAGEN
-  // ======================================================
 
-  const siguienteImagen = () => {
-    if (imagenes.length <= 1) {
-      return;
-    }
+  const visitarProyecto =
+    () => {
+      const url =
+        obtenerUrlProyecto();
 
-    setIndex(
-      (prev) =>
-        (prev + 1) %
-        imagenes.length
-    );
-  };
 
-  const anteriorImagen = () => {
-    if (imagenes.length <= 1) {
-      return;
-    }
+      if (!url) {
+        return;
+      }
 
-    setIndex((prev) =>
-      prev === 0
-        ? imagenes.length - 1
-        : prev - 1
-    );
-  };
 
-  // ======================================================
-  // SWIPE CELULAR
-  // ======================================================
+      window.open(
+        normalizarUrl(
+          url
+        ),
+        "_blank",
+        "noopener,noreferrer"
+      );
+    };
 
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
 
-    setTouchStart(
-      e.targetTouches[0].clientX
-    );
-  };
+  /* ======================================================
+     TIPO DE PROYECTO
+  ====================================================== */
 
-  const onTouchMove = (e) => {
-    setTouchEnd(
-      e.targetTouches[0].clientX
-    );
-  };
+  const obtenerTipo =
+    () => {
+      return String(
+        proyecto?.categoria ||
+        proyecto?.tipo ||
+        "Proyecto tecnológico"
+      );
+    };
 
-  const onTouchEnd = () => {
-    if (
-      touchStart === null ||
-      touchEnd === null
-    ) {
-      return;
-    }
 
-    const distance =
-      touchStart - touchEnd;
+  const iconoTipo =
+    () => {
+      const tipo =
+        obtenerTipo()
+          .toLowerCase();
 
-    if (
-      distance >
-      minSwipeDistance
-    ) {
-      siguienteImagen();
-    }
 
-    if (
-      distance <
-      -minSwipeDistance
-    ) {
-      anteriorImagen();
-    }
+      if (
+        tipo.includes(
+          "web"
+        ) ||
+        tipo.includes(
+          "página"
+        ) ||
+        tipo.includes(
+          "pagina"
+        )
+      ) {
+        return <FaGlobe />;
+      }
 
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
 
-  // ======================================================
-  // ABRIR FOTO
-  // ======================================================
+      if (
+        tipo.includes(
+          "app"
+        ) ||
+        tipo.includes(
+          "móvil"
+        ) ||
+        tipo.includes(
+          "movil"
+        )
+      ) {
+        return <FaMobileAlt />;
+      }
 
-  const abrirImagen = (
-    imagen
-  ) => {
-    if (!imagen) {
-      return;
-    }
 
-    setImagenModal(imagen);
-    setModalAbierto(true);
-  };
+      if (
+        tipo.includes(
+          "cámara"
+        ) ||
+        tipo.includes(
+          "camara"
+        ) ||
+        tipo.includes(
+          "seguridad"
+        )
+      ) {
+        return <FaCamera />;
+      }
 
-  // ======================================================
-  // FAVORITO
-  // ======================================================
+
+      if (
+        tipo.includes(
+          "publicidad"
+        ) ||
+        tipo.includes(
+          "marketing"
+        )
+      ) {
+        return <FaBullhorn />;
+      }
+
+
+      if (
+        tipo.includes(
+          "software"
+        ) ||
+        tipo.includes(
+          "sistema"
+        )
+      ) {
+        return <FaLaptopCode />;
+      }
+
+
+      return <FaTools />;
+    };
+
+
+  /* ======================================================
+     GALERÍA
+  ====================================================== */
+
+  const siguienteImagen =
+    () => {
+      if (
+        imagenes.length <=
+        1
+      ) {
+        return;
+      }
+
+
+      setIndex(
+        (prev) =>
+          (
+            prev + 1
+          ) %
+          imagenes.length
+      );
+    };
+
+
+  const anteriorImagen =
+    () => {
+      if (
+        imagenes.length <=
+        1
+      ) {
+        return;
+      }
+
+
+      setIndex(
+        (prev) =>
+          prev === 0
+            ? imagenes.length -
+              1
+            : prev - 1
+      );
+    };
+
+
+  /* ======================================================
+     SWIPE
+  ====================================================== */
+
+  const onTouchStart =
+    (e) => {
+      setTouchEnd(
+        null
+      );
+
+
+      setTouchStart(
+        e.targetTouches[0]
+          .clientX
+      );
+    };
+
+
+  const onTouchMove =
+    (e) => {
+      setTouchEnd(
+        e.targetTouches[0]
+          .clientX
+      );
+    };
+
+
+  const onTouchEnd =
+    () => {
+      if (
+        touchStart ===
+          null ||
+        touchEnd ===
+          null
+      ) {
+        return;
+      }
+
+
+      const distance =
+        touchStart -
+        touchEnd;
+
+
+      if (
+        distance >
+        minSwipeDistance
+      ) {
+        siguienteImagen();
+      }
+
+
+      if (
+        distance <
+        -minSwipeDistance
+      ) {
+        anteriorImagen();
+      }
+
+
+      setTouchStart(
+        null
+      );
+
+
+      setTouchEnd(
+        null
+      );
+    };
+
+
+  /* ======================================================
+     MODAL
+  ====================================================== */
+
+  const abrirImagen =
+    (imagen) => {
+      if (!imagen) {
+        return;
+      }
+
+
+      setImagenModal(
+        imagen
+      );
+
+
+      setModalAbierto(
+        true
+      );
+    };
+
+
+  /* ======================================================
+     FAVORITOS
+  ====================================================== */
 
   const toggleFavorito =
     async () => {
       if (!usuario) {
         navigate(
-          "/login"
+          "/login",
+          {
+            state: {
+              mensaje:
+                "Inicia sesión para guardar proyectos en favoritos.",
+            },
+          }
         );
 
         return;
       }
 
+
       const documentoId =
         `${usuario.uid}_${proyecto.id}`;
+
+
+      const favoritoRef =
+        doc(
+          db,
+          "favoritos",
+          documentoId
+        );
+
 
       try {
         setGuardandoFavorito(
           true
         );
 
-        if (esFavorito) {
+
+        if (
+          esFavorito
+        ) {
           await deleteDoc(
-            doc(
-              db,
-              "favoritos",
-              documentoId
-            )
+            favoritoRef
           );
+
+
+          setEsFavorito(
+            false
+          );
+
 
           return;
         }
 
+
         await setDoc(
-          doc(
-            db,
-            "favoritos",
-            documentoId
-          ),
+          favoritoRef,
           {
             uid:
               usuario.uid,
 
             usuario:
               usuario.email ||
-              null,
+              "",
 
             proyectoId:
               proyecto.id,
@@ -686,15 +751,24 @@ function DetalleProyecto() {
 
             categoria:
               proyecto.categoria ||
+              proyecto.tipo ||
               "",
 
             descripcion:
               proyecto.descripcion ||
               "",
 
+            url:
+              obtenerUrlProyecto(),
+
             fechaGuardado:
               serverTimestamp(),
           }
+        );
+
+
+        setEsFavorito(
+          true
         );
 
       } catch (error) {
@@ -702,6 +776,7 @@ function DetalleProyecto() {
           "Error actualizando favorito:",
           error
         );
+
 
         alert(
           "No se pudo actualizar el favorito."
@@ -714,76 +789,43 @@ function DetalleProyecto() {
       }
     };
 
-  // ======================================================
-  // WHATSAPP
-  // ======================================================
 
-  const contactarWhatsApp =
+  /* ======================================================
+     SOLICITAR SERVICIO SIMILAR
+  ====================================================== */
+
+  const solicitarProyecto =
     () => {
-      const telefono =
-        "529811574778";
+      const proyectoReferencia = {
+        ...proyecto,
 
-      const mensaje =
-        `Hola 👋, vi el proyecto "${proyecto.nombre}" en la página de Wealth y me gustaría recibir información.`;
+        id:
+          proyecto.id,
 
-      const url =
-        `https://wa.me/${telefono}?text=${encodeURIComponent(
-          mensaje
-        )}`;
+        proyectoReferenciaId:
+          proyecto.id,
 
-      window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-      );
-    };
+        proyectoReferenciaNombre:
+          proyecto.nombre ||
+          "",
 
-  // ======================================================
-  // COTIZAR ESTE PROYECTO
-  // ======================================================
-  //
-  // CrearCotizacion ya recibe:
-  // location.state?.proyecto
-  //
-  // Por eso enviamos el proyecto COMPLETO.
-  // Así conserva:
-  // - id
-  // - nombre
-  // - categoría
-  // - descripción
-  // - imagen
-  // - imagenes[]
-  //
-  // CrearCotizacion lo utilizará como proyecto de referencia.
-  // ======================================================
+        proyectoReferenciaCategoria:
+          proyecto.categoria ||
+          proyecto.tipo ||
+          "",
+      };
 
-  const cotizarProyecto =
-    () => {
+
       if (!usuario) {
         navigate(
           "/login",
           {
             state: {
               mensaje:
-                "Inicia sesión para cotizar este proyecto.",
+                "Inicia sesión para solicitar un proyecto similar.",
 
-              proyectoPendiente: {
-                ...proyecto,
-
-                id:
-                  proyecto.id,
-
-                proyectoReferenciaId:
-                  proyecto.id,
-
-                proyectoReferenciaNombre:
-                  proyecto.nombre ||
-                  "",
-
-                proyectoReferenciaCategoria:
-                  proyecto.categoria ||
-                  "",
-              },
+              proyectoPendiente:
+                proyectoReferencia,
             },
           }
         );
@@ -791,91 +833,649 @@ function DetalleProyecto() {
         return;
       }
 
+
       navigate(
         "/crear-cotizacion",
         {
           state: {
-            proyecto: {
-              ...proyecto,
-
-              // Dejamos explícitamente el ID
-              // para que quede guardada la referencia.
-              id:
-                proyecto.id,
-
-              proyectoReferenciaId:
-                proyecto.id,
-
-              proyectoReferenciaNombre:
-                proyecto.nombre ||
-                "",
-
-              proyectoReferenciaCategoria:
-                proyecto.categoria ||
-                "",
-            },
+            proyecto:
+              proyectoReferencia,
           },
         }
       );
     };
 
-  // ======================================================
-  // MAPS
-  // ======================================================
 
-  const abrirUbicacion =
-    () => {
-      const url =
-        "https://www.google.com/maps/search/?api=1&query=Av+Aviacion+89+Heroe+de+Nacozari+Campeche";
+  /* ======================================================
+     LOADING
+  ====================================================== */
 
-      window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-      );
-    };
+  if (loading) {
+    return (
+      <div
+        className={`
+          min-h-[70vh]
+
+          flex
+          items-center
+          justify-center
+
+          ${
+            modoOscuro
+              ? "bg-slate-950 text-white"
+              : "bg-[#f5fbff] text-slate-900"
+          }
+        `}
+      >
+
+        <div className="text-center">
+
+          <div
+            className="
+              w-12
+              h-12
+
+              border-4
+              border-sky-100
+              border-t-sky-500
+
+              rounded-full
+
+              animate-spin
+
+              mx-auto
+            "
+          />
+
+
+          <p className="text-slate-500 mt-4">
+
+            Cargando proyecto...
+
+          </p>
+
+        </div>
+
+      </div>
+    );
+  }
+
+
+  /* ======================================================
+     NO ENCONTRADO
+  ====================================================== */
+
+  if (!proyecto) {
+    return (
+      <div
+        className={`
+          min-h-[70vh]
+
+          flex
+          items-center
+          justify-center
+
+          px-5
+
+          ${
+            modoOscuro
+              ? "bg-slate-950 text-white"
+              : "bg-[#f5fbff] text-slate-900"
+          }
+        `}
+      >
+
+        <div className="text-center">
+
+          <div
+            className="
+              w-16
+              h-16
+
+              rounded-2xl
+
+              bg-sky-50
+              text-sky-500
+
+              flex
+              items-center
+              justify-center
+
+              mx-auto
+
+              text-2xl
+            "
+          >
+
+            <FaLaptopCode />
+
+          </div>
+
+
+          <h1
+            className="
+              text-3xl
+              font-black
+
+              mt-5
+            "
+          >
+
+            Proyecto no encontrado
+
+          </h1>
+
+
+          <p className="text-slate-500 mt-2">
+
+            El proyecto que buscas ya no está disponible.
+
+          </p>
+
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                "/proyectos"
+              )
+            }
+            className="
+              mt-6
+
+              bg-sky-500
+              hover:bg-sky-600
+
+              text-white
+
+              px-6
+              py-3
+
+              rounded-xl
+
+              font-bold
+            "
+          >
+
+            Volver a proyectos
+
+          </button>
+
+        </div>
+
+      </div>
+    );
+  }
+
+
+  /* ======================================================
+     RENDER
+  ====================================================== */
+
+  const urlProyecto =
+    obtenerUrlProyecto();
+
 
   return (
-    <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-screen bg-black text-white`}>
-      {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
+    <div
+      className={`
+        min-h-screen
+
+        ${
+          modoOscuro
+            ? "bg-slate-950 text-white"
+            : "bg-[#f5fbff] text-slate-900"
+        }
+      `}
+    >
 
       {/* ================================================= */}
-      {/* NAV */}
+      {/* BARRA SUPERIOR */}
       {/* ================================================= */}
 
-      <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-5 border-b border-white/10">
+      <div
+        className={`
+          border-b
 
-        <button
-          type="button"
-          onClick={() =>
-            navigate(-1)
+          ${
+            modoOscuro
+              ? "bg-slate-950 border-slate-800"
+              : "bg-white border-sky-100"
           }
-          className="flex items-center gap-2 text-zinc-400 hover:text-white transition"
-        >
-          <FaArrowLeft />
-          Volver
-        </button>
+        `}
+      >
 
-        <h1 className="font-semibold text-right truncate">
-          {proyecto.nombre}
-        </h1>
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+
+            px-5
+            md:px-8
+
+            py-5
+
+            flex
+            items-center
+            justify-between
+
+            gap-4
+          "
+        >
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(-1)
+            }
+            className="
+              flex
+              items-center
+              gap-2
+
+              text-slate-500
+
+              hover:text-sky-500
+
+              transition
+            "
+          >
+
+            <FaArrowLeft />
+
+            Volver
+
+          </button>
+
+
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+
+              min-w-0
+            "
+          >
+
+            <div
+              className="
+                w-9
+                h-9
+
+                rounded-xl
+
+                bg-sky-500
+                text-white
+
+                flex
+                items-center
+                justify-center
+
+                shrink-0
+              "
+            >
+
+              <FaCode />
+
+            </div>
+
+
+            <p
+              className="
+                font-bold
+
+                truncate
+              "
+            >
+
+              {proyecto.nombre}
+
+            </p>
+
+          </div>
+
+        </div>
 
       </div>
 
+
       {/* ================================================= */}
-      {/* MAIN */}
+      {/* HERO DETALLE */}
       {/* ================================================= */}
 
-      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+
+          px-5
+          md:px-8
+
+          pt-10
+          pb-8
+        "
+      >
+
+        <div
+          className="
+            flex
+            flex-col
+
+            lg:flex-row
+            lg:items-end
+            lg:justify-between
+
+            gap-6
+          "
+        >
+
+          <div>
+
+            <div
+              className="
+                flex
+                flex-wrap
+                items-center
+
+                gap-2
+              "
+            >
+
+              <span
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+
+                  px-4
+                  py-2
+
+                  rounded-full
+
+                  bg-sky-50
+                  border
+                  border-sky-100
+
+                  text-sky-600
+
+                  text-xs
+                  font-bold
+
+                  uppercase
+                  tracking-[0.18em]
+                "
+              >
+
+                {iconoTipo()}
+
+                {obtenerTipo()}
+
+              </span>
+
+
+              {proyecto.destacado && (
+
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    gap-2
+
+                    px-4
+                    py-2
+
+                    rounded-full
+
+                    bg-amber-50
+                    border
+                    border-amber-100
+
+                    text-amber-600
+
+                    text-xs
+                    font-bold
+                  "
+                >
+
+                  <FaStar />
+
+                  Destacado
+
+                </span>
+
+              )}
+
+
+              {proyecto.estado && (
+
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    gap-2
+
+                    px-4
+                    py-2
+
+                    rounded-full
+
+                    bg-emerald-50
+                    border
+                    border-emerald-100
+
+                    text-emerald-600
+
+                    text-xs
+                    font-bold
+                  "
+                >
+
+                  <FaCheckCircle />
+
+                  {proyecto.estado}
+
+                </span>
+
+              )}
+
+            </div>
+
+
+            <p
+              className="
+                text-xs
+                uppercase
+                tracking-[0.25em]
+
+                text-sky-500
+
+                font-bold
+
+                mt-7
+              "
+            >
+
+              Portafolio Macro
+
+            </p>
+
+
+            <h1
+              className="
+                text-4xl
+                md:text-6xl
+
+                font-black
+
+                tracking-tight
+                leading-[1.04]
+
+                mt-3
+
+                max-w-4xl
+              "
+            >
+
+              {proyecto.nombre}
+
+            </h1>
+
+
+            {proyecto.descripcion && (
+
+              <p
+                className="
+                  text-slate-500
+
+                  text-base
+                  md:text-lg
+
+                  leading-relaxed
+
+                  max-w-3xl
+
+                  mt-5
+
+                  whitespace-pre-line
+                "
+              >
+
+                {proyecto.descripcion}
+
+              </p>
+
+            )}
+
+          </div>
+
+
+          {/* FAVORITO */}
+
+          <button
+            type="button"
+            onClick={
+              toggleFavorito
+            }
+            disabled={
+              guardandoFavorito
+            }
+            className={`
+              px-5
+              py-3.5
+
+              rounded-xl
+
+              border
+
+              font-semibold
+
+              flex
+              items-center
+              justify-center
+              gap-2
+
+              shrink-0
+
+              transition
+
+              ${
+                esFavorito
+                  ? `
+                    bg-pink-50
+                    border-pink-200
+                    text-pink-500
+                  `
+                  : modoOscuro
+                  ? `
+                    bg-slate-900
+                    border-slate-700
+                    text-slate-300
+
+                    hover:border-pink-400
+                    hover:text-pink-400
+                  `
+                  : `
+                    bg-white
+                    border-sky-100
+                    text-slate-600
+
+                    hover:border-pink-200
+                    hover:text-pink-500
+                  `
+              }
+            `}
+          >
+
+            {esFavorito
+              ? <FaHeart />
+              : <FaRegHeart />
+            }
+
+
+            {esFavorito
+              ? "Guardado"
+              : "Guardar"
+            }
+
+          </button>
+
+        </div>
+
+      </section>
+
+
+      {/* ================================================= */}
+      {/* CONTENIDO */}
+      {/* ================================================= */}
+
+      <main
+        className="
+          max-w-7xl
+          mx-auto
+
+          px-5
+          md:px-8
+
+          pb-16
+
+          grid
+          lg:grid-cols-[1.2fr_0.8fr]
+
+          gap-7
+          lg:gap-10
+        "
+      >
 
         {/* ================================================= */}
         {/* IMÁGENES */}
         {/* ================================================= */}
 
-        <div className="space-y-4">
+        <div className="min-w-0">
 
           <div
-            className="relative overflow-hidden bg-zinc-950 border border-zinc-800 rounded-3xl min-h-[360px] md:min-h-[520px] flex items-center justify-center"
+            className={`
+              relative
+
+              overflow-hidden
+
+              rounded-[30px]
+
+              border
+
+              min-h-[380px]
+              md:min-h-[550px]
+
+              flex
+              items-center
+              justify-center
+
+              ${
+                modoOscuro
+                  ? "bg-slate-900 border-slate-800"
+                  : "bg-white border-sky-100 shadow-sm"
+              }
+            `}
             onTouchStart={
               onTouchStart
             }
@@ -888,6 +1488,7 @@ function DetalleProyecto() {
           >
 
             {imagenPrincipal ? (
+
               <img
                 src={
                   imagenPrincipal
@@ -900,461 +1501,1033 @@ function DetalleProyecto() {
                     imagenPrincipal
                   )
                 }
-                className="w-full h-[420px] md:h-[560px] object-contain p-4 md:p-6 cursor-zoom-in select-none"
                 draggable={
                   false
                 }
+                className="
+                  w-full
+
+                  h-[430px]
+                  md:h-[590px]
+
+                  object-contain
+
+                  p-3
+                  md:p-5
+
+                  cursor-zoom-in
+
+                  select-none
+                "
               />
+
             ) : (
-              <div className="text-zinc-600 flex flex-col items-center gap-3">
-                <FaImages size={38} />
+
+              <div
+                className="
+                  flex
+                  flex-col
+                  items-center
+
+                  gap-3
+
+                  text-slate-400
+                "
+              >
+
+                <FaImages
+                  size={42}
+                />
+
+
                 <p>
+
                   Sin imágenes
+
                 </p>
+
               </div>
+
             )}
 
-            {/* FLECHA IZQUIERDA */}
+
+            {/* FLECHAS */}
 
             {imagenes.length >
               1 && (
-              <button
-                type="button"
-                onClick={
-                  anteriorImagen
-                }
-                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 border border-white/10 items-center justify-center text-white text-2xl transition"
-              >
-                ❮
-              </button>
+
+              <>
+
+                <button
+                  type="button"
+                  onClick={
+                    anteriorImagen
+                  }
+                  className="
+                    hidden
+                    md:flex
+
+                    absolute
+                    left-5
+                    top-1/2
+
+                    -translate-y-1/2
+
+                    w-12
+                    h-12
+
+                    rounded-full
+
+                    bg-slate-950/70
+                    hover:bg-slate-950
+
+                    text-white
+
+                    items-center
+                    justify-center
+
+                    text-xl
+
+                    backdrop-blur-md
+                  "
+                >
+
+                  ❮
+
+                </button>
+
+
+                <button
+                  type="button"
+                  onClick={
+                    siguienteImagen
+                  }
+                  className="
+                    hidden
+                    md:flex
+
+                    absolute
+                    right-5
+                    top-1/2
+
+                    -translate-y-1/2
+
+                    w-12
+                    h-12
+
+                    rounded-full
+
+                    bg-slate-950/70
+                    hover:bg-slate-950
+
+                    text-white
+
+                    items-center
+                    justify-center
+
+                    text-xl
+
+                    backdrop-blur-md
+                  "
+                >
+
+                  ❯
+
+                </button>
+
+              </>
+
             )}
 
-            {/* FLECHA DERECHA */}
-
-            {imagenes.length >
-              1 && (
-              <button
-                type="button"
-                onClick={
-                  siguienteImagen
-                }
-                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 border border-white/10 items-center justify-center text-white text-2xl transition"
-              >
-                ❯
-              </button>
-            )}
 
             {/* CONTADOR */}
 
             {imagenes.length >
               1 && (
-              <span className="absolute bottom-4 right-4 bg-black/80 border border-white/10 px-3 py-1.5 rounded-full text-xs">
-                {index + 1} /{" "}
-                {
-                  imagenes.length
-                }
+
+              <span
+                className="
+                  absolute
+                  right-4
+                  bottom-4
+
+                  px-3
+                  py-1.5
+
+                  rounded-full
+
+                  bg-slate-950/75
+
+                  text-white
+
+                  text-xs
+
+                  backdrop-blur-md
+                "
+              >
+
+                {index + 1}
+
+                {" / "}
+
+                {imagenes.length}
+
               </span>
+
             )}
 
           </div>
 
-          {/* MINI GALERÍA */}
+
+          {/* MINIATURAS */}
 
           {imagenes.length >
             1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
+
+            <div
+              className="
+                flex
+                gap-3
+
+                overflow-x-auto
+
+                py-4
+              "
+            >
 
               {imagenes.map(
-                (img, i) => (
+                (
+                  imagen,
+                  indice
+                ) => (
+
                   <button
                     type="button"
-                    key={`${img}-${i}`}
+                    key={`${imagen}-${indice}`}
                     onClick={() =>
-                      setIndex(i)
+                      setIndex(
+                        indice
+                      )
                     }
-                    className="shrink-0"
+                    className={`
+                      shrink-0
+
+                      rounded-xl
+
+                      overflow-hidden
+
+                      border-2
+
+                      transition
+
+                      ${
+                        indice ===
+                        index
+                          ? "border-sky-500"
+                          : modoOscuro
+                          ? "border-slate-800 opacity-60 hover:opacity-100"
+                          : "border-sky-100 opacity-60 hover:opacity-100"
+                      }
+                    `}
                   >
+
                     <img
-                      src={img}
-                      alt={`${proyecto.nombre} ${
-                        i + 1
-                      }`}
-                      className={`w-24 h-20 object-cover rounded-xl cursor-pointer border-2 transition ${
-                        i === index
-                          ? "border-yellow-500 opacity-100"
-                          : "border-transparent opacity-55 hover:opacity-90"
-                      }`}
+                      src={
+                        imagen
+                      }
+                      alt={`${proyecto.nombre} ${indice + 1}`}
+                      className="
+                        w-24
+                        h-20
+
+                        object-cover
+                      "
                     />
+
                   </button>
+
                 )
               )}
 
             </div>
+
           )}
 
         </div>
 
+
         {/* ================================================= */}
-        {/* INFORMACIÓN */}
+        {/* PANEL INFORMACIÓN */}
         {/* ================================================= */}
 
-        <div className="space-y-6">
+        <aside className="space-y-5">
 
-          {proyecto.categoria && (
-            <span className="inline-flex bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-bold">
-              {
-                proyecto.categoria
+          {/* ACCIONES */}
+
+          <div
+            className={`
+              rounded-[28px]
+
+              border
+
+              p-6
+
+              ${
+                modoOscuro
+                  ? "bg-slate-900 border-slate-800"
+                  : "bg-white border-sky-100 shadow-sm"
               }
-            </span>
-          )}
+            `}
+          >
 
-          <div>
+            <div
+              className="
+                w-12
+                h-12
 
-            <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-              {
-                proyecto.nombre
-              }
+                rounded-2xl
+
+                bg-sky-50
+                text-sky-500
+
+                flex
+                items-center
+                justify-center
+
+                text-xl
+              "
+            >
+
+              <FaRocket />
+
+            </div>
+
+
+            <h2
+              className="
+                text-2xl
+                font-black
+
+                mt-5
+              "
+            >
+
+              ¿Te interesa algo similar?
+
             </h2>
 
-            {proyecto.descripcion && (
-              <p className="text-zinc-400 text-base md:text-lg leading-relaxed mt-5 whitespace-pre-line">
-                {
-                  proyecto.descripcion
+
+            <p
+              className="
+                text-sm
+                text-slate-500
+
+                leading-relaxed
+
+                mt-2
+              "
+            >
+
+              Podemos tomar este proyecto como referencia y
+              preparar una solución personalizada para ti.
+
+            </p>
+
+
+            <button
+              type="button"
+              onClick={
+                solicitarProyecto
+              }
+              className="
+                w-full
+
+                mt-6
+
+                px-5
+                py-4
+
+                rounded-xl
+
+                bg-sky-500
+                hover:bg-sky-600
+
+                text-white
+
+                font-bold
+
+                flex
+                items-center
+                justify-center
+                gap-3
+
+                transition
+              "
+            >
+
+              <FaRocket />
+
+
+              {usuario
+                ? "Solicitar proyecto similar"
+                : "Iniciar sesión para solicitar"
+              }
+
+
+              <FaArrowRight />
+
+            </button>
+
+
+            {urlProyecto && (
+
+              <button
+                type="button"
+                onClick={
+                  visitarProyecto
                 }
-              </p>
+                className={`
+                  w-full
+
+                  mt-3
+
+                  px-5
+                  py-4
+
+                  rounded-xl
+
+                  border
+
+                  font-bold
+
+                  flex
+                  items-center
+                  justify-center
+                  gap-3
+
+                  transition
+
+                  ${
+                    modoOscuro
+                      ? `
+                        bg-slate-950
+                        border-slate-700
+                        text-sky-400
+
+                        hover:border-sky-500
+                      `
+                      : `
+                        bg-sky-50
+                        border-sky-200
+                        text-sky-600
+
+                        hover:bg-sky-100
+                      `
+                  }
+                `}
+              >
+
+                <FaGlobe />
+
+                Visitar proyecto
+
+                <FaExternalLinkAlt
+                  size={12}
+                />
+
+              </button>
+
             )}
 
           </div>
 
-          {/* =============================================== */}
-          {/* ACCIONES */}
-          {/* =============================================== */}
 
-          <div className="grid sm:grid-cols-3 gap-3 pt-2">
+          {/* DETALLES */}
 
-            {/* COTIZAR */}
+          <div
+            className={`
+              rounded-[28px]
 
-            <button
-              type="button"
-              onClick={
-                cotizarProyecto
+              border
+
+              p-6
+
+              ${
+                modoOscuro
+                  ? "bg-slate-900 border-slate-800"
+                  : "bg-white border-sky-100 shadow-sm"
               }
-              className="w-full flex items-center justify-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black py-4 px-5 rounded-2xl font-bold transition"
+            `}
+          >
+
+            <p
+              className="
+                text-xs
+                uppercase
+                tracking-[0.2em]
+
+                text-sky-500
+
+                font-bold
+              "
             >
-              <FaFileInvoiceDollar size={20} />
 
-              {usuario
-                ? "Cotizar este proyecto"
-                : "Inicia sesión para cotizar"}
-            </button>
+              Información
 
-            {/* FAVORITO */}
-
-            <button
-              type="button"
-              onClick={
-                toggleFavorito
-              }
-              disabled={
-                guardandoFavorito
-              }
-              className={`w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl font-bold transition border ${
-                esFavorito
-                  ? "bg-pink-500/10 border-pink-500/40 text-pink-400 hover:bg-pink-500/20"
-                  : "bg-zinc-900 border-zinc-700 text-white hover:border-pink-500/40 hover:text-pink-400"
-              } disabled:opacity-50`}
-            >
-              {esFavorito ? (
-                <FaHeart size={20} />
-              ) : (
-                <FaRegHeart size={20} />
-              )}
-
-              {esFavorito
-                ? "En favoritos"
-                : "Guardar favorito"}
-            </button>
-
-            {/* WHATSAPP */}
-
-            <button
-              type="button"
-              onClick={
-                contactarWhatsApp
-              }
-              className="w-full flex items-center justify-center gap-3 bg-green-600 hover:bg-green-500 text-white py-4 px-5 rounded-2xl font-bold transition"
-            >
-              <FaWhatsapp size={21} />
-
-              Contactar por WhatsApp
-            </button>
-
-          </div>
-
-          {/* EXPLICACIÓN */}
-
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-4">
-            <p className="text-sm text-zinc-300">
-              ¿Te interesa este diseño?{" "}
-              <strong className="text-yellow-400">
-                {usuario
-                  ? "Cotizar este proyecto"
-                  : "Inicia sesión para cotizar"}
-              </strong>{" "}
-              {usuario
-                ? "abrirá la solicitud de cotización usando este trabajo como referencia."
-                : "te llevará al inicio de sesión. Después podrás continuar con la cotización del proyecto."}
-            </p>
-          </div>
-
-          {/* ================================================= */}
-          {/* CONTACTO */}
-          {/* ================================================= */}
-
-          <div className="border border-zinc-800 bg-zinc-950 rounded-2xl p-5 space-y-4">
-
-            <p className="font-bold text-white">
-              Contacto Wealth
             </p>
 
-            <a
-              href="tel:+529811574778"
-              className="flex items-center gap-3 text-zinc-300 hover:text-yellow-400 transition"
+
+            <h3
+              className="
+                text-xl
+                font-black
+
+                mt-2
+                mb-5
+              "
             >
-              <FaPhone className="text-yellow-500" />
 
-              <span>
-                +52 981 157 4778
-              </span>
-            </a>
+              Detalles del proyecto
 
-            <button
-              type="button"
-              onClick={
-                contactarWhatsApp
-              }
-              className="w-full flex items-center gap-3 text-zinc-300 hover:text-green-400 transition text-left"
-            >
-              <FaWhatsapp className="text-green-500" />
-
-              <span>
-                WhatsApp disponible
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                abrirUbicacion
-              }
-              className="w-full flex items-center gap-3 text-zinc-300 hover:text-yellow-400 transition text-left"
-            >
-              <FaMapMarkerAlt className="text-yellow-500" />
-
-              <span>
-                Ver ubicación en mapa
-              </span>
-            </button>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ================================================= */}
-      {/* GALERÍA DE DISEÑOS / REFERENCIAS */}
-      {/* ================================================= */}
-
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-16">
-
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-
-          <div>
-
-            <p className="text-xs uppercase tracking-[0.22em] text-yellow-500 font-semibold">
-              Más inspiración
-            </p>
-
-            <h3 className="text-2xl font-bold mt-1">
-              {Array.isArray(
-                proyecto.galeria
-              ) &&
-              proyecto.galeria.length >
-                0
-                ? "Galería de diseños"
-                : "Referencias relacionadas"}
             </h3>
 
-            {!(
-              Array.isArray(
-                proyecto.galeria
-              ) &&
-              proyecto.galeria.length >
-                0
-            ) && (
-              <p className="text-zinc-500 text-sm mt-2 max-w-2xl">
-                Este proyecto no tiene imágenes de referencia adicionales cargadas. Te mostramos algunas ideas de nuestra galería para que sigas explorando.
-              </p>
-            )}
 
-          </div>
+            <div className="space-y-4">
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                "/galeria"
-              )
-            }
-            className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-400 hover:text-black border border-yellow-500/30 hover:border-yellow-500 px-5 py-3 rounded-xl font-bold transition flex items-center gap-2"
-          >
-            <FaImages />
+              <DetalleDato
+                icon={
+                  iconoTipo()
+                }
+                label="Tipo"
+                value={
+                  obtenerTipo()
+                }
+                modoOscuro={
+                  modoOscuro
+                }
+              />
 
-            Ver galería completa
-          </button>
 
-        </div>
+              {proyecto.estado && (
 
-        {Array.isArray(
-          proyecto.galeria
-        ) &&
-        proyecto.galeria.length >
-          0 ? (
+                <DetalleDato
+                  icon={
+                    <FaCheckCircle />
+                  }
+                  label="Estado"
+                  value={
+                    proyecto.estado
+                  }
+                  modoOscuro={
+                    modoOscuro
+                  }
+                />
 
-          <div className="flex gap-5 overflow-x-auto pb-3 snap-x snap-mandatory">
-
-            {proyecto.galeria
-              .slice(
-                0,
-                4
-              )
-              .map(
-                (img, i) => (
-                  <div
-                    key={`${img}-${i}`}
-                    className="min-w-[280px] md:min-w-[320px] overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 flex-shrink-0 snap-start"
-                  >
-                    <img
-                      src={img}
-                      alt={`Diseño ${
-                        i + 1
-                      }`}
-                      onClick={() =>
-                        abrirImagen(
-                          img
-                        )
-                      }
-                      className="w-full h-64 object-cover hover:scale-105 transition duration-300 cursor-zoom-in"
-                    />
-                  </div>
-                )
               )}
 
-          </div>
 
-        ) : cargandoReferencias ? (
+              {proyecto.plataforma && (
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-            {[1, 2, 3, 4].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="aspect-[4/3] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse"
+                <DetalleDato
+                  icon={
+                    <FaMobileAlt />
+                  }
+                  label="Plataforma"
+                  value={
+                    proyecto.plataforma
+                  }
+                  modoOscuro={
+                    modoOscuro
+                  }
                 />
-              )
-            )}
+
+              )}
+
+
+              {proyecto.clienteNombre && (
+
+                <DetalleDato
+                  icon={
+                    <FaStore />
+                  }
+                  label="Cliente"
+                  value={
+                    proyecto.clienteNombre
+                  }
+                  modoOscuro={
+                    modoOscuro
+                  }
+                />
+
+              )}
+
+            </div>
 
           </div>
 
-        ) : referenciasGaleria.length >
-          0 ? (
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* TECNOLOGÍAS */}
 
-            {referenciasGaleria.map(
-              (referencia) => (
+          {Array.isArray(
+            proyecto.tecnologias
+          ) &&
+            proyecto
+              .tecnologias
+              .length >
+              0 && (
+
+            <div
+              className={`
+                rounded-[28px]
+
+                border
+
+                p-6
+
+                ${
+                  modoOscuro
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-white border-sky-100 shadow-sm"
+                }
+              `}
+            >
+
+              <p
+                className="
+                  text-xs
+                  uppercase
+                  tracking-[0.2em]
+
+                  text-sky-500
+
+                  font-bold
+                "
+              >
+
+                Tecnología
+
+              </p>
+
+
+              <h3
+                className="
+                  text-xl
+                  font-black
+
+                  mt-2
+                "
+              >
+
+                Tecnologías utilizadas
+
+              </h3>
+
+
+              <div
+                className="
+                  flex
+                  flex-wrap
+
+                  gap-2
+
+                  mt-5
+                "
+              >
+
+                {proyecto
+                  .tecnologias
+                  .map(
+                    (
+                      tecnologia
+                    ) => (
+
+                      <span
+                        key={
+                          tecnologia
+                        }
+                        className={`
+                          px-3
+                          py-2
+
+                          rounded-xl
+
+                          border
+
+                          text-sm
+                          font-semibold
+
+                          ${
+                            modoOscuro
+                              ? `
+                                bg-slate-950
+                                border-slate-700
+                                text-sky-400
+                              `
+                              : `
+                                bg-sky-50
+                                border-sky-100
+                                text-sky-600
+                              `
+                          }
+                        `}
+                      >
+
+                        {tecnologia}
+
+                      </span>
+
+                    )
+                  )}
+
+              </div>
+
+            </div>
+
+          )}
+
+        </aside>
+
+      </main>
+
+
+      {/* ================================================= */}
+      {/* GALERÍA PROPIA DEL PROYECTO */}
+      {/* ================================================= */}
+
+      {galeria.length >
+        0 && (
+
+        <section
+          className="
+            max-w-7xl
+            mx-auto
+
+            px-5
+            md:px-8
+
+            pb-20
+          "
+        >
+
+          <div className="mb-7">
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+
+                text-sky-500
+              "
+            >
+
+              <FaImages />
+
+
+              <p
+                className="
+                  text-xs
+                  uppercase
+                  tracking-[0.22em]
+
+                  font-bold
+                "
+              >
+
+                Galería
+
+              </p>
+
+            </div>
+
+
+            <h2
+              className="
+                text-3xl
+                md:text-4xl
+
+                font-black
+
+                mt-2
+              "
+            >
+
+              Más imágenes del proyecto
+
+            </h2>
+
+
+            <p
+              className="
+                text-slate-500
+
+                mt-2
+              "
+            >
+
+              Explora capturas, fotografías y referencias
+              adicionales de este trabajo.
+
+            </p>
+
+          </div>
+
+
+          <div
+            className="
+              grid
+              grid-cols-2
+              lg:grid-cols-4
+
+              gap-4
+            "
+          >
+
+            {galeria.map(
+              (
+                imagen,
+                indice
+              ) => (
+
                 <button
                   type="button"
-                  key={
-                    referencia.id
-                  }
+                  key={`${imagen}-${indice}`}
                   onClick={() =>
                     abrirImagen(
-                      referencia.imagen
+                      imagen
                     )
                   }
-                  className="group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-yellow-500/50 transition aspect-[4/3]"
+                  className={`
+                    group
+
+                    relative
+
+                    overflow-hidden
+
+                    rounded-2xl
+
+                    border
+
+                    aspect-[4/3]
+
+                    ${
+                      modoOscuro
+                        ? "bg-slate-900 border-slate-800"
+                        : "bg-white border-sky-100"
+                    }
+                  `}
                 >
 
                   <img
                     src={
-                      referencia.imagen
+                      imagen
                     }
-                    alt={
-                      referencia.subcategoria
-                    }
+                    alt={`Galería ${indice + 1}`}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="
+                      w-full
+                      h-full
+
+                      object-cover
+
+                      transition-transform
+                      duration-500
+
+                      group-hover:scale-105
+                    "
                   />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
-                  <div className="absolute left-3 right-3 bottom-3 text-left">
+                  <div
+                    className="
+                      absolute
+                      inset-0
 
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-yellow-400">
-                      {
-                        referencia.categoria
-                      }
-                    </p>
+                      bg-gradient-to-t
+                      from-slate-950/60
+                      to-transparent
 
-                    <p className="text-sm font-semibold mt-1 line-clamp-1">
-                      {
-                        referencia.subcategoria
-                      }
-                    </p>
+                      opacity-0
+                      group-hover:opacity-100
 
-                  </div>
+                      transition
+                    "
+                  />
+
+
+                  <span
+                    className="
+                      absolute
+                      bottom-3
+                      right-3
+
+                      w-9
+                      h-9
+
+                      rounded-xl
+
+                      bg-white/90
+
+                      text-sky-500
+
+                      flex
+                      items-center
+                      justify-center
+
+                      opacity-0
+                      group-hover:opacity-100
+
+                      transition
+                    "
+                  >
+
+                    <FaImages />
+
+                  </span>
 
                 </button>
+
               )
             )}
 
           </div>
 
-        ) : (
+        </section>
 
-          <div className="border border-zinc-800 bg-zinc-950 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      )}
 
-            <div>
 
-              <p className="font-semibold">
-                Explora más ideas en nuestra galería
-              </p>
+      {/* ================================================= */}
+      {/* CTA FINAL */}
+      {/* ================================================= */}
 
-              <p className="text-zinc-500 text-sm mt-1">
-                Aún no hay referencias relacionadas disponibles para este proyecto.
-              </p>
+      <section
+        className="
+          max-w-7xl
+          mx-auto
 
-            </div>
+          px-5
+          md:px-8
+
+          pb-20
+        "
+      >
+
+        <div
+          className="
+            relative
+            overflow-hidden
+
+            rounded-[34px]
+
+            bg-gradient-to-r
+            from-sky-500
+            to-blue-600
+
+            text-white
+
+            p-8
+            md:p-12
+          "
+        >
+
+          <div
+            className="
+              absolute
+              -right-20
+              -top-20
+
+              w-72
+              h-72
+
+              rounded-full
+
+              bg-white/10
+            "
+          />
+
+
+          <div className="relative z-10">
+
+            <FaCode className="text-3xl" />
+
+
+            <h2
+              className="
+                text-3xl
+                md:text-5xl
+
+                font-black
+
+                mt-5
+              "
+            >
+
+              Convierte tu idea en
+              el próximo proyecto Macro.
+
+            </h2>
+
+
+            <p
+              className="
+                max-w-2xl
+
+                text-white/85
+
+                text-lg
+
+                mt-4
+
+                leading-relaxed
+              "
+            >
+
+              Desde una página web hasta una aplicación,
+              instalación de cámaras, publicidad o software
+              personalizado.
+
+            </p>
+
 
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  "/galeria"
-                )
+              onClick={
+                solicitarProyecto
               }
-              className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-3 rounded-xl font-bold transition"
+              className="
+                mt-7
+
+                bg-white
+                text-sky-600
+
+                hover:bg-sky-50
+
+                px-6
+                py-4
+
+                rounded-xl
+
+                font-bold
+
+                flex
+                items-center
+                gap-3
+              "
             >
-              Ver galería
+
+              Solicitar servicio
+
+              <FaArrowRight />
+
             </button>
 
           </div>
-        )}
+
+        </div>
 
       </section>
+
 
       {/* ================================================= */}
       {/* MODAL IMAGEN */}
@@ -1362,25 +2535,51 @@ function DetalleProyecto() {
 
       {modalAbierto &&
         imagenModal && (
+
         <div
           onClick={() =>
             setModalAbierto(
               false
             )
           }
-          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-5 cursor-zoom-out"
+          className="
+            fixed
+            inset-0
+
+            z-[200]
+
+            bg-slate-950/95
+            backdrop-blur-md
+
+            flex
+            items-center
+            justify-center
+
+            p-4
+            md:p-8
+
+            cursor-zoom-out
+          "
         >
 
           <img
             src={
               imagenModal
             }
-            alt="Vista previa"
+            alt="Vista ampliada"
             onClick={(e) =>
               e.stopPropagation()
             }
-            className="max-w-full max-h-[90vh] rounded-2xl object-contain"
+            className="
+              max-w-full
+              max-h-[90vh]
+
+              object-contain
+
+              rounded-2xl
+            "
           />
+
 
           <button
             type="button"
@@ -1389,16 +2588,145 @@ function DetalleProyecto() {
                 false
               )
             }
-            className="absolute top-6 right-6 w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-white text-3xl hover:text-yellow-500 hover:border-yellow-500/50 transition flex items-center justify-center"
+            className="
+              absolute
+              top-5
+              right-5
+
+              w-12
+              h-12
+
+              rounded-full
+
+              bg-white/10
+              hover:bg-white/20
+
+              border
+              border-white/10
+
+              text-white
+
+              text-3xl
+
+              flex
+              items-center
+              justify-center
+            "
           >
+
             ×
+
           </button>
 
         </div>
+
       )}
 
     </div>
   );
 }
+
+
+/* ======================================================
+   DETALLE DATO
+====================================================== */
+
+function DetalleDato({
+  icon,
+  label,
+  value,
+  modoOscuro,
+}) {
+  return (
+    <div
+      className={`
+        rounded-2xl
+
+        border
+
+        p-4
+
+        flex
+        items-center
+        gap-4
+
+        ${
+          modoOscuro
+            ? `
+              bg-slate-950
+              border-slate-700
+            `
+            : `
+              bg-sky-50
+              border-sky-100
+            `
+        }
+      `}
+    >
+
+      <div
+        className="
+          w-10
+          h-10
+
+          rounded-xl
+
+          bg-white
+
+          text-sky-500
+
+          flex
+          items-center
+          justify-center
+
+          shrink-0
+        "
+      >
+
+        {icon}
+
+      </div>
+
+
+      <div className="min-w-0">
+
+        <p
+          className="
+            text-[11px]
+
+            uppercase
+            tracking-[0.15em]
+
+            text-slate-400
+
+            font-semibold
+          "
+        >
+
+          {label}
+
+        </p>
+
+
+        <p
+          className="
+            font-semibold
+
+            mt-1
+
+            truncate
+          "
+        >
+
+          {value}
+
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
 
 export default DetalleProyecto;

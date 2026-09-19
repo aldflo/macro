@@ -16,10 +16,14 @@ import {
 
 import {
   FaBell,
+  FaBoxes,
   FaBriefcase,
+  FaCalendarAlt,
   FaCheck,
   FaCheckCircle,
   FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
   FaChevronUp,
   FaClock,
   FaDollarSign,
@@ -42,11 +46,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 
-const ESTADOS_FINALIZADOS = [
-  "finalizada",
-  "terminada",
-  "terminado",
-];
+const ESTADOS_FINALIZADOS = ["finalizada", "terminada", "terminado"];
 
 const ESTADOS_CON_PROPUESTA = [
   "cotizada",
@@ -66,138 +66,10 @@ const ESTADOS_CON_PROPUESTA = [
   "instalacion",
 ];
 
-
-const ESTILOS_TEMA_CLARO = `
-  .wealth-light-page {
-    background-color: #f9fafb !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .bg-black {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-950 {
-    background-color: #ffffff !important;
-  }
-
-  .wealth-light-page .bg-zinc-900 {
-    background-color: #f9fafb !important;
-  }
-
-  .wealth-light-page .bg-zinc-800 {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .bg-zinc-700 {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-950/70"],
-  .wealth-light-page [class~="bg-zinc-950/60"] {
-    background-color: rgba(255, 255, 255, 0.92) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-900/80"],
-  .wealth-light-page [class~="bg-zinc-900/60"] {
-    background-color: rgba(249, 250, 251, 0.94) !important;
-  }
-
-  .wealth-light-page [class~="bg-zinc-800/70"],
-  .wealth-light-page [class~="bg-zinc-800/60"],
-  .wealth-light-page [class~="bg-zinc-800/40"] {
-    background-color: rgba(243, 244, 246, 0.9) !important;
-  }
-
-  .wealth-light-page .border-zinc-900,
-  .wealth-light-page .border-zinc-800 {
-    border-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .border-zinc-700,
-  .wealth-light-page .border-zinc-600 {
-    border-color: #d1d5db !important;
-  }
-
-  .wealth-light-page .text-white {
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .text-zinc-100,
-  .wealth-light-page .text-zinc-200 {
-    color: #1f2937 !important;
-  }
-
-  .wealth-light-page .text-zinc-300 {
-    color: #374151 !important;
-  }
-
-  .wealth-light-page .text-zinc-400 {
-    color: #4b5563 !important;
-  }
-
-  .wealth-light-page .text-zinc-500,
-  .wealth-light-page .text-zinc-600 {
-    color: #6b7280 !important;
-  }
-
-  .wealth-light-page .text-zinc-700 {
-    color: #9ca3af !important;
-  }
-
-  .wealth-light-page input,
-  .wealth-light-page textarea,
-  .wealth-light-page select {
-    color: #111827;
-  }
-
-  .wealth-light-page input::placeholder,
-  .wealth-light-page textarea::placeholder {
-    color: #9ca3af;
-  }
-
-  .wealth-light-page option {
-    background: #ffffff;
-    color: #111827;
-  }
-
-  .wealth-light-page .inputAdmin {
-    background: #ffffff !important;
-    border-color: #d1d5db !important;
-    color: #111827 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-900:hover {
-    background-color: #f3f4f6 !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-800:hover {
-    background-color: #e5e7eb !important;
-  }
-
-  .wealth-light-page .hover\\:bg-zinc-700:hover {
-    background-color: #d1d5db !important;
-  }
-
-  /* Mantener texto blanco en botones/estados de color intenso */
-  .wealth-light-page [class*="bg-red-"][class~="text-white"],
-  .wealth-light-page [class*="bg-green-"][class~="text-white"],
-  .wealth-light-page [class*="bg-emerald-"][class~="text-white"],
-  .wealth-light-page [class*="bg-blue-"][class~="text-white"],
-  .wealth-light-page [class*="bg-purple-"][class~="text-white"],
-  .wealth-light-page [class*="bg-cyan-"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-
-  /* Overlays fotográficos siguen oscuros */
-  .wealth-light-page [class*="bg-black/"][class~="text-white"],
-  .wealth-light-page [class*="from-black"][class~="text-white"] {
-    color: #ffffff !important;
-  }
-`;
-
 function CotizacionesAdmin() {
-  const { modoOscuro } = useOutletContext();
+  const outlet = useOutletContext() || {};
+  const modoOscuro = outlet?.modoOscuro ?? false;
+
   const [cotizaciones, setCotizaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -228,16 +100,8 @@ function CotizacionesAdmin() {
   const [errorFinalizar, setErrorFinalizar] = useState("");
   const [subiendoFinales, setSubiendoFinales] = useState(false);
 
-  /* ======================================================
-     HISTORIAL / LÍNEA DE TIEMPO
-  ====================================================== */
-
   const [historialOpen, setHistorialOpen] = useState(false);
   const [cotizacionHistorial, setCotizacionHistorial] = useState(null);
-
-  /* ======================================================
-     FIRESTORE - COTIZACIONES
-  ====================================================== */
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -269,6 +133,11 @@ function CotizacionesAdmin() {
           return data.find((c) => c.id === actual.id) || actual;
         });
 
+        setCotizacionHistorial((actual) => {
+          if (!actual) return null;
+          return data.find((c) => c.id === actual.id) || actual;
+        });
+
         setCargando(false);
       },
       (err) => {
@@ -279,10 +148,6 @@ function CotizacionesAdmin() {
 
     return () => unsub();
   }, []);
-
-  /* ======================================================
-     FIRESTORE - USUARIOS
-  ====================================================== */
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -303,12 +168,53 @@ function CotizacionesAdmin() {
     return () => unsub();
   }, []);
 
-  /* ======================================================
-     IMPORTANTE:
-     NO marcamos todas las notificaciones como vistas al entrar.
-     Solo se marcan vistas cuando el administrador ABRE
-     el cliente o ABRE la cotización.
-  ====================================================== */
+  const theme = useMemo(() => {
+    if (modoOscuro) {
+      return {
+        page: "min-h-screen bg-[#081223] text-white",
+        card: "bg-[#0d1a31] border border-slate-800",
+        cardSoft: "bg-[#11203d] border border-slate-800",
+        cardMuted: "bg-[#081223] border border-slate-800",
+        title: "text-white",
+        text: "text-slate-200",
+        muted: "text-slate-400",
+        lightMuted: "text-slate-500",
+        input:
+          "w-full rounded-2xl border border-slate-700 bg-[#091526] text-white placeholder:text-slate-500 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15",
+        modalBg: "bg-[#081223]/80",
+        primaryBtn:
+          "bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/20",
+        ghostBtn:
+          "bg-[#11203d] hover:bg-[#162949] border border-slate-700 text-slate-200",
+        dangerBtn:
+          "bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300",
+        successBtn:
+          "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/20",
+      };
+    }
+
+    return {
+      page: "min-h-screen bg-[#f4f8fc] text-slate-900",
+      card: "bg-white border border-slate-200 shadow-sm",
+      cardSoft: "bg-[#f8fbff] border border-slate-200",
+      cardMuted: "bg-[#eef5ff] border border-slate-200",
+      title: "text-slate-900",
+      text: "text-slate-700",
+      muted: "text-slate-500",
+      lightMuted: "text-slate-400",
+      input:
+        "w-full rounded-2xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15",
+      modalBg: "bg-slate-950/45",
+      primaryBtn:
+        "bg-sky-500 hover:bg-sky-600 text-white shadow-lg shadow-sky-500/20",
+      ghostBtn:
+        "bg-white hover:bg-slate-50 border border-slate-300 text-slate-700",
+      dangerBtn:
+        "bg-red-50 hover:bg-red-100 border border-red-200 text-red-600",
+      successBtn:
+        "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20",
+    };
+  }, [modoOscuro]);
 
   const cotizacionesActivas = useMemo(() => {
     return cotizaciones.filter(
@@ -476,7 +382,6 @@ function CotizacionesAdmin() {
 
   const clientesFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-
     if (!texto) return clientes;
 
     return clientes.filter((cliente) => {
@@ -502,9 +407,7 @@ function CotizacionesAdmin() {
   const montoAnticipo = useMemo(() => {
     const total = Number(presupuestoAdmin);
     const porcentaje = Number(porcentajeAnticipo);
-
     if (!total || Number.isNaN(total)) return 0;
-
     return (total * porcentaje) / 100;
   }, [presupuestoAdmin, porcentajeAnticipo]);
 
@@ -543,9 +446,7 @@ function CotizacionesAdmin() {
   };
 
   const formatoDinero = (valor) => {
-    if (valor === null || valor === undefined || valor === "") {
-      return "—";
-    }
+    if (valor === null || valor === undefined || valor === "") return "—";
 
     return Number(valor).toLocaleString("es-MX", {
       style: "currency",
@@ -568,21 +469,17 @@ function CotizacionesAdmin() {
     }
   };
 
-
   const obtenerFechaValida = (fecha) => {
     if (!fecha) return null;
 
     try {
-      if (typeof fecha.toDate === "function") {
-        return fecha.toDate();
-      }
+      if (typeof fecha.toDate === "function") return fecha.toDate();
 
       const texto = String(fecha).trim();
 
       if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
         const [anio, mes, dia] = texto.split("-").map(Number);
         const date = new Date(anio, mes - 1, dia, 12, 0, 0);
-
         return Number.isNaN(date.getTime()) ? null : date;
       }
 
@@ -595,7 +492,6 @@ function CotizacionesAdmin() {
 
   const formatearFechaSoloDia = (fecha) => {
     const date = obtenerFechaValida(fecha);
-
     if (!date) return "—";
 
     return date.toLocaleDateString("es-MX", {
@@ -615,7 +511,7 @@ function CotizacionesAdmin() {
     );
   };
 
-  const obtenerFechaEntregaWealth = (cotizacion) => {
+  const obtenerFechaEntregaMacro = (cotizacion) => {
     return (
       cotizacion?.propuestaActual?.fechaEntregaEstimada ??
       cotizacion?.fechaEntregaEstimada ??
@@ -626,17 +522,14 @@ function CotizacionesAdmin() {
 
   const calcularEstadoEntrega = (fechaEntrega) => {
     const entrega = obtenerFechaValida(fechaEntrega);
-
     if (!entrega) return null;
 
     const hoy = new Date();
-
     const inicioHoy = new Date(
       hoy.getFullYear(),
       hoy.getMonth(),
       hoy.getDate()
     );
-
     const inicioEntrega = new Date(
       entrega.getFullYear(),
       entrega.getMonth(),
@@ -644,12 +537,10 @@ function CotizacionesAdmin() {
     );
 
     const diferenciaMs =
-      inicioEntrega.getTime() -
-      inicioHoy.getTime();
+      inicioEntrega.getTime() - inicioHoy.getTime();
 
     const dias = Math.ceil(
-      diferenciaMs /
-        (1000 * 60 * 60 * 24)
+      diferenciaMs / (1000 * 60 * 60 * 24)
     );
 
     if (dias > 5) {
@@ -657,7 +548,7 @@ function CotizacionesAdmin() {
         dias,
         texto: `Faltan ${dias} días`,
         clase:
-          "bg-green-500/10 border-green-500/30 text-green-400",
+          "bg-emerald-50 text-emerald-700 border border-emerald-200",
       };
     }
 
@@ -665,8 +556,7 @@ function CotizacionesAdmin() {
       return {
         dias,
         texto: `Faltan ${dias} días`,
-        clase:
-          "bg-yellow-500/10 border-yellow-500/30 text-yellow-400",
+        clase: "bg-sky-50 text-sky-700 border border-sky-200",
       };
     }
 
@@ -674,8 +564,7 @@ function CotizacionesAdmin() {
       return {
         dias,
         texto: "Falta 1 día",
-        clase:
-          "bg-yellow-500/10 border-yellow-500/30 text-yellow-400",
+        clase: "bg-sky-50 text-sky-700 border border-sky-200",
       };
     }
 
@@ -684,7 +573,7 @@ function CotizacionesAdmin() {
         dias,
         texto: "Entrega hoy",
         clase:
-          "bg-orange-500/10 border-orange-500/30 text-orange-400",
+          "bg-amber-50 text-amber-700 border border-amber-200",
       };
     }
 
@@ -693,8 +582,7 @@ function CotizacionesAdmin() {
       texto: `Vencida por ${Math.abs(dias)} ${
         Math.abs(dias) === 1 ? "día" : "días"
       }`,
-      clase:
-        "bg-red-500/10 border-red-500/30 text-red-400",
+      clase: "bg-red-50 text-red-700 border border-red-200",
     };
   };
 
@@ -719,7 +607,7 @@ function CotizacionesAdmin() {
       case "cancelada_cliente":
         return "Cancelada por cliente";
       case "confirmada_admin":
-        return "Trabajo confirmado";
+        return "Proyecto confirmado";
       case "anticipo_pendiente":
         return "Anticipo pendiente";
       case "anticipo_pagado":
@@ -731,6 +619,8 @@ function CotizacionesAdmin() {
       case "instalacion":
       case "instalacion_programada":
         return "Instalación";
+      case "rechazada":
+        return "Rechazada por Macro";
       default:
         return estado || "Pendiente";
     }
@@ -739,39 +629,37 @@ function CotizacionesAdmin() {
   const getEstadoColor = (estado) => {
     switch (estado) {
       case "pendiente":
-        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
+        return "bg-slate-100 text-slate-700 border border-slate-200";
       case "revision":
       case "en_revision":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+        return "bg-blue-50 text-blue-700 border border-blue-200";
       case "cotizada":
       case "propuesta_enviada":
-        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
+        return "bg-sky-50 text-sky-700 border border-sky-200";
       case "propuesta_modificada":
       case "cambios_solicitados":
-        return "bg-orange-500/10 text-orange-400 border-orange-500/30";
+        return "bg-amber-50 text-amber-700 border border-amber-200";
       case "aceptada_cliente":
       case "confirmada_admin":
       case "anticipo_pagado":
       case "anticipo_recibido":
-        return "bg-green-500/10 text-green-400 border-green-500/30";
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "rechazada_cliente":
       case "cancelada_cliente":
       case "rechazada":
-        return "bg-red-500/10 text-red-400 border-red-500/30";
+        return "bg-red-50 text-red-700 border border-red-200";
       case "proceso":
       case "en_proceso":
-        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/30";
+        return "bg-cyan-50 text-cyan-700 border border-cyan-200";
       case "instalacion":
       case "instalacion_programada":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/30";
+        return "bg-violet-50 text-violet-700 border border-violet-200";
       default:
-        return "bg-zinc-800 text-zinc-300 border-zinc-700";
+        return modoOscuro
+          ? "bg-slate-800 text-slate-200 border border-slate-700"
+          : "bg-slate-100 text-slate-700 border border-slate-200";
     }
   };
-
-  /* ======================================================
-     HISTORIAL / LÍNEA DE TIEMPO
-  ====================================================== */
 
   const crearEventoHistorial = (
     tipo,
@@ -792,14 +680,8 @@ function CotizacionesAdmin() {
     if (!fecha) return 0;
 
     try {
-      if (typeof fecha.toMillis === "function") {
-        return fecha.toMillis();
-      }
-
-      if (typeof fecha.toDate === "function") {
-        return fecha.toDate().getTime();
-      }
-
+      if (typeof fecha.toMillis === "function") return fecha.toMillis();
+      if (typeof fecha.toDate === "function") return fecha.toDate().getTime();
       return new Date(fecha).getTime() || 0;
     } catch {
       return 0;
@@ -823,7 +705,6 @@ function CotizacionesAdmin() {
       ? [...cotizacion.historial]
       : [];
 
-    // Compatibilidad con cotizaciones creadas antes de agregar el historial.
     if (
       cotizacion?.fecha &&
       !eventos.some((evento) => evento.tipo === "solicitud_creada")
@@ -846,7 +727,7 @@ function CotizacionesAdmin() {
       eventos.push({
         tipo: "propuesta_enviada",
         titulo: "Propuesta enviada",
-        descripcion: "Wealth envió una propuesta al cliente.",
+        descripcion: "Macro envió una propuesta al cliente.",
         actor: "admin",
         fecha: cotizacion.fechaPropuesta,
       });
@@ -903,12 +784,12 @@ function CotizacionesAdmin() {
 
     if (
       cotizacion?.fechaFinalizacion &&
-      !eventos.some((evento) => evento.tipo === "trabajo_finalizado")
+      !eventos.some((evento) => evento.tipo === "proyecto_finalizado")
     ) {
       eventos.push({
-        tipo: "trabajo_finalizado",
-        titulo: "Trabajo finalizado",
-        descripcion: "Wealth marcó el trabajo como terminado.",
+        tipo: "proyecto_finalizado",
+        titulo: "Proyecto finalizado",
+        descripcion: "Macro marcó el proyecto como terminado.",
         actor: "admin",
         fecha: cotizacion.fechaFinalizacion,
       });
@@ -935,15 +816,10 @@ function CotizacionesAdmin() {
     }
   };
 
-  /* ======================================================
-     NOTIFICACIONES ADMIN
-  ====================================================== */
-
   const marcarCotizacionesComoVistas = async (lista) => {
     const pendientes = lista.filter(
       (cotizacion) => cotizacion.vistoPorAdmin === false
     );
-
     if (!pendientes.length) return;
 
     const batch = writeBatch(db);
@@ -960,7 +836,6 @@ function CotizacionesAdmin() {
 
   const toggleCliente = async (cliente) => {
     const yaAbierto = clienteAbierto === cliente.clave;
-
     setClienteAbierto(yaAbierto ? null : cliente.clave);
 
     if (!yaAbierto) {
@@ -1038,15 +913,10 @@ function CotizacionesAdmin() {
     setError("");
   };
 
-  /* ======================================================
-     PROPUESTA
-  ====================================================== */
-
   const enviarPropuesta = async () => {
     if (!cotizacionActiva) return;
 
     setError("");
-
     const total = Number(presupuestoAdmin);
     const porcentaje = Number(porcentajeAnticipo);
 
@@ -1074,9 +944,7 @@ function CotizacionesAdmin() {
         Number(cotizacionActiva.propuestaActual?.version) ||
         (yaTeniaPropuesta ? 1 : 0);
 
-      const nuevaVersion = yaTeniaPropuesta
-        ? versionActual + 1
-        : 1;
+      const nuevaVersion = yaTeniaPropuesta ? versionActual + 1 : 1;
 
       const propuestaActual = {
         version: nuevaVersion,
@@ -1095,41 +963,29 @@ function CotizacionesAdmin() {
         estado: yaTeniaPropuesta
           ? "propuesta_modificada"
           : "propuesta_enviada",
-
         propuestaActual,
-
         precioTotal: total,
         presupuestoAdmin: total,
-
         porcentajeAnticipo: porcentaje,
         anticipo: Number(montoAnticipo),
         montoAnticipo: Number(montoAnticipo),
-
         saldo: Number(saldoPendiente),
         saldoPendiente: Number(saldoPendiente),
-
         tiempoEstimado: tiempoEstimado.trim(),
         fechaEntregaEstimada: fechaEntregaEstimada.trim() || null,
         garantia: garantia.trim(),
-
         observaciones: observacionesAdmin.trim(),
         observacionesAdmin: observacionesAdmin.trim(),
-
         versionPropuesta: nuevaVersion,
-
         respuestaCliente: "sin_respuesta",
         mensajeCliente: "",
-
         vistoPorAdmin: true,
         vistoPorCliente: false,
-
         mensajeClienteSistema: yaTeniaPropuesta
-          ? "Wealth modificó tu propuesta."
-          : "Wealth envió una nueva propuesta.",
-
+          ? "Macro modificó tu propuesta."
+          : "Macro envió una nueva propuesta.",
         fechaPropuesta: serverTimestamp(),
         fechaActualizacion: serverTimestamp(),
-
         historial: arrayUnion(
           crearEventoHistorial(
             yaTeniaPropuesta
@@ -1139,8 +995,8 @@ function CotizacionesAdmin() {
               ? "Propuesta modificada"
               : "Propuesta enviada",
             yaTeniaPropuesta
-              ? `Wealth envió la versión ${nuevaVersion} de la propuesta.`
-              : `Wealth envió la propuesta versión ${nuevaVersion}.`
+              ? `Macro envió la versión ${nuevaVersion} de la propuesta.`
+              : `Macro envió la propuesta versión ${nuevaVersion}.`
           )
         ),
       };
@@ -1158,11 +1014,7 @@ function CotizacionesAdmin() {
         ];
       }
 
-      await updateDoc(
-        doc(db, "cotizaciones", cotizacionActiva.id),
-        datos
-      );
-
+      await updateDoc(doc(db, "cotizaciones", cotizacionActiva.id), datos);
       cerrarCotizacion();
     } catch (err) {
       console.error(err);
@@ -1171,10 +1023,6 @@ function CotizacionesAdmin() {
       setProcesando(false);
     }
   };
-
-  /* ======================================================
-     CAMBIOS DE ESTADO
-  ====================================================== */
 
   const actualizarEstado = async (
     cotizacion,
@@ -1185,32 +1033,34 @@ function CotizacionesAdmin() {
       en_revision: {
         tipo: "en_revision",
         titulo: "Solicitud en revisión",
-        descripcion: "Wealth comenzó a revisar la solicitud.",
+        descripcion: "Macro comenzó a revisar la solicitud.",
       },
       confirmada_admin: {
-        tipo: "trabajo_confirmado",
-        titulo: "Trabajo confirmado",
-        descripcion: "Wealth confirmó el trabajo aceptado por el cliente.",
+        tipo: "proyecto_confirmado",
+        titulo: "Proyecto confirmado",
+        descripcion:
+          "Macro confirmó el proyecto aceptado por el cliente.",
       },
       anticipo_pendiente: {
         tipo: "anticipo_pendiente",
         titulo: "Anticipo pendiente",
-        descripcion: "Wealth indicó que el anticipo está pendiente.",
+        descripcion: "Macro indicó que el anticipo está pendiente.",
       },
       anticipo_recibido: {
         tipo: "anticipo_recibido",
         titulo: "Anticipo recibido",
-        descripcion: "Wealth confirmó la recepción del anticipo.",
+        descripcion:
+          "Macro confirmó la recepción del anticipo.",
       },
       en_proceso: {
-        tipo: "trabajo_iniciado",
-        titulo: "Trabajo en ejecución",
-        descripcion: "Wealth inició la ejecución del trabajo.",
+        tipo: "proyecto_iniciado",
+        titulo: "Proyecto en ejecución",
+        descripcion: "Macro inició la ejecución del proyecto.",
       },
       rechazada: {
         tipo: "solicitud_rechazada_admin",
-        titulo: "Solicitud rechazada por Wealth",
-        descripcion: "Wealth rechazó la solicitud.",
+        titulo: "Solicitud rechazada por Macro",
+        descripcion: "Macro rechazó la solicitud.",
       },
     };
 
@@ -1225,8 +1075,6 @@ function CotizacionesAdmin() {
         fechaActualizacion: serverTimestamp(),
       };
 
-      // Guardamos también fechas directas para que el expediente
-      // terminado pueda mostrar la cronología sin depender solo del historial.
       if (estado === "confirmada_admin") {
         datos.fechaConfirmacionAdmin = serverTimestamp();
       }
@@ -1256,14 +1104,14 @@ function CotizacionesAdmin() {
     actualizarEstado(
       cotizacion,
       "en_revision",
-      "Wealth está revisando tu solicitud."
+      "Macro está revisando tu solicitud."
     );
 
-  const confirmarTrabajo = (cotizacion) =>
+  const confirmarProyecto = (cotizacion) =>
     actualizarEstado(
       cotizacion,
       "confirmada_admin",
-      "Wealth confirmó el trabajo."
+      "Macro confirmó el proyecto."
     );
 
   const marcarAnticipoPendiente = (cotizacion) =>
@@ -1277,14 +1125,14 @@ function CotizacionesAdmin() {
     actualizarEstado(
       cotizacion,
       "anticipo_recibido",
-      "Wealth confirmó la recepción del anticipo."
+      "Macro confirmó la recepción del anticipo."
     );
 
-  const iniciarTrabajo = (cotizacion) =>
+  const iniciarProyecto = (cotizacion) =>
     actualizarEstado(
       cotizacion,
       "en_proceso",
-      "Tu trabajo ya está en proceso."
+      "Tu proyecto ya está en proceso."
     );
 
   const programarInstalacion = async (cotizacion) => {
@@ -1317,18 +1165,13 @@ function CotizacionesAdmin() {
     try {
       await updateDoc(doc(db, "cotizaciones", cotizacion.id), {
         estado: "instalacion_programada",
-
         fechaInicioInstalacion: inicio.trim(),
         fechaFinInstalacion: fin.trim(),
         fechaInstalacion: serverTimestamp(),
-
         vistoPorAdmin: true,
         vistoPorCliente: false,
-
         mensajeClienteSistema: `Instalación programada del ${inicio.trim()} al ${fin.trim()}.`,
-
         fechaActualizacion: serverTimestamp(),
-
         historial: arrayUnion(
           crearEventoHistorial(
             "instalacion_programada",
@@ -1352,13 +1195,12 @@ function CotizacionesAdmin() {
     const ok = window.confirm(
       `¿Rechazar la solicitud "${cotizacion.nombre || "Sin nombre"}"?`
     );
-
     if (!ok) return;
 
     await actualizarEstado(
       cotizacion,
       "rechazada",
-      "Wealth rechazó esta solicitud."
+      "Macro rechazó esta solicitud."
     );
   };
 
@@ -1372,43 +1214,32 @@ function CotizacionesAdmin() {
     try {
       await updateDoc(doc(db, "cotizaciones", cotizacion.id), {
         estado: "pendiente",
-
         propuestaActual: null,
         historialPropuestas: [],
-
         precioTotal: null,
         presupuestoAdmin: null,
-
         porcentajeAnticipo: null,
         anticipo: null,
         montoAnticipo: null,
-
         saldo: null,
         saldoPendiente: null,
-
         tiempoEstimado: "",
         fechaEntregaEstimada: null,
         garantia: "",
         observaciones: "",
         observacionesAdmin: "",
-
         respuestaCliente: "sin_respuesta",
         mensajeCliente: "",
-
         vistoPorAdmin: true,
         vistoPorCliente: false,
-
         versionPropuesta: null,
-        mensajeClienteSistema:
-          "La cotización fue reiniciada por Wealth.",
-
+        mensajeClienteSistema: "La cotización fue reiniciada por Macro.",
         fechaActualizacion: serverTimestamp(),
-
         historial: arrayUnion(
           crearEventoHistorial(
             "cotizacion_reiniciada",
             "Cotización reiniciada",
-            "Wealth reinició la cotización para elaborar una nueva propuesta."
+            "Macro reinició la cotización para elaborar una nueva propuesta."
           )
         ),
       });
@@ -1433,23 +1264,14 @@ function CotizacionesAdmin() {
     }
   };
 
-  /* ======================================================
-     GALERÍA
-  ====================================================== */
-
   const abrirGaleria = (cotizacion) => {
     const imagenes = obtenerImagenes(cotizacion);
-
     if (!imagenes.length) return;
 
     setImagenesActivas(imagenes);
     setIndiceImagen(0);
     setGaleriaOpen(true);
   };
-
-  /* ======================================================
-     FINALIZAR + CLOUDINARY
-  ====================================================== */
 
   const abrirFinalizacion = (cotizacion) => {
     setCotizacionFinalizar(cotizacion);
@@ -1470,9 +1292,7 @@ function CotizacionesAdmin() {
     );
 
     if (validos.length !== archivos.length) {
-      setErrorFinalizar(
-        "Solo se aceptan imágenes de máximo 5 MB."
-      );
+      setErrorFinalizar("Solo se aceptan imágenes de máximo 5 MB.");
     } else {
       setErrorFinalizar("");
     }
@@ -1485,7 +1305,6 @@ function CotizacionesAdmin() {
     }
 
     setFotosFinales((actuales) => [...actuales, ...nuevos]);
-
     setPreviewsFinales((actuales) => [
       ...actuales,
       ...nuevos.map((archivo) => URL.createObjectURL(archivo)),
@@ -1495,11 +1314,7 @@ function CotizacionesAdmin() {
   const eliminarFotoFinal = (indice) => {
     setPreviewsFinales((actuales) => {
       const url = actuales[indice];
-
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-
+      if (url) URL.revokeObjectURL(url);
       return actuales.filter((_, i) => i !== indice);
     });
 
@@ -1510,7 +1325,6 @@ function CotizacionesAdmin() {
 
   const cerrarFinalizacion = () => {
     previewsFinales.forEach((url) => URL.revokeObjectURL(url));
-
     setPreviewsFinales([]);
     setFotosFinales([]);
     setCotizacionFinalizar(null);
@@ -1520,12 +1334,17 @@ function CotizacionesAdmin() {
 
   const subirFotoCloudinary = async (archivo) => {
     const formData = new FormData();
-
     formData.append("file", archivo);
-    formData.append("upload_preset", "wealth");
+
+    const cloudName =
+      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dxj4iczvk";
+    const uploadPreset =
+      import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "macroservices";
+
+    formData.append("upload_preset", uploadPreset);
 
     const respuesta = await fetch(
-      "https://api.cloudinary.com/v1_1/dxj4iczvk/image/upload",
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
       {
         method: "POST",
         body: formData,
@@ -1534,15 +1353,12 @@ function CotizacionesAdmin() {
 
     if (!respuesta.ok) {
       const detalle = await respuesta.json().catch(() => null);
-
       throw new Error(
-        detalle?.error?.message ||
-          "No se pudo subir una fotografía."
+        detalle?.error?.message || "No se pudo subir una fotografía."
       );
     }
 
     const data = await respuesta.json();
-
     if (!data.secure_url) {
       throw new Error("Cloudinary no devolvió la URL.");
     }
@@ -1550,18 +1366,18 @@ function CotizacionesAdmin() {
     return data.secure_url;
   };
 
-  const terminarTrabajo = async () => {
+  const terminarProyecto = async () => {
     if (!cotizacionFinalizar) return;
 
     if (fotosFinales.length === 0) {
       setErrorFinalizar(
-        "Agrega por lo menos una fotografía del trabajo terminado."
+        "Agrega por lo menos una fotografía del proyecto terminado."
       );
       return;
     }
 
     const ok = window.confirm(
-      `¿Finalizar "${cotizacionFinalizar.nombre || "este trabajo"}"?`
+      `¿Finalizar "${cotizacionFinalizar.nombre || "este proyecto"}"?`
     );
 
     if (!ok) return;
@@ -1570,16 +1386,16 @@ function CotizacionesAdmin() {
       setSubiendoFinales(true);
       setErrorFinalizar("");
 
-      const fotosTrabajoFinal = await Promise.all(
+      const fotosProyectoFinal = await Promise.all(
         fotosFinales.map(subirFotoCloudinary)
       );
 
       const cotizacion = cotizacionFinalizar;
 
       const eventoFinal = crearEventoHistorial(
-        "trabajo_finalizado",
-        "Trabajo finalizado",
-        "Wealth finalizó el trabajo y agregó las fotografías finales."
+        "proyecto_finalizado",
+        "Proyecto finalizado",
+        "Macro finalizó el proyecto y agregó las fotografías finales."
       );
 
       const historialFinal = [
@@ -1588,12 +1404,7 @@ function CotizacionesAdmin() {
       ];
 
       const batch = writeBatch(db);
-
-      const proyectoRef = doc(
-        db,
-        "proyectosClientes",
-        cotizacion.id
-      );
+      const proyectoRef = doc(db, "proyectosClientes", cotizacion.id);
 
       batch.set(
         proyectoRef,
@@ -1611,30 +1422,23 @@ function CotizacionesAdmin() {
             "",
 
           cotizacionId: cotizacion.id,
-
-          nombre: cotizacion.nombre || "Proyecto Wealth",
+          nombre: cotizacion.nombre || "Proyecto Macro",
           descripcion: cotizacion.descripcion || "",
           tipo: cotizacion.tipo || "",
-
           ubicacion: cotizacion.ubicacion || "",
           latitud: cotizacion.latitud ?? null,
           longitud: cotizacion.longitud ?? null,
-
           medidas: cotizacion.medidas || "",
           fechaDeseada: cotizacion.fechaDeseada || null,
-
           telefono:
             cotizacion.telefono ||
             cotizacion.telefonoCliente ||
             "",
-
           imagenes: cotizacion.imagenes || [],
           imagenesProyecto: cotizacion.imagenesProyecto || [],
           imagenesCliente: cotizacion.imagenesCliente || [],
+          imagenesProyectoFinal: fotosProyectoFinal,
 
-          imagenesTrabajoFinal: fotosTrabajoFinal,
-
-          // Información económica completa del expediente
           precioFinal: obtenerPrecio(cotizacion),
           precioTotal: obtenerPrecio(cotizacion),
           presupuestoAdmin: obtenerPrecio(cotizacion),
@@ -1690,14 +1494,9 @@ function CotizacionesAdmin() {
             1,
 
           propuestaActual: cotizacion.propuestaActual || null,
-
-          fechaEntregaEstimada:
-            obtenerFechaEntregaWealth(cotizacion),
-
+          fechaEntregaEstimada: obtenerFechaEntregaMacro(cotizacion),
           historial: historialFinal,
 
-          // Cronología completa. También recupera fechas desde el historial
-          // para cotizaciones creadas antes de estos campos directos.
           fechaSolicitud:
             cotizacion.fechaSolicitud ||
             cotizacion.fecha ||
@@ -1706,12 +1505,12 @@ function CotizacionesAdmin() {
 
           fechaConfirmacionAdmin:
             cotizacion.fechaConfirmacionAdmin ||
-            obtenerFechaEventoHistorial(cotizacion, ["trabajo_confirmado"]) ||
+            obtenerFechaEventoHistorial(cotizacion, ["proyecto_confirmado"]) ||
             null,
 
           fechaInicioProyecto:
             cotizacion.fechaInicioProyecto ||
-            obtenerFechaEventoHistorial(cotizacion, ["trabajo_iniciado"]) ||
+            obtenerFechaEventoHistorial(cotizacion, ["proyecto_iniciado"]) ||
             null,
 
           fechaInstalacion:
@@ -1720,11 +1519,8 @@ function CotizacionesAdmin() {
             obtenerFechaEventoHistorial(cotizacion, ["instalacion_programada"]) ||
             null,
 
-          fechaInicioInstalacion:
-            cotizacion.fechaInicioInstalacion || null,
-
-          fechaFinInstalacion:
-            cotizacion.fechaFinInstalacion || null,
+          fechaInicioInstalacion: cotizacion.fechaInicioInstalacion || null,
+          fechaFinInstalacion: cotizacion.fechaFinInstalacion || null,
 
           estado: "finalizada",
           fechaFinalizacion: serverTimestamp(),
@@ -1735,41 +1531,40 @@ function CotizacionesAdmin() {
 
       batch.update(doc(db, "cotizaciones", cotizacion.id), {
         estado: "finalizada",
-
-        imagenesTrabajoFinal: fotosTrabajoFinal,
-
+        imagenesProyectoFinal: fotosProyectoFinal,
         vistoPorAdmin: true,
         vistoPorCliente: false,
-
         mensajeClienteSistema:
-          "Tu trabajo fue finalizado. Ya puedes verlo en Mis Proyectos.",
-
+          "Tu proyecto fue finalizado. Ya puedes verlo en Mis Proyectos.",
         fechaFinalizacion: serverTimestamp(),
         fechaActualizacion: serverTimestamp(),
-
         historial: arrayUnion(eventoFinal),
       });
 
       await batch.commit();
-
       cerrarFinalizacion();
     } catch (err) {
       console.error(err);
       setErrorFinalizar(
-        err?.message || "No se pudo finalizar el trabajo."
+        err?.message || "No se pudo finalizar el proyecto."
       );
     } finally {
       setSubiendoFinales(false);
     }
   };
 
+  const totalClientes = clientes.length;
+  const totalEnEjecucion = clientes.reduce(
+    (acc, item) => acc + item.enEjecucion,
+    0
+  );
+
   if (cargando) {
     return (
-      <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-screen bg-black text-white flex items-center justify-center`}>
-        {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
+      <div className={`${theme.page} flex items-center justify-center p-6`}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-zinc-800 border-t-yellow-500 rounded-full animate-spin mx-auto" />
-          <p className="text-zinc-500 mt-4">
+          <div className="w-14 h-14 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin mx-auto" />
+          <p className={`${theme.muted} mt-4 font-medium`}>
             Cargando cotizaciones...
           </p>
         </div>
@@ -1778,469 +1573,408 @@ function CotizacionesAdmin() {
   }
 
   return (
-    <div className={`wealth-theme-page ${!modoOscuro ? "wealth-light-page" : ""} min-h-screen bg-black text-white p-5 md:p-8 lg:p-10`}>
-      {!modoOscuro && <style>{ESTILOS_TEMA_CLARO}</style>}
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
-          <div>
-            <p className="text-yellow-500 uppercase tracking-[0.25em] text-xs font-bold">
-              Administración
-            </p>
+    <div className={`${theme.page} p-4 md:p-6 lg:p-8`}>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <section className={`rounded-[30px] overflow-hidden ${theme.card} relative`}>
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-sky-500/10 via-blue-500/5 to-transparent" />
 
-            <h1 className="text-3xl md:text-5xl font-black mt-2">
-              Cotizaciones
-            </h1>
-
-            <p className="text-zinc-500 mt-2">
-              Solicitudes, propuestas y trabajos activos.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div
-              className={`px-4 py-3 rounded-2xl border flex items-center gap-3 ${
-                cantidadNovedadesAdmin > 0
-                  ? "bg-red-500/10 border-red-500/40 text-red-300"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-400"
-              }`}
-            >
-              <FaBell />
-
-              <span className="font-bold">
-                {cantidadNovedadesAdmin}
-              </span>
-
-              <span className="text-sm">
-                {cantidadNovedadesAdmin === 1
-                  ? "novedad"
-                  : "novedades"}
-              </span>
+          <div className="relative p-6 md:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <p className="text-sky-500 text-xs font-extrabold uppercase tracking-[0.35em]">
+                Panel Macro
+              </p>
+              <h1 className={`mt-3 text-3xl md:text-4xl font-black ${theme.title}`}>
+                Solicitudes y cotizaciones
+              </h1>
+              <p className={`${theme.muted} mt-3 max-w-2xl`}>
+                Administra solicitudes, propuestas, anticipos, instalaciones y cierre de
+                proyectos desde una interfaz más clara y ordenada.
+              </p>
             </div>
 
-            <div className="px-4 py-3 rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-300">
-              {cotizacionesActivas.length} activas
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto lg:min-w-[560px]">
+              <StatCard
+                icon={<FaBriefcase />}
+                label="Solicitudes activas"
+                value={cotizacionesActivas.length}
+                theme={theme}
+              />
+              <StatCard
+                icon={<FaUser />}
+                label="Clientes"
+                value={totalClientes}
+                theme={theme}
+              />
+              <StatCard
+                icon={<FaPlay />}
+                label="En ejecución"
+                value={totalEnEjecucion}
+                theme={theme}
+              />
+              <StatCard
+                icon={<FaBell />}
+                label="Novedades"
+                value={cantidadNovedadesAdmin}
+                theme={theme}
+                accent={cantidadNovedadesAdmin > 0}
+              />
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="relative mb-8">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
+        <section className={`${theme.card} rounded-[28px] p-4 md:p-5`}>
+          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+            <div className="relative flex-1">
+              <FaSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme.lightMuted}`} />
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar cliente, correo, teléfono o proyecto..."
+                className={`${theme.input} pl-12 pr-4 py-4`}
+              />
+            </div>
 
-          <input
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar cliente, correo, teléfono o proyecto..."
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-yellow-500/60"
-          />
-        </div>
+            <div className="flex flex-wrap gap-3">
+              <MiniBadge theme={theme} label="Macro" value="Admin" />
+              <MiniBadge
+                theme={theme}
+                label="Pendientes"
+                value={
+                  cotizacionesActivas.filter((c) => c.estado === "pendiente").length
+                }
+              />
+              <MiniBadge
+                theme={theme}
+                label="Propuestas"
+                value={cotizacionesActivas.filter((c) => tienePropuesta(c)).length}
+              />
+            </div>
+          </div>
+        </section>
 
         {clientesFiltrados.length === 0 ? (
-          <div className="border border-zinc-800 bg-zinc-950 rounded-[28px] p-14 text-center">
-            <FaBriefcase className="text-4xl text-zinc-700 mx-auto" />
-
-            <h2 className="text-2xl font-bold mt-5">
+          <section className={`${theme.card} rounded-[30px] p-10 md:p-14 text-center`}>
+            <div className="w-20 h-20 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center mx-auto text-3xl">
+              <FaBoxes />
+            </div>
+            <h2 className={`text-2xl font-black mt-5 ${theme.title}`}>
               No hay cotizaciones activas
             </h2>
-
-            <p className="text-zinc-600 mt-2">
-              Si el panel marca novedades y aquí no aparece nada,
-              revisa que estés entrando por /admin/cotizaciones.
+            <p className={`${theme.muted} mt-2 max-w-xl mx-auto`}>
+              Cuando los clientes envíen solicitudes o pidan cambios a sus propuestas,
+              aparecerán aquí agrupadas por cliente.
             </p>
-          </div>
+          </section>
         ) : (
-          <div className="space-y-5">
+          <section className="space-y-4">
             {clientesFiltrados.map((cliente) => {
               const abierto = clienteAbierto === cliente.clave;
 
               return (
-                <div
+                <article
                   key={cliente.clave}
-                  className={`rounded-[26px] overflow-hidden border bg-zinc-950 ${
-                    cliente.nuevas > 0
-                      ? "border-yellow-500/70"
-                      : "border-zinc-800"
+                  className={`${theme.card} rounded-[28px] overflow-hidden ${
+                    cliente.nuevas > 0 ? "ring-2 ring-sky-300/70" : ""
                   }`}
                 >
                   <button
                     type="button"
                     onClick={() => toggleCliente(cliente)}
-                    className="w-full p-5 md:p-6 text-left hover:bg-zinc-900 transition"
+                    className="w-full text-left p-5 md:p-6"
                   >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                       <div className="flex items-start gap-4">
-                        <div className="relative w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center shrink-0">
-                          <FaUser className="text-yellow-500 text-xl" />
-
+                        <div className="relative w-16 h-16 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl shrink-0">
+                          <FaUser />
                           {cliente.nuevas > 0 && (
-                            <span className="absolute -top-2 -right-2 min-w-[23px] h-[23px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            <span className="absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1 rounded-full bg-red-500 text-white text-[11px] font-black flex items-center justify-center">
                               {cliente.nuevas}
                             </span>
                           )}
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl font-bold">
+                            <h2 className={`text-xl md:text-2xl font-black ${theme.title}`}>
                               {cliente.nombre}
                             </h2>
-
                             {cliente.nuevas > 0 && (
-                              <span className="px-2 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold">
-                                NUEVO
+                              <span className="px-3 py-1 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-extrabold uppercase tracking-wide">
+                                Nuevo
                               </span>
                             )}
                           </div>
 
-                          <p className="text-zinc-500 text-sm mt-1">
-                            {cliente.correo || "Sin correo"}
+                          <p className={`${theme.muted} mt-1 break-all`}>
+                            {cliente.correo || "Sin correo registrado"}
                           </p>
 
                           {cliente.telefono && (
-                            <p className="text-zinc-600 text-sm mt-1 flex items-center gap-2">
-                              <FaPhone />
-                              {cliente.telefono}
-                            </p>
+                            <div className={`mt-2 flex items-center gap-2 ${theme.muted}`}>
+                              <FaPhone className="text-sky-500" />
+                              <span>{cliente.telefono}</span>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className="px-4 py-2 rounded-xl bg-black border border-zinc-800 text-sm">
-                          {cliente.cotizaciones.length}{" "}
-                          {cliente.cotizaciones.length === 1
-                            ? "cotización"
-                            : "cotizaciones"}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                        <SummaryPill
+                          text={`${cliente.cotizaciones.length} ${
+                            cliente.cotizaciones.length === 1
+                              ? "cotización"
+                              : "cotizaciones"
+                          }`}
+                          theme={theme}
+                        />
 
                         {cliente.enEjecucion > 0 && (
-                          <span className="px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
-                            {cliente.enEjecucion} en ejecución
-                          </span>
+                          <SummaryPill
+                            text={`${cliente.enEjecucion} en ejecución`}
+                            theme={theme}
+                            color="green"
+                          />
                         )}
 
-                        <div className="w-10 h-10 rounded-xl bg-black border border-zinc-800 flex items-center justify-center">
-                          {abierto ? (
-                            <FaChevronUp />
-                          ) : (
-                            <FaChevronDown />
-                          )}
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${theme.cardSoft}`}>
+                          {abierto ? <FaChevronUp /> : <FaChevronDown />}
                         </div>
                       </div>
                     </div>
                   </button>
 
                   {abierto && (
-                    <div className="border-t border-zinc-800 p-5 md:p-6 space-y-5">
+                    <div className="px-5 md:px-6 pb-6 border-t border-slate-200/80 space-y-4">
                       {cliente.cotizaciones.map((cotizacion) => {
                         const precio = obtenerPrecio(cotizacion);
                         const imagenes = obtenerImagenes(cotizacion);
-
                         const fechaDeseadaCliente =
                           obtenerFechaDeseadaCliente(cotizacion);
-
-                        const fechaEntregaWealth =
-                          obtenerFechaEntregaWealth(cotizacion);
-
+                        const fechaEntregaMacro =
+                          obtenerFechaEntregaMacro(cotizacion);
                         const estadoEntrega =
-                          calcularEstadoEntrega(fechaEntregaWealth);
+                          calcularEstadoEntrega(fechaEntregaMacro);
 
                         return (
                           <div
                             key={cotizacion.id}
-                            className={`rounded-2xl border p-5 ${
+                            className={`rounded-[24px] p-4 md:p-5 ${
                               cotizacion.vistoPorAdmin === false
-                                ? "border-yellow-500/50 bg-yellow-500/[0.03]"
-                                : "border-zinc-800 bg-black"
+                                ? "bg-sky-50 border border-sky-200"
+                                : `${theme.cardSoft}`
                             }`}
                           >
-                            <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-5">
-                              <div className="min-w-0">
+                            <div className="flex flex-col xl:flex-row gap-5 xl:justify-between">
+                              <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="text-lg font-bold">
-                                    {cotizacion.nombre ||
-                                      "Solicitud sin nombre"}
+                                  <h3 className={`text-lg md:text-xl font-black ${theme.title}`}>
+                                    {cotizacion.nombre || "Solicitud sin nombre"}
                                   </h3>
 
-                                  <span
-                                    className={`px-3 py-1 rounded-full border text-xs ${getEstadoColor(
-                                      cotizacion.estado
-                                    )}`}
-                                  >
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${getEstadoColor(cotizacion.estado)}`}>
                                     {getEstadoTexto(cotizacion.estado)}
                                   </span>
 
-                                  {cotizacion.vistoPorAdmin === false && (
-                                    <span className="px-2 py-1 rounded-full bg-red-500 text-white text-[10px] font-black">
-                                      NUEVO
+                                  {cotizacion.tipo && (
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${theme.cardMuted} ${theme.text}`}>
+                                      {cotizacion.tipo}
                                     </span>
                                   )}
                                 </div>
 
-                                <p className="text-zinc-500 mt-2">
-                                  {cotizacion.descripcion ||
-                                    "Sin descripción"}
+                                <p className={`${theme.text} mt-3 leading-relaxed`}>
+                                  {cotizacion.descripcion || "Sin descripción"}
                                 </p>
 
-                                <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-sm text-zinc-500">
+                                <div className="flex flex-wrap gap-3 mt-4">
                                   {cotizacion.ubicacion && (
-                                    <span className="flex items-center gap-2">
-                                      <FaMapMarkerAlt />
-                                      {cotizacion.ubicacion}
-                                    </span>
+                                    <InfoCapsule
+                                      theme={theme}
+                                      icon={<FaMapMarkerAlt />}
+                                      text={cotizacion.ubicacion}
+                                    />
                                   )}
 
-                                  {precio !== null && (
-                                    <span className="flex items-center gap-2 text-green-400">
-                                      <FaDollarSign />
-                                      {formatoDinero(precio)}
-                                    </span>
-                                  )}
-
-                                  <span>
-                                    {formatearFecha(
+                                  <InfoCapsule
+                                    theme={theme}
+                                    icon={<FaCalendarAlt />}
+                                    text={formatearFecha(
                                       cotizacion.fechaActualizacion ||
                                         cotizacion.fecha
                                     )}
-                                  </span>
+                                  />
+
+                                  {precio !== null && (
+                                    <InfoCapsule
+                                      theme={theme}
+                                      icon={<FaDollarSign />}
+                                      text={formatoDinero(precio)}
+                                      accent="green"
+                                    />
+                                  )}
                                 </div>
 
-                                {(fechaDeseadaCliente ||
-                                  fechaEntregaWealth) && (
-                                  <div className="mt-4 grid sm:grid-cols-3 gap-2">
-                                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-                                      <p className="text-[10px] uppercase tracking-wide text-zinc-600">
-                                        Cliente lo necesita
-                                      </p>
-                                      <p className="text-sm font-semibold text-zinc-200 mt-1">
-                                        {formatearFechaSoloDia(
-                                          fechaDeseadaCliente
-                                        )}
-                                      </p>
-                                    </div>
+                                <div className="grid md:grid-cols-3 gap-3 mt-4">
+                                  <SmallPanel
+                                    theme={theme}
+                                    label="Cliente lo necesita"
+                                    value={formatearFechaSoloDia(fechaDeseadaCliente)}
+                                  />
 
-                                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-                                      <p className="text-[10px] uppercase tracking-wide text-zinc-600">
-                                        Entrega Wealth
-                                      </p>
-                                      <p className="text-sm font-semibold text-zinc-200 mt-1">
-                                        {formatearFechaSoloDia(
-                                          fechaEntregaWealth
-                                        )}
-                                      </p>
-                                    </div>
+                                  <SmallPanel
+                                    theme={theme}
+                                    label="Entrega Macro"
+                                    value={formatearFechaSoloDia(fechaEntregaMacro)}
+                                  />
 
-                                    {estadoEntrega ? (
-                                      <div
-                                        className={`rounded-xl border px-3 py-2.5 ${estadoEntrega.clase}`}
-                                      >
-                                        <p className="text-[10px] uppercase tracking-wide opacity-70">
-                                          Tiempo restante
-                                        </p>
-                                        <p className="text-sm font-bold mt-1">
-                                          {estadoEntrega.texto}
-                                        </p>
-                                      </div>
-                                    ) : (
-                                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-                                        <p className="text-[10px] uppercase tracking-wide text-zinc-600">
-                                          Tiempo restante
-                                        </p>
-                                        <p className="text-sm font-semibold text-zinc-500 mt-1">
-                                          Sin fecha de entrega
-                                        </p>
-                                      </div>
-                                    )}
+                                  <div className={`rounded-2xl p-4 ${estadoEntrega?.clase || theme.cardMuted}`}>
+                                    <p className="text-xs uppercase tracking-[0.18em] font-bold opacity-70">
+                                      Tiempo restante
+                                    </p>
+                                    <p className="mt-2 font-black text-sm md:text-base">
+                                      {estadoEntrega?.texto || "Sin fecha de entrega"}
+                                    </p>
                                   </div>
-                                )}
+                                </div>
 
                                 {cotizacion.mensajeCliente && (
-                                  <div className="mt-4 p-4 rounded-xl bg-orange-500/10 border border-orange-500/30">
-                                    <p className="text-xs uppercase tracking-wide text-orange-400 font-bold">
-                                      Mensaje del cliente
+                                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
+                                      Solicitud del cliente
                                     </p>
-
-                                    <p className="mt-1 text-zinc-200">
+                                    <p className="text-amber-900 mt-2 leading-relaxed">
                                       {cotizacion.mensajeCliente}
                                     </p>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="flex flex-wrap gap-2 xl:max-w-[520px] xl:justify-end">
-                                <button
-                                  onClick={() =>
-                                    abrirCotizacion(cotizacion)
-                                  }
-                                  className="px-4 py-2.5 rounded-xl bg-yellow-500 text-black font-bold flex items-center gap-2"
-                                >
-                                  {tienePropuesta(cotizacion) ? (
-                                    <FaEdit />
-                                  ) : (
-                                    <FaPaperPlane />
+                              <div className="xl:w-[360px] shrink-0">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <ActionButton
+                                    onClick={() => abrirCotizacion(cotizacion)}
+                                    className={theme.primaryBtn}
+                                    icon={
+                                      tienePropuesta(cotizacion)
+                                        ? <FaEdit />
+                                        : <FaPaperPlane />
+                                    }
+                                    text={
+                                      tienePropuesta(cotizacion)
+                                        ? "Propuesta"
+                                        : "Cotizar"
+                                    }
+                                  />
+
+                                  <ActionButton
+                                    onClick={() => abrirHistorial(cotizacion)}
+                                    className={theme.ghostBtn}
+                                    icon={<FaHistory />}
+                                    text="Historial"
+                                  />
+
+                                  {imagenes.length > 0 && (
+                                    <ActionButton
+                                      onClick={() => abrirGaleria(cotizacion)}
+                                      className={theme.ghostBtn}
+                                      icon={<FaImages />}
+                                      text={`Fotos (${imagenes.length})`}
+                                    />
                                   )}
-                                  {tienePropuesta(cotizacion)
-                                    ? "Ver / editar propuesta"
-                                    : "Cotizar"}
-                                </button>
 
-                                {imagenes.length > 0 && (
-                                  <button
-                                    onClick={() =>
-                                      abrirGaleria(cotizacion)
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center gap-2"
-                                  >
-                                    <FaImages />
-                                    Fotos ({imagenes.length})
-                                  </button>
-                                )}
+                                  {["pendiente", "revision"].includes(cotizacion.estado) && (
+                                    <ActionButton
+                                      onClick={() => marcarEnRevision(cotizacion)}
+                                      className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700"
+                                      icon={<FaEye />}
+                                      text="Revisar"
+                                    />
+                                  )}
 
-                                <button
-                                  onClick={() =>
-                                    abrirHistorial(cotizacion)
-                                  }
-                                  className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 flex items-center gap-2"
-                                >
-                                  <FaHistory className="text-yellow-500" />
-                                  Historial
-                                </button>
+                                  {cotizacion.estado === "aceptada_cliente" && (
+                                    <ActionButton
+                                      onClick={() => confirmarProyecto(cotizacion)}
+                                      className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700"
+                                      icon={<FaCheck />}
+                                      text="Confirmar"
+                                    />
+                                  )}
 
-                                {["pendiente", "revision"].includes(
-                                  cotizacion.estado
-                                ) && (
-                                  <button
-                                    onClick={() =>
-                                      marcarEnRevision(cotizacion)
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center gap-2"
-                                  >
-                                    <FaEye />
-                                    Revisar
-                                  </button>
-                                )}
+                                  {cotizacion.estado === "confirmada_admin" && (
+                                    <ActionButton
+                                      onClick={() => marcarAnticipoPendiente(cotizacion)}
+                                      className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-700"
+                                      icon={<FaDollarSign />}
+                                      text="Pedir anticipo"
+                                    />
+                                  )}
 
-                                {cotizacion.estado ===
-                                  "aceptada_cliente" && (
-                                  <button
-                                    onClick={() =>
-                                      confirmarTrabajo(cotizacion)
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 flex items-center gap-2"
-                                  >
-                                    <FaCheck />
-                                    Confirmar
-                                  </button>
-                                )}
+                                  {cotizacion.estado === "anticipo_pendiente" && (
+                                    <ActionButton
+                                      onClick={() => marcarAnticipoRecibido(cotizacion)}
+                                      className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700"
+                                      icon={<FaCheckCircle />}
+                                      text="Anticipo recibido"
+                                    />
+                                  )}
 
-                                {cotizacion.estado ===
-                                  "confirmada_admin" && (
-                                  <button
-                                    onClick={() =>
-                                      marcarAnticipoPendiente(
-                                        cotizacion
-                                      )
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-2"
-                                  >
-                                    <FaDollarSign />
-                                    Pedir anticipo
-                                  </button>
-                                )}
+                                  {[
+                                    "confirmada_admin",
+                                    "anticipo_recibido",
+                                    "anticipo_pagado",
+                                  ].includes(cotizacion.estado) && (
+                                    <ActionButton
+                                      onClick={() => iniciarProyecto(cotizacion)}
+                                      className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700"
+                                      icon={<FaPlay />}
+                                      text="Iniciar"
+                                    />
+                                  )}
 
-                                {cotizacion.estado ===
-                                  "anticipo_pendiente" && (
-                                  <button
-                                    onClick={() =>
-                                      marcarAnticipoRecibido(
-                                        cotizacion
-                                      )
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-2"
-                                  >
-                                    <FaCheckCircle />
-                                    Anticipo recibido
-                                  </button>
-                                )}
+                                  {["proceso", "en_proceso"].includes(cotizacion.estado) && (
+                                    <ActionButton
+                                      onClick={() => programarInstalacion(cotizacion)}
+                                      className="bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700"
+                                      icon={<FaTools />}
+                                      text="Instalación"
+                                    />
+                                  )}
 
-                                {[
-                                  "confirmada_admin",
-                                  "anticipo_recibido",
-                                  "anticipo_pagado",
-                                ].includes(cotizacion.estado) && (
-                                  <button
-                                    onClick={() =>
-                                      iniciarTrabajo(cotizacion)
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center gap-2"
-                                  >
-                                    <FaPlay />
-                                    Iniciar trabajo
-                                  </button>
-                                )}
+                                  {[
+                                    "proceso",
+                                    "en_proceso",
+                                    "instalacion",
+                                    "instalacion_programada",
+                                  ].includes(cotizacion.estado) && (
+                                    <ActionButton
+                                      onClick={() => abrirFinalizacion(cotizacion)}
+                                      className={theme.successBtn}
+                                      icon={<FaFlagCheckered />}
+                                      text="Finalizar"
+                                    />
+                                  )}
+                                </div>
 
-                                {[
-                                  "proceso",
-                                  "en_proceso",
-                                ].includes(cotizacion.estado) && (
-                                  <button
-                                    onClick={() =>
-                                      programarInstalacion(
-                                        cotizacion
-                                      )
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center gap-2"
-                                  >
-                                    <FaTools />
-                                    Instalación
-                                  </button>
-                                )}
-
-                                {[
-                                  "proceso",
-                                  "en_proceso",
-                                  "instalacion",
-                                  "instalacion_programada",
-                                ].includes(cotizacion.estado) && (
-                                  <button
-                                    onClick={() =>
-                                      abrirFinalizacion(
-                                        cotizacion
-                                      )
-                                    }
-                                    className="px-4 py-2.5 rounded-xl bg-green-600 text-white font-bold flex items-center gap-2"
-                                  >
-                                    <FaFlagCheckered />
-                                    Finalizar
-                                  </button>
-                                )}
-
-                                <button
-                                  onClick={() => resetEstado(cotizacion)}
-                                  className="px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-400"
-                                  title="Reiniciar"
-                                >
-                                  <FaUndo />
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    rechazarCotizacion(cotizacion)
-                                  }
-                                  className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400"
-                                  title="Rechazar"
-                                >
-                                  <FaTimes />
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    eliminarCotizacion(cotizacion)
-                                  }
-                                  className="px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-500"
-                                  title="Eliminar"
-                                >
-                                  <FaTrash />
-                                </button>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <IconButton
+                                    onClick={() => resetEstado(cotizacion)}
+                                    className={theme.ghostBtn}
+                                    title="Reiniciar"
+                                    icon={<FaUndo />}
+                                  />
+                                  <IconButton
+                                    onClick={() => rechazarCotizacion(cotizacion)}
+                                    className={theme.dangerBtn}
+                                    title="Rechazar"
+                                    icon={<FaTimes />}
+                                  />
+                                  <IconButton
+                                    onClick={() => eliminarCotizacion(cotizacion)}
+                                    className={theme.ghostBtn}
+                                    title="Eliminar"
+                                    icon={<FaTrash />}
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2248,196 +1982,174 @@ function CotizacionesAdmin() {
                       })}
                     </div>
                   )}
-                </div>
+                </article>
               );
             })}
-          </div>
+          </section>
         )}
       </div>
 
-      {/* =================================================
-          MODAL PROPUESTA
-      ================================================= */}
-
       {modalCotizacion && cotizacionActiva && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="max-w-3xl mx-auto my-8 bg-zinc-950 border border-zinc-800 rounded-[28px] overflow-hidden">
-            <div className="p-6 border-b border-zinc-800 flex items-start justify-between gap-4">
+        <Overlay onClose={cerrarCotizacion} theme={theme}>
+          <div className={`${theme.card} rounded-[30px] w-full max-w-5xl overflow-hidden`}>
+            <div className="p-6 md:p-7 border-b border-slate-200/80 flex items-start justify-between gap-4">
               <div>
-                <p className="text-yellow-500 text-xs uppercase tracking-[0.2em] font-bold">
-                  Cotización
+                <p className="text-sky-500 text-xs font-extrabold uppercase tracking-[0.35em]">
+                  Macro · Propuesta comercial
                 </p>
-
-                <h2 className="text-2xl font-bold mt-1">
+                <h2 className={`text-2xl md:text-3xl font-black mt-3 ${theme.title}`}>
                   {cotizacionActiva.nombre || "Proyecto"}
                 </h2>
+                <p className={`${theme.muted} mt-2`}>
+                  Define precio, anticipo, tiempos y condiciones para enviar o modificar la propuesta.
+                </p>
               </div>
 
               <button
                 onClick={cerrarCotizacion}
-                className="w-10 h-10 rounded-xl bg-black border border-zinc-800 flex items-center justify-center"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center ${theme.ghostBtn}`}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 md:p-7 space-y-6 max-h-[82vh] overflow-y-auto">
               {cotizacionActiva.mensajeCliente && (
-                <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/30">
-                  <p className="text-orange-400 text-sm font-bold">
-                    El cliente solicita:
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-amber-700 font-black text-sm uppercase tracking-[0.18em]">
+                    Comentario del cliente
                   </p>
-
-                  <p className="text-white mt-1">
+                  <p className="text-amber-900 mt-2">
                     {cotizacionActiva.mensajeCliente}
                   </p>
                 </div>
               )}
 
-              <div className="grid md:grid-cols-3 gap-3">
-                <ResumenFecha
-                  titulo="Cliente lo necesita"
-                  valor={formatearFechaSoloDia(
+              <div className="grid md:grid-cols-3 gap-4">
+                <SmallPanel
+                  theme={theme}
+                  label="Fecha solicitada"
+                  value={formatearFechaSoloDia(
                     obtenerFechaDeseadaCliente(cotizacionActiva)
                   )}
                 />
-
-                <ResumenFecha
-                  titulo="Entrega estimada Wealth"
-                  valor={
+                <SmallPanel
+                  theme={theme}
+                  label="Entrega estimada"
+                  value={
                     fechaEntregaEstimada
                       ? formatearFechaSoloDia(fechaEntregaEstimada)
                       : "Sin definir"
                   }
                 />
-
-                <ResumenFecha
-                  titulo="Tiempo restante"
-                  valor={
-                    calcularEstadoEntrega(
-                      fechaEntregaEstimada
-                    )?.texto || "Sin fecha de entrega"
-                  }
-                  clase={
-                    calcularEstadoEntrega(
-                      fechaEntregaEstimada
-                    )?.clase ||
-                    "border-zinc-800 text-zinc-400"
-                  }
-                />
+                <div className={`rounded-2xl p-4 ${calcularEstadoEntrega(fechaEntregaEstimada)?.clase || theme.cardMuted}`}>
+                  <p className="text-xs uppercase tracking-[0.18em] font-bold opacity-70">
+                    Tiempo restante
+                  </p>
+                  <p className="mt-2 font-black">
+                    {calcularEstadoEntrega(fechaEntregaEstimada)?.texto ||
+                      "Sin fecha de entrega"}
+                  </p>
+                </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Campo
-                  label="Precio total"
-                  icon={<FaDollarSign />}
-                >
-                  <input
-                    type="number"
-                    value={presupuestoAdmin}
-                    onChange={(e) =>
-                      setPresupuestoAdmin(e.target.value)
-                    }
-                    className="inputAdmin"
-                    placeholder="Ej. 25000"
-                  />
-                </Campo>
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-5">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FieldCard label="Precio total" icon={<FaDollarSign />} theme={theme}>
+                      <input
+                        type="number"
+                        value={presupuestoAdmin}
+                        onChange={(e) => setPresupuestoAdmin(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                        placeholder="Ej. 25000"
+                      />
+                    </FieldCard>
 
-                <Campo
-                  label="% de anticipo"
-                  icon={<FaDollarSign />}
-                >
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={porcentajeAnticipo}
-                    onChange={(e) =>
-                      setPorcentajeAnticipo(e.target.value)
-                    }
-                    className="inputAdmin"
-                  />
-                </Campo>
+                    <FieldCard label="Porcentaje de anticipo" icon={<FaDollarSign />} theme={theme}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={porcentajeAnticipo}
+                        onChange={(e) => setPorcentajeAnticipo(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                      />
+                    </FieldCard>
 
-                <Campo
-                  label="Tiempo estimado"
-                  icon={<FaClock />}
-                >
-                  <input
-                    value={tiempoEstimado}
-                    onChange={(e) =>
-                      setTiempoEstimado(e.target.value)
-                    }
-                    className="inputAdmin"
-                    placeholder="Ej. 15 días"
-                  />
-                </Campo>
+                    <FieldCard label="Tiempo estimado" icon={<FaClock />} theme={theme}>
+                      <input
+                        value={tiempoEstimado}
+                        onChange={(e) => setTiempoEstimado(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                        placeholder="Ej. 15 días"
+                      />
+                    </FieldCard>
 
-                <Campo
-                  label="Fecha estimada de entrega"
-                  icon={<FaFlagCheckered />}
-                >
-                  <input
-                    type="date"
-                    value={fechaEntregaEstimada}
-                    onChange={(e) =>
-                      setFechaEntregaEstimada(e.target.value)
-                    }
-                    className="inputAdmin"
-                  />
-                </Campo>
+                    <FieldCard label="Fecha estimada de entrega" icon={<FaFlagCheckered />} theme={theme}>
+                      <input
+                        type="date"
+                        value={fechaEntregaEstimada}
+                        onChange={(e) => setFechaEntregaEstimada(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                      />
+                    </FieldCard>
 
-                <Campo
-                  label="Garantía"
-                  icon={<FaShieldAlt />}
-                >
-                  <input
-                    value={garantia}
-                    onChange={(e) => setGarantia(e.target.value)}
-                    className="inputAdmin"
-                    placeholder="Ej. 12 meses"
+                    <FieldCard label="Garantía" icon={<FaShieldAlt />} theme={theme}>
+                      <input
+                        value={garantia}
+                        onChange={(e) => setGarantia(e.target.value)}
+                        className={`${theme.input} px-4 py-3.5`}
+                        placeholder="Ej. 12 meses"
+                      />
+                    </FieldCard>
+                  </div>
+
+                  <FieldCard label="Observaciones" icon={<FaEdit />} theme={theme}>
+                    <textarea
+                      rows={6}
+                      value={observacionesAdmin}
+                      onChange={(e) => setObservacionesAdmin(e.target.value)}
+                      className={`${theme.input} px-4 py-3.5 resize-none`}
+                      placeholder="Alcances, condiciones, entregables, soporte, instalación, etc."
+                    />
+                  </FieldCard>
+                </div>
+
+                <div className="space-y-4">
+                  <ResumeCard
+                    theme={theme}
+                    title="Anticipo"
+                    value={formatoDinero(montoAnticipo)}
                   />
-                </Campo>
+                  <ResumeCard
+                    theme={theme}
+                    title="Saldo pendiente"
+                    value={formatoDinero(saldoPendiente)}
+                  />
+                  <ResumeCard
+                    theme={theme}
+                    title="Versión"
+                    value={
+                      cotizacionActiva.propuestaActual?.version ||
+                      cotizacionActiva.versionPropuesta ||
+                      (tienePropuesta(cotizacionActiva) ? 1 : "Nueva")
+                    }
+                  />
+                </div>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <Resumen
-                  titulo="Anticipo"
-                  valor={formatoDinero(montoAnticipo)}
-                />
-
-                <Resumen
-                  titulo="Saldo"
-                  valor={formatoDinero(saldoPendiente)}
-                />
-              </div>
-
-              <Campo
-                label="Observaciones"
-                icon={<FaEdit />}
-              >
-                <textarea
-                  rows={5}
-                  value={observacionesAdmin}
-                  onChange={(e) =>
-                    setObservacionesAdmin(e.target.value)
-                  }
-                  className="inputAdmin resize-none"
-                  placeholder="Condiciones, materiales, alcances..."
-                />
-              </Campo>
 
               {error && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
                   {error}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={enviarPropuesta}
                   disabled={procesando}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-black rounded-xl px-5 py-3.5 flex items-center justify-center gap-2"
+                  className={`flex-1 rounded-2xl px-5 py-4 font-black flex items-center justify-center gap-2 transition ${theme.primaryBtn} disabled:opacity-60`}
                 >
                   {procesando ? (
                     <FaSyncAlt className="animate-spin" />
@@ -2452,104 +2164,86 @@ function CotizacionesAdmin() {
 
                 <button
                   onClick={cerrarCotizacion}
-                  className="px-5 py-3.5 rounded-xl bg-black border border-zinc-800"
+                  className={`sm:w-auto rounded-2xl px-5 py-4 font-bold transition ${theme.ghostBtn}`}
                 >
                   Cancelar
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
 
-      {/* =================================================
-          HISTORIAL / LÍNEA DE TIEMPO
-      ================================================= */}
-
       {historialOpen && cotizacionHistorial && (
-        <div
-          className="fixed inset-0 z-[105] bg-black/90 backdrop-blur-sm p-4 overflow-y-auto"
-          onClick={() => setHistorialOpen(false)}
-        >
-          <div
-            className="max-w-2xl mx-auto my-8 bg-zinc-950 border border-zinc-800 rounded-[28px] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-zinc-800 flex items-start justify-between gap-4">
+        <Overlay onClose={() => setHistorialOpen(false)} theme={theme}>
+          <div className={`${theme.card} rounded-[30px] w-full max-w-3xl overflow-hidden`}>
+            <div className="p-6 md:p-7 border-b border-slate-200/80 flex items-start justify-between gap-4">
               <div>
-                <p className="text-yellow-500 text-xs uppercase tracking-[0.2em] font-bold">
-                  Expediente Wealth
+                <p className="text-sky-500 text-xs font-extrabold uppercase tracking-[0.35em]">
+                  Macro · Historial
                 </p>
-
-                <h2 className="text-2xl font-bold mt-1">
+                <h2 className={`text-2xl font-black mt-3 ${theme.title}`}>
                   Historial del proyecto
                 </h2>
-
-                <p className="text-zinc-500 mt-1">
+                <p className={`${theme.muted} mt-2`}>
                   {cotizacionHistorial.nombre || "Cotización"}
                 </p>
               </div>
 
               <button
                 onClick={() => setHistorialOpen(false)}
-                className="w-10 h-10 rounded-xl bg-black border border-zinc-800 flex items-center justify-center"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center ${theme.ghostBtn}`}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 md:p-7 max-h-[78vh] overflow-y-auto">
               {obtenerHistorialVisible(cotizacionHistorial).length === 0 ? (
-                <div className="rounded-2xl border border-zinc-800 bg-black p-8 text-center text-zinc-500">
-                  Todavía no hay movimientos registrados.
+                <div className={`rounded-2xl p-10 text-center ${theme.cardSoft}`}>
+                  <FaHistory className="text-3xl text-sky-500 mx-auto" />
+                  <p className={`${theme.muted} mt-4`}>
+                    Todavía no hay movimientos registrados.
+                  </p>
                 </div>
               ) : (
-                <div className="relative">
-                  <div className="absolute left-[11px] top-2 bottom-2 w-px bg-zinc-800" />
-
-                  <div className="space-y-6">
+                <div className="relative pl-4">
+                  <div className="absolute left-[12px] top-0 bottom-0 w-px bg-sky-200" />
+                  <div className="space-y-5">
                     {obtenerHistorialVisible(cotizacionHistorial).map(
                       (evento, indice) => (
                         <div
-                          key={`${evento.tipo}-${obtenerMillis(
-                            evento.fecha
-                          )}-${indice}`}
-                          className="relative pl-10"
+                          key={`${evento.tipo}-${obtenerMillis(evento.fecha)}-${indice}`}
+                          className="relative pl-8"
                         >
-                          <div className="absolute left-0 top-1.5 w-[23px] h-[23px] rounded-full bg-black border-2 border-yellow-500 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                          </div>
+                          <div className="absolute left-0 top-3 w-6 h-6 rounded-full bg-sky-500 shadow-md shadow-sky-500/20 border-4 border-white" />
 
-                          <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className={`${theme.cardSoft} rounded-2xl p-4 md:p-5`}>
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                               <div>
-                                <p className="font-bold text-white">
+                                <h3 className={`font-black ${theme.title}`}>
                                   {evento.titulo}
-                                </p>
-
+                                </h3>
                                 {evento.descripcion && (
-                                  <p className="text-zinc-400 text-sm mt-1">
+                                  <p className={`${theme.text} mt-2 leading-relaxed`}>
                                     {evento.descripcion}
                                   </p>
                                 )}
                               </div>
 
-                              <span className="text-xs text-zinc-600 shrink-0">
-                                {evento.actor === "cliente"
-                                  ? "Cliente"
-                                  : "Wealth"}
+                              <span className="px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold whitespace-nowrap">
+                                {evento.actor === "cliente" ? "Cliente" : "Macro"}
                               </span>
                             </div>
 
-                            <p className="text-yellow-500/80 text-xs mt-3">
+                            <p className={`${theme.muted} text-sm mt-3`}>
                               {formatearFecha(evento.fecha)}
                             </p>
 
                             {evento.fechaInicioInstalacion &&
                               evento.fechaFinInstalacion && (
-                                <p className="text-cyan-400 text-xs mt-2">
-                                  Instalación:{" "}
-                                  {evento.fechaInicioInstalacion} →{" "}
+                                <p className="text-violet-600 text-sm mt-2 font-semibold">
+                                  Instalación: {evento.fechaInicioInstalacion} →{" "}
                                   {evento.fechaFinInstalacion}
                                 </p>
                               )}
@@ -2562,209 +2256,306 @@ function CotizacionesAdmin() {
               )}
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
 
-      {/* =================================================
-          GALERÍA
-      ================================================= */}
-
       {galeriaOpen && (
-        <div className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center p-4">
-          <button
-            onClick={() => setGaleriaOpen(false)}
-            className="absolute top-5 right-5 w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center"
-          >
-            <FaTimes />
-          </button>
+        <div className={`fixed inset-0 z-[110] ${theme.modalBg} backdrop-blur-sm p-4 flex items-center justify-center`}>
+          <div className="absolute inset-0" onClick={() => setGaleriaOpen(false)} />
 
-          <div className="max-w-5xl w-full">
-            <img
-              src={imagenesActivas[indiceImagen]}
-              alt="Proyecto"
-              className="w-full max-h-[75vh] object-contain rounded-2xl"
-            />
+          <div className="relative max-w-6xl w-full">
+            <button
+              onClick={() => setGaleriaOpen(false)}
+              className={`absolute -top-14 right-0 w-11 h-11 rounded-2xl flex items-center justify-center ${theme.ghostBtn}`}
+            >
+              <FaTimes />
+            </button>
 
-            <div className="flex items-center justify-center gap-3 mt-5">
-              {imagenesActivas.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setIndiceImagen(i)}
-                  className={`w-3 h-3 rounded-full ${
-                    i === indiceImagen
-                      ? "bg-yellow-500"
-                      : "bg-zinc-700"
-                  }`}
+            <div className={`${theme.card} rounded-[28px] p-4 md:p-5`}>
+              <div className="relative rounded-[24px] overflow-hidden bg-slate-100 min-h-[300px] flex items-center justify-center">
+                <img
+                  src={imagenesActivas[indiceImagen]}
+                  alt="Proyecto"
+                  className="w-full max-h-[75vh] object-contain"
                 />
-              ))}
+
+                {imagenesActivas.length > 1 && (
+                  <>
+                    <button
+                      onClick={() =>
+                        setIndiceImagen((prev) =>
+                          prev === 0 ? imagenesActivas.length - 1 : prev - 1
+                        )
+                      }
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 text-slate-700 shadow-lg flex items-center justify-center"
+                    >
+                      <FaChevronLeft />
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setIndiceImagen((prev) =>
+                          prev === imagenesActivas.length - 1 ? 0 : prev + 1
+                        )
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 text-slate-700 shadow-lg flex items-center justify-center"
+                    >
+                      <FaChevronRight />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 mt-4">
+                {imagenesActivas.map((img, i) => (
+                  <button
+                    key={`${img}-${i}`}
+                    onClick={() => setIndiceImagen(i)}
+                    className={`w-16 h-16 rounded-2xl overflow-hidden border-2 ${
+                      i === indiceImagen ? "border-sky-500" : "border-transparent"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Miniatura ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* =================================================
-          FINALIZAR
-      ================================================= */}
-
       {modalFinalizar && cotizacionFinalizar && (
-        <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="max-w-2xl mx-auto my-8 bg-zinc-950 border border-zinc-800 rounded-[28px] p-6">
-            <div className="flex items-start justify-between">
+        <Overlay onClose={cerrarFinalizacion} theme={theme}>
+          <div className={`${theme.card} rounded-[30px] w-full max-w-3xl overflow-hidden`}>
+            <div className="p-6 md:p-7 border-b border-slate-200/80 flex items-start justify-between gap-4">
               <div>
-                <p className="text-green-400 text-xs uppercase tracking-[0.2em] font-bold">
-                  Trabajo terminado
+                <p className="text-emerald-500 text-xs font-extrabold uppercase tracking-[0.35em]">
+                  Macro · Cierre de proyecto
                 </p>
-
-                <h2 className="text-2xl font-bold mt-1">
-                  {cotizacionFinalizar.nombre}
+                <h2 className={`text-2xl font-black mt-3 ${theme.title}`}>
+                  {cotizacionFinalizar.nombre || "Proyecto"}
                 </h2>
+                <p className={`${theme.muted} mt-2`}>
+                  Sube evidencias del proyecto terminado para guardarlas en el expediente del cliente.
+                </p>
               </div>
 
               <button
                 onClick={cerrarFinalizacion}
-                className="w-10 h-10 rounded-xl bg-black border border-zinc-800 flex items-center justify-center"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center ${theme.ghostBtn}`}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <p className="text-zinc-500 mt-4">
-              Sube fotografías reales del trabajo terminado. Se
-              guardarán en el expediente del cliente.
-            </p>
+            <div className="p-6 md:p-7">
+              <label className="block border-2 border-dashed border-sky-300 rounded-[26px] p-8 text-center cursor-pointer bg-sky-50 hover:bg-sky-100 transition">
+                <FaImages className="text-4xl text-sky-500 mx-auto" />
+                <p className="font-black text-slate-900 mt-4">
+                  Agregar fotografías finales
+                </p>
+                <p className="text-slate-500 mt-2 text-sm">
+                  Máximo 6 imágenes · 5 MB cada una
+                </p>
 
-            <label className="mt-6 block border-2 border-dashed border-zinc-700 hover:border-yellow-500/60 rounded-2xl p-7 text-center cursor-pointer">
-              <FaImages className="text-3xl text-yellow-500 mx-auto" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={seleccionarFotosFinales}
+                />
+              </label>
 
-              <p className="font-bold mt-3">
-                Agregar fotografías
-              </p>
-
-              <p className="text-zinc-600 text-sm mt-1">
-                Máximo 6 imágenes, 5 MB cada una
-              </p>
-
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={seleccionarFotosFinales}
-              />
-            </label>
-
-            {previewsFinales.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5">
-                {previewsFinales.map((url, i) => (
-                  <div
-                    key={url}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-zinc-800"
-                  >
-                    <img
-                      src={url}
-                      alt={`Final ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-
-                    <button
-                      onClick={() => eliminarFotoFinal(i)}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/80 text-red-400 flex items-center justify-center"
+              {previewsFinales.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5">
+                  {previewsFinales.map((url, i) => (
+                    <div
+                      key={url}
+                      className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200"
                     >
-                      <FaTimes />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {errorFinalizar && (
-              <div className="mt-5 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
-                {errorFinalizar}
-              </div>
-            )}
-
-            <button
-              onClick={terminarTrabajo}
-              disabled={subiendoFinales}
-              className="w-full mt-6 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-black rounded-xl px-5 py-4 flex items-center justify-center gap-2"
-            >
-              {subiendoFinales ? (
-                <FaSyncAlt className="animate-spin" />
-              ) : (
-                <FaFlagCheckered />
+                      <img
+                        src={url}
+                        alt={`Final ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => eliminarFotoFinal(i)}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-xl bg-slate-900/80 text-white flex items-center justify-center"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
 
-              {subiendoFinales
-                ? "Subiendo y finalizando..."
-                : "Finalizar trabajo"}
-            </button>
+              {errorFinalizar && (
+                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+                  {errorFinalizar}
+                </div>
+              )}
+
+              <button
+                onClick={terminarProyecto}
+                disabled={subiendoFinales}
+                className={`w-full mt-6 rounded-2xl px-5 py-4 font-black flex items-center justify-center gap-2 transition ${theme.successBtn} disabled:opacity-60`}
+              >
+                {subiendoFinales ? (
+                  <FaSyncAlt className="animate-spin" />
+                ) : (
+                  <FaFlagCheckered />
+                )}
+
+                {subiendoFinales
+                  ? "Subiendo y finalizando..."
+                  : "Finalizar proyecto"}
+              </button>
+            </div>
           </div>
-        </div>
+        </Overlay>
       )}
-
-      <style>{`
-        .inputAdmin {
-          width: 100%;
-          background: #09090b;
-          border: 1px solid #3f3f46;
-          border-radius: 12px;
-          padding: 12px 14px;
-          color: white;
-          outline: none;
-        }
-
-        .inputAdmin:focus {
-          border-color: rgba(234, 179, 8, 0.7);
-        }
-      `}</style>
     </div>
   );
 }
 
-function Campo({ label, icon, children }) {
+function Overlay({ children, onClose, theme }) {
   return (
-    <label className="block">
-      <span className="text-sm text-zinc-400 font-medium flex items-center gap-2 mb-2">
+    <div className={`fixed inset-0 z-[100] ${theme.modalBg} backdrop-blur-sm p-4 overflow-y-auto`}>
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative min-h-full flex items-start justify-center py-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldCard({ label, icon, children, theme }) {
+  return (
+    <div className={`${theme.cardSoft} rounded-[24px] p-4`}>
+      <label className="block">
+        <span className={`text-sm font-bold mb-3 flex items-center gap-2 ${theme.text}`}>
+          <span className="text-sky-500">{icon}</span>
+          {label}
+        </span>
+        {children}
+      </label>
+    </div>
+  );
+}
+
+function ResumeCard({ title, value, theme }) {
+  return (
+    <div className={`${theme.cardSoft} rounded-[24px] p-5`}>
+      <p className={`text-xs uppercase tracking-[0.2em] font-bold ${theme.muted}`}>
+        {title}
+      </p>
+      <p className={`text-2xl font-black mt-3 ${theme.title}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, theme, accent = false }) {
+  return (
+    <div className={`rounded-[24px] p-4 ${accent ? "bg-red-50 border border-red-200" : theme.cardSoft}`}>
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${accent ? "bg-red-100 text-red-600" : "bg-sky-100 text-sky-600"}`}>
         {icon}
+      </div>
+      <p className={`text-xs font-bold uppercase tracking-[0.16em] mt-4 ${theme.muted}`}>
         {label}
+      </p>
+      <p className={`text-2xl md:text-3xl font-black mt-2 ${accent ? "text-red-600" : theme.title}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function MiniBadge({ label, value, theme }) {
+  return (
+    <div className={`${theme.cardSoft} rounded-2xl px-4 py-3 min-w-[120px]`}>
+      <p className={`text-[11px] uppercase tracking-[0.18em] font-bold ${theme.muted}`}>
+        {label}
+      </p>
+      <p className={`text-sm font-black mt-1 ${theme.title}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SummaryPill({ text, theme, color = "default" }) {
+  const styles =
+    color === "green"
+      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+      : `${theme.cardMuted} ${theme.text}`;
+
+  return (
+    <span className={`px-4 py-2 rounded-2xl text-sm font-bold ${styles}`}>
+      {text}
+    </span>
+  );
+}
+
+function InfoCapsule({ icon, text, theme, accent = "default" }) {
+  const style =
+    accent === "green"
+      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+      : `${theme.cardMuted} ${theme.text}`;
+
+  return (
+    <div className={`px-3 py-2 rounded-2xl text-sm flex items-center gap-2 ${style}`}>
+      <span className={accent === "green" ? "text-emerald-600" : "text-sky-500"}>
+        {icon}
       </span>
-
-      {children}
-    </label>
+      <span>{text}</span>
+    </div>
   );
 }
 
-function Resumen({ titulo, valor }) {
+function SmallPanel({ label, value, theme }) {
   return (
-    <div className="rounded-2xl bg-black border border-zinc-800 p-4">
-      <p className="text-zinc-600 text-xs uppercase tracking-wide">
-        {titulo}
+    <div className={`${theme.cardMuted} rounded-2xl p-4`}>
+      <p className="text-xs uppercase tracking-[0.18em] font-bold text-slate-500">
+        {label}
       </p>
-
-      <p className="text-xl font-black mt-1">
-        {valor}
+      <p className={`mt-2 font-black ${theme.title}`}>
+        {value || "—"}
       </p>
     </div>
   );
 }
 
-function ResumenFecha({
-  titulo,
-  valor,
-  clase = "border-zinc-800 text-white",
-}) {
+function ActionButton({ onClick, className, icon, text }) {
   return (
-    <div
-      className={`rounded-2xl bg-black border p-4 ${clase}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl px-4 py-3 font-bold flex items-center justify-center gap-2 transition ${className}`}
     >
-      <p className="text-xs uppercase tracking-wide opacity-60">
-        {titulo}
-      </p>
+      {icon}
+      <span>{text}</span>
+    </button>
+  );
+}
 
-      <p className="text-base font-black mt-1">
-        {valor}
-      </p>
-    </div>
+function IconButton({ onClick, className, icon, title }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`rounded-2xl px-4 py-3 font-bold flex items-center justify-center gap-2 transition ${className}`}
+    >
+      {icon}
+      <span className="text-sm">{title}</span>
+    </button>
   );
 }
 
