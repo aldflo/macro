@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import { motion } from "framer-motion";
+
 import {
   Link,
   useNavigate,
@@ -696,38 +698,34 @@ function Home() {
   const servicios = [
 
     {
-      icon: <FaGlobe />,
-      titulo: "Desarrollo web",
+      icon: <FaLaptopCode />,
+      titulo: "Desarrollo Web",
       subtitulo: "Web & plataformas",
-      descripcion:
-        "Sitios corporativos, tiendas, sistemas web y soluciones digitales adaptadas a cada negocio.",
+      descripcion: "Sitios y plataformas a medida con tecnología de punta.",
       tipo: "web",
     },
 
     {
       icon: <FaMobileAlt />,
-      titulo: "Apps móviles",
+      titulo: "Apps Móviles",
       subtitulo: "iOS & Android",
-      descripcion:
-        "Aplicaciones modernas para conectar servicios, clientes y procesos.",
+      descripcion: "iOS y Android nativos con experiencia impecable.",
       tipo: "app",
     },
 
     {
-      icon: <FaCamera />,
-      titulo: "Seguridad",
-      subtitulo: "Cámaras & tecnología",
-      descripcion:
-        "Videovigilancia, cámaras y soluciones de seguridad tecnológica.",
+      icon: <FaBolt />,
+      titulo: "Seguridad Digital",
+      subtitulo: "Protección & tecnología",
+      descripcion: "Protección proactiva y auditoría completa.",
       tipo: "camaras",
     },
 
     {
       icon: <FaBullhorn />,
-      titulo: "Marketing",
-      subtitulo: "Publicidad digital",
-      descripcion:
-        "Campañas, identidad digital y contenido para hacer crecer marcas.",
+      titulo: "Publicidad Digital",
+      subtitulo: "Marketing & crecimiento",
+      descripcion: "Campañas que convierten en cada canal.",
       tipo: "publicidad",
     },
 
@@ -1186,6 +1184,25 @@ function Home() {
           0%, 100% { transform: scale(1) translate3d(0, 0, 0); filter: saturate(1) brightness(1); }
           50% { transform: scale(1.018) translate3d(0, -3px, 0); filter: saturate(1.06) brightness(1.025); }
         }
+        @keyframes macroHeroVideoCinema {
+          0%, 100% { transform: scale(1.035) translate3d(0,0,0); filter: brightness(1.12) saturate(1.18) contrast(1.05); }
+          50% { transform: scale(1.075) translate3d(0,-7px,0); filter: brightness(1.18) saturate(1.28) contrast(1.08); }
+        }
+
+        @keyframes macroServicesVideoCinema {
+          0%, 100% { transform: scale(1.14) translate3d(0,0,0); filter: brightness(1.16) saturate(1.24) contrast(1.06); }
+          50% { transform: scale(1.19) translate3d(-8px,-5px,0); filter: brightness(1.22) saturate(1.34) contrast(1.09); }
+        }
+
+        .macro-hero-video {
+          animation: macroHeroVideoCinema 14s ease-in-out infinite;
+          will-change: transform, filter;
+        }
+
+        .macro-services-video {
+          animation: macroServicesVideoCinema 18s ease-in-out infinite;
+          will-change: transform, filter;
+        }
         @keyframes macroHeroScanX {
           0% { transform: translateX(-140%) skewX(-14deg); opacity: 0; }
           15% { opacity: .45; }
@@ -1553,7 +1570,9 @@ function Home() {
           .macro-tunnel-core,
           .macro-tunnel-zoom,
           .macro-tunnel-scan,
-          .macro-tunnel-dot {
+          .macro-tunnel-dot,
+          .macro-hero-video,
+          .macro-services-video {
             animation: none !important;
           }
         }
@@ -1595,10 +1614,7 @@ function Home() {
             h-full
             object-cover
             object-center
-            brightness-[1.08]
-            saturate-[1.10]
-            contrast-[1.03]
-            scale-[1.015]
+            macro-hero-video
             pointer-events-none
             select-none
           "
@@ -1611,9 +1627,9 @@ function Home() {
         </video>
 
         {/* CAPAS MUY LIGERAS: EL VIDEO DEBE SER PROTAGONISTA */}
-        <div className="absolute inset-0 z-[1] bg-[#020617]/10 pointer-events-none" />
-        <div className="absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(2,6,23,.70)_0%,rgba(2,6,23,.40)_31%,rgba(2,6,23,.10)_58%,rgba(2,6,23,.06)_100%)] pointer-events-none" />
-        <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(2,6,23,.08)_0%,transparent_45%,rgba(2,6,23,.36)_100%)] pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-[#020617]/[0.05] pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(2,6,23,.62)_0%,rgba(2,6,23,.32)_31%,rgba(2,6,23,.07)_58%,rgba(2,6,23,.03)_100%)] pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(2,6,23,.04)_0%,transparent_48%,rgba(2,6,23,.30)_100%)] pointer-events-none" />
 
         <div className="absolute inset-x-0 top-0 z-[2] h-px bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent pointer-events-none" />
 
@@ -2400,315 +2416,106 @@ function Home() {
 
 
       {/* ================================================= */}
-      {/* SERVICIOS — INTERFAZ DINÁMICA */}
+      {/* SERVICIOS — MISMA ESTRUCTURA + ANIMACIÓN PRO */}
       {/* ================================================= */}
 
       <section
         id="servicios"
-        className="
-          relative
-          isolate
-          overflow-hidden
-          bg-[#050816]
-          text-white
-          py-24
-          md:py-28
-        "
+        className="relative isolate overflow-hidden bg-[#050816] text-white py-24 md:py-28"
       >
-
-        {/* ================================================= */}
-        {/* VIDEO LOCAL DE FONDO — SERVICIOS */}
-        {/* Archivo: public/videos/fondo.mov */}
-        {/* ================================================= */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            overflow-hidden
-            pointer-events-none
-            select-none
-          "
-        >
-          <video
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+          <motion.video
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
-            className="
-              absolute
-              inset-0
-              w-full
-              h-full
-              object-cover
-              object-[center_72%]
-              scale-[1.30]
-              brightness-[1.12]
-              saturate-[1.14]
-              contrast-[1.04]
-            "
+            className="absolute inset-0 w-full h-full object-cover object-[center_62%] scale-[1.18] brightness-[1.18] saturate-[1.28] contrast-[1.08]"
+            animate={{ scale: [1.18, 1.23, 1.18], x: [0, -10, 0], y: [0, -6, 0] }}
+            transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
           >
-            <source
-              src={FONDO_VIDEO_URL}
-              type="video/quicktime"
-            />
-
-            Tu navegador no puede reproducir este video.
-          </video>
+            <source src={FONDO_VIDEO_URL} type="video/quicktime" />
+          </motion.video>
+          <div className="absolute inset-0 bg-[#020617]/24" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,.48)_0%,rgba(2,6,23,.28)_38%,rgba(2,6,23,.12)_68%,rgba(2,6,23,.22)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_24%,rgba(14,165,233,.14),transparent_30%),radial-gradient(circle_at_86%_28%,rgba(168,85,247,.11),transparent_32%)]" />
         </div>
 
-
-        {/* ================================================= */}
-        {/* CAPAS PARA QUE EL TEXTO Y TARJETAS SE VEAN BIEN */}
-        {/* ================================================= */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[#020617]/22
-            pointer-events-none
-          "
-        />
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[linear-gradient(90deg,rgba(2,6,23,.52)_0%,rgba(2,6,23,.36)_34%,rgba(2,6,23,.16)_68%,rgba(2,6,23,.28)_100%)]
-            pointer-events-none
-          "
-        />
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[radial-gradient(circle_at_16%_24%,rgba(14,165,233,.10),transparent_28%),radial-gradient(circle_at_86%_30%,rgba(168,85,247,.08),transparent_30%)]
-            pointer-events-none
-          "
-        />
-
-        {/* Brillo sutil para integrar el video con Macro */}
-        <div
-          className="
-            absolute
-            inset-x-0
-            top-0
-            h-px
-            bg-gradient-to-r
-            from-transparent
-            via-cyan-300/70
-            to-transparent
-            pointer-events-none
-          "
-        />
-
         <div className="relative z-10 max-w-[1440px] mx-auto px-5 md:px-8">
-
-          {/* ENCABEZADO */}
-
-          <div
-            className="
-              grid
-              lg:grid-cols-[.72fr_1.28fr]
-              gap-10
-              lg:gap-14
-              items-end
-            "
-          >
-
-            <div>
-              <div
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-full
-                  border
-                  border-cyan-300/20
-                  bg-cyan-300/[0.06]
-                  px-4
-                  py-2
-                  text-[10px]
-                  sm:text-xs
-                  uppercase
-                  tracking-[.24em]
-                  text-cyan-300
-                  font-black
-                "
-              >
+          <div className="grid lg:grid-cols-[.72fr_1.28fr] gap-10 lg:gap-14 items-end">
+            <motion.div
+              initial={{ opacity: 0, y: 34, filter: "blur(8px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={{ duration: 0.8, ease: [0.22, 0.8, 0.2, 1] }}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-4 py-2 text-[10px] sm:text-xs uppercase tracking-[.24em] text-cyan-300 font-black">
                 <span className="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,.8)]" />
                 Servicios Macro
               </div>
-
-              <h2
-                className="
-                  mt-6
-                  text-5xl
-                  md:text-6xl
-                  lg:text-7xl
-                  font-black
-                  tracking-[-0.055em]
-                  leading-[.94]
-                "
-              >
+              <h2 className="mt-6 text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.055em] leading-[.94]">
                 Un equipo.
-                <span
-                  className="
-                    block
-                    mt-2
-                    bg-gradient-to-r
-                    from-cyan-300
-                    via-sky-400
-                    to-fuchsia-400
-                    bg-clip-text
-                    text-transparent
-                    macro-animated-gradient
-                  "
-                >
+                <span className="block mt-2 bg-gradient-to-r from-cyan-300 via-sky-400 to-fuchsia-400 bg-clip-text text-transparent macro-animated-gradient">
                   Muchas soluciones.
                 </span>
               </h2>
-            </div>
+            </motion.div>
 
-            <div className="lg:pb-2">
+            <motion.div
+              className="lg:pb-2"
+              initial={{ opacity: 0, y: 34 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={{ duration: 0.8, delay: 0.12 }}
+            >
               <p className="max-w-2xl text-base md:text-lg text-slate-300 leading-relaxed">
-                Macro une desarrollo web, aplicaciones, seguridad y publicidad
-                en una experiencia tecnológica conectada. Cada servicio vive
-                dentro del mismo ecosistema y puede crecer junto con tu negocio.
+                Macro une desarrollo web, aplicaciones, seguridad y publicidad en una experiencia tecnológica conectada. Cada servicio vive dentro del mismo ecosistema.
               </p>
-
               <button
                 type="button"
                 onClick={() => solicitarServicio()}
-                className="
-                  group
-                  mt-7
-                  inline-flex
-                  items-center
-                  gap-3
-                  text-sm
-                  font-black
-                  text-cyan-300
-                  hover:text-white
-                  transition
-                "
+                className="group mt-7 inline-flex items-center gap-3 text-sm font-black text-cyan-300 hover:text-white transition"
               >
                 Cuéntanos tu idea
                 <span className="w-10 h-10 rounded-full border border-cyan-300/25 bg-cyan-300/10 flex items-center justify-center transition-all group-hover:bg-cyan-400 group-hover:text-slate-950 group-hover:translate-x-1">
                   <FaArrowRight />
                 </span>
               </button>
-            </div>
-
+            </motion.div>
           </div>
 
-          {/* TARJETAS */}
-
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5 mt-14">
-
             {servicios.map((servicio, indexServicio) => {
-
               const estilos = [
-                {
-                  gradient: "from-cyan-400/25 via-sky-500/10 to-transparent",
-                  icon: "from-cyan-300 to-sky-600",
-                  glow: "bg-cyan-400/25",
-                  number: "01",
-                },
-                {
-                  gradient: "from-violet-400/25 via-purple-500/10 to-transparent",
-                  icon: "from-violet-300 to-purple-600",
-                  glow: "bg-violet-400/25",
-                  number: "02",
-                },
-                {
-                  gradient: "from-emerald-400/20 via-cyan-500/10 to-transparent",
-                  icon: "from-emerald-300 to-cyan-600",
-                  glow: "bg-emerald-400/20",
-                  number: "03",
-                },
-                {
-                  gradient: "from-fuchsia-400/25 via-pink-500/10 to-transparent",
-                  icon: "from-fuchsia-300 to-pink-600",
-                  glow: "bg-fuchsia-400/20",
-                  number: "04",
-                },
+                { gradient: "from-cyan-400/25 via-sky-500/10 to-transparent", icon: "from-cyan-300 to-sky-600", glow: "bg-cyan-400/25", number: "01" },
+                { gradient: "from-violet-400/25 via-purple-500/10 to-transparent", icon: "from-violet-300 to-purple-600", glow: "bg-violet-400/25", number: "02" },
+                { gradient: "from-emerald-400/20 via-cyan-500/10 to-transparent", icon: "from-emerald-300 to-cyan-600", glow: "bg-emerald-400/20", number: "03" },
+                { gradient: "from-fuchsia-400/25 via-pink-500/10 to-transparent", icon: "from-fuchsia-300 to-pink-600", glow: "bg-fuchsia-400/20", number: "04" },
               ];
-
               const estilo = estilos[indexServicio] || estilos[0];
 
               return (
-                <button
+                <motion.button
                   type="button"
                   key={servicio.titulo}
                   onClick={() => solicitarServicio(servicio)}
-                  className="
-                    macro-service-card
-                    group
-                    relative
-                    min-h-[390px]
-                    overflow-hidden
-                    rounded-[30px]
-                    border
-                    border-white/10
-                    bg-white/[0.045]
-                    backdrop-blur-xl
-                    p-6
-                    text-left
-                    transition-all
-                    duration-500
-                    hover:-translate-y-2
-                    hover:border-white/20
-                    hover:shadow-[0_28px_90px_rgba(0,0,0,.35)]
-                  "
+                  className="macro-service-card group relative min-h-[390px] overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.045] backdrop-blur-xl p-6 text-left hover:border-white/20 hover:shadow-[0_28px_90px_rgba(0,0,0,.35)]"
+                  initial={{ opacity: 0, y: 44, scale: 0.97 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, amount: 0.22 }}
+                  transition={{ duration: 0.72, delay: indexServicio * 0.09, ease: [0.22, 0.8, 0.2, 1] }}
+                  whileHover={{ y: -10, rotateX: 2.5, rotateY: indexServicio % 2 === 0 ? -2.5 : 2.5, scale: 1.015 }}
+                  whileTap={{ scale: 0.985 }}
                 >
-
                   <div className={`absolute inset-0 bg-gradient-to-br ${estilo.gradient} opacity-70 transition-opacity duration-500 group-hover:opacity-100`} />
                   <div className={`absolute -right-14 -top-14 w-48 h-48 rounded-full ${estilo.glow} blur-[65px] transition-transform duration-700 group-hover:scale-150`} />
-
-                  <div
-                    className="
-                      absolute
-                      inset-x-6
-                      top-0
-                      h-px
-                      bg-gradient-to-r
-                      from-transparent
-                      via-white/45
-                      to-transparent
-                      opacity-0
-                      group-hover:opacity-100
-                      transition-opacity
-                    "
-                  />
+                  <div className="absolute -left-1/3 top-0 h-full w-1/3 rotate-[18deg] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
 
                   <div className="relative z-10 h-full flex flex-col">
-
                     <div className="flex items-start justify-between gap-4">
-                      <div
-                        className={`
-                          macro-service-icon
-                          w-14
-                          h-14
-                          rounded-2xl
-                          bg-gradient-to-br
-                          ${estilo.icon}
-                          flex
-                          items-center
-                          justify-center
-                          text-xl
-                          text-white
-                          shadow-lg
-                          transition-all
-                          duration-500
-                        `}
-                      >
+                      <div className={`macro-service-icon w-14 h-14 rounded-2xl bg-gradient-to-br ${estilo.icon} flex items-center justify-center text-xl text-white shadow-lg transition-all duration-500`}>
                         {servicio.icon}
                       </div>
-
                       <span className="text-5xl font-black tracking-[-.08em] text-white/[0.08] transition-colors group-hover:text-white/[0.13]">
                         {estilo.number}
                       </span>
@@ -2718,105 +2525,52 @@ function Home() {
                       <p className="text-[10px] uppercase tracking-[.24em] font-black text-slate-400 group-hover:text-cyan-200 transition-colors">
                         {servicio.subtitulo}
                       </p>
-
                       <h3 className="mt-3 text-2xl md:text-3xl font-black tracking-[-.03em]">
                         {servicio.titulo}
                       </h3>
-
                       <p className="mt-4 text-sm md:text-base text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">
                         {servicio.descripcion}
                       </p>
                     </div>
 
                     <div className="mt-auto pt-9 flex items-center justify-between gap-4">
-                      <span className="text-sm font-black text-white">
-                        Explorar servicio
-                      </span>
-
-                      <span
-                        className="
-                          w-11
-                          h-11
-                          rounded-full
-                          border
-                          border-white/10
-                          bg-white/[0.06]
-                          flex
-                          items-center
-                          justify-center
-                          text-cyan-300
-                          transition-all
-                          duration-300
-                          group-hover:bg-white
-                          group-hover:text-slate-950
-                          group-hover:translate-x-1
-                        "
-                      >
+                      <span className="text-sm font-black text-cyan-300">Saber más</span>
+                      <span className="w-11 h-11 rounded-full border border-white/10 bg-white/[0.06] flex items-center justify-center text-cyan-300 transition-all duration-300 group-hover:bg-white group-hover:text-slate-950 group-hover:translate-x-1">
                         <FaArrowRight />
                       </span>
                     </div>
 
-                    <div className="mt-7 h-1.5 rounded-full bg-white/[0.055] overflow-hidden">
+                    {/* BARRA ANIMADA DE LA CARD */}
+                    <div className="mt-7 h-1.5 rounded-full bg-white/[0.055] overflow-hidden relative">
                       <div
                         className={`
+                          relative
                           h-full
+                          w-[28%]
+                          group-hover:w-full
                           rounded-full
                           bg-gradient-to-r
                           ${estilo.icon}
+                          overflow-hidden
                           transition-all
                           duration-700
-                          w-[28%]
-                          group-hover:w-full
+                          ease-out
+                          shadow-[0_0_16px_rgba(56,189,248,.25)]
                         `}
-                      />
+                      >
+                        <motion.span
+                          className="absolute inset-y-0 w-[35%] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                          animate={{ x: ["-150%", "350%"] }}
+                          transition={{ duration: 2.3, repeat: Infinity, ease: "linear" }}
+                        />
+                      </div>
                     </div>
-
                   </div>
-
-                </button>
+                </motion.button>
               );
             })}
-
           </div>
-
-          {/* BANDA DE CAPACIDADES */}
-
-          <div
-            className="
-              mt-7
-              rounded-[28px]
-              border
-              border-white/10
-              bg-white/[0.035]
-              backdrop-blur-xl
-              px-5
-              md:px-7
-              py-5
-              flex
-              flex-wrap
-              items-center
-              justify-between
-              gap-5
-            "
-          >
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs md:text-sm text-slate-400 font-semibold">
-              <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-300" /> Desarrollo</span>
-              <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-violet-300" /> Automatización</span>
-              <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-300" /> Seguridad</span>
-              <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-fuchsia-300" /> Crecimiento digital</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[.2em] text-cyan-300 font-black">
-              <span className="relative flex w-2.5 h-2.5">
-                <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-300 opacity-70 animate-ping" />
-                <span className="relative inline-flex w-2.5 h-2.5 rounded-full bg-emerald-300" />
-              </span>
-              Macro activo
-            </div>
-          </div>
-
         </div>
-
       </section>
 
       {/* ================================================= */}
@@ -2973,9 +2727,13 @@ function Home() {
 
                   return (
 
-                    <article
+                    <motion.article
                       key={proyecto.id}
                       className="macro-project-perspective"
+                      initial={{ opacity: 0, y: 46, scale: 0.985 }}
+                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                      viewport={{ once: true, amount: 0.18 }}
+                      transition={{ duration: 0.8, delay: Math.min(indice * 0.08, 0.24), ease: [0.22, 0.8, 0.2, 1] }}
                     >
 
                       <div
@@ -3204,7 +2962,7 @@ function Home() {
 
                       </div>
 
-                    </article>
+                    </motion.article>
 
                   );
 
@@ -3410,6 +3168,563 @@ function Home() {
 
       </section>
 
+
+      {/* ================================================= */}
+      {/* FONDO2 — VIDEO DETRÁS DE LAS DOS CARDS */}
+      {/* Archivo: public/videos/fondo2.mov */}
+      {/* ================================================= */}
+
+      <div
+        className="
+          relative
+          isolate
+          overflow-hidden
+        "
+      >
+
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="
+            absolute
+            inset-0
+            z-0
+            w-full
+            h-full
+            object-cover
+            object-center
+            pointer-events-none
+            select-none
+            brightness-[1.00]
+            saturate-[1.00]
+            contrast-[1.00]
+          "
+        >
+          <source
+            src={FONDO2_VIDEO_URL}
+            type="video/quicktime"
+          />
+
+          Tu navegador no puede reproducir este video.
+        </video>
+
+        {/*
+          No ponemos capa negra encima para conservar
+          la iluminación y los colores originales del video.
+          Solo un degradado muy leve en los bordes para
+          integrar las dos tarjetas oscuras.
+        */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            z-[1]
+            pointer-events-none
+            bg-[linear-gradient(180deg,rgba(246,249,252,.06)_0%,transparent_14%,transparent_86%,rgba(246,249,252,.05)_100%)]
+          "
+        />
+
+        <div
+          className="
+            relative
+            z-10
+          "
+        >
+
+      {/* ================================================= */}
+      {/* TIENDA — DISEÑO CONSERVADO */}
+      {/* ================================================= */}
+
+      <section id="tienda" className="max-w-7xl mx-auto px-5 md:px-8 py-14 md:py-16">
+        <motion.div
+          className="relative overflow-hidden rounded-[38px] border border-white/20 bg-[#071221]/52 p-8 text-white shadow-[0_24px_70px_rgba(0,0,0,.24)] backdrop-blur-md md:p-12 lg:p-14"
+          initial={{ opacity: 0, y: 45, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.22 }}
+          transition={{ duration: 0.85, ease: [0.22, 0.8, 0.2, 1] }}
+        >
+          <div className="absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full bg-sky-500/20 blur-3xl" />
+          <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1fr_0.8fr]">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Macro Store</span>
+              <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight md:text-5xl lg:text-6xl">
+                Productos que <span className="bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">elevan</span> tu marca
+              </h2>
+              <p className="mt-5 max-w-md text-slate-300">
+                Descubre herramientas, templates y recursos digitales diseñados para impulsar tu negocio.
+              </p>
+              <motion.button
+                type="button"
+                onClick={() => navigate("/tienda")}
+                className="group mt-7 inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 px-7 py-4 text-sm font-black text-white shadow-[0_16px_45px_rgba(14,165,233,.25)]"
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <FaStore />
+                Entrar a la tienda
+                <FaArrowRight className="transition-transform group-hover:translate-x-1" />
+              </motion.button>
+            </div>
+
+            <div className="flex justify-center lg:justify-end">
+              <motion.div
+                className="text-9xl text-white/10"
+                animate={{ y: [0, -16, 0], rotate: [0, 3, 0] }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <FaRocket />
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ================================================= */}
+      {/* CTA FINAL */}
+      {/* ================================================= */}
+
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+          px-5
+          md:px-8
+          pb-16
+          pt-6
+        "
+      >
+
+        <div
+          className="
+            relative
+            overflow-hidden
+            rounded-[38px]
+            min-h-[430px]
+            border
+            border-white/20
+            shadow-[0_26px_80px_rgba(0,0,0,.26)]
+            flex
+            items-center
+            bg-[#020617]
+          "
+        >
+
+
+          {/* ================================================= */}
+        {/* FONDO TECNOLÓGICO GENERADO CON CÓDIGO */}
+        {/* ================================================= */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            overflow-hidden
+            bg-[#040617]
+            pointer-events-none
+          "
+        >
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-[radial-gradient(circle_at_50%_50%,rgba(14,165,233,.13),transparent_28%),radial-gradient(circle_at_78%_30%,rgba(168,85,247,.14),transparent_30%)]
+            "
+          />
+
+          {/* CÍRCULOS TIPO TÚNEL */}
+
+          <div className="macro-tunnel-zoom absolute left-1/2 top-1/2 w-[1100px] h-[1100px] rounded-full border border-cyan-300/10" />
+
+          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[900px] h-[900px] rounded-full border-[18px] border-cyan-300/[0.08]">
+            <span className="absolute top-[8%] left-[50%] w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,.8)]" />
+            <span className="absolute bottom-[12%] right-[18%] w-2.5 h-2.5 rounded-full bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,.75)]" />
+          </div>
+
+          <div className="macro-tunnel-ring-reverse absolute left-1/2 top-1/2 w-[720px] h-[720px] rounded-full border-[16px] border-violet-400/[0.10]">
+            <span className="absolute top-[20%] right-[8%] w-2.5 h-2.5 rounded-full bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,.8)]" />
+          </div>
+
+          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[560px] h-[560px] rounded-full border-[14px] border-cyan-300/[0.12]" style={{ animationDuration: "11s" }} />
+
+          <div className="macro-tunnel-ring-reverse absolute left-1/2 top-1/2 w-[420px] h-[420px] rounded-full border-[12px] border-fuchsia-400/[0.11]" style={{ animationDuration: "9s" }} />
+
+          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[300px] h-[300px] rounded-full border-[10px] border-cyan-200/[0.14]" style={{ animationDuration: "7s" }} />
+
+          <div className="macro-tunnel-core absolute left-1/2 top-1/2 w-[120px] h-[120px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.95)_0%,rgba(103,232,249,.9)_14%,rgba(14,165,233,.55)_35%,rgba(59,130,246,.12)_62%,transparent_74%)] shadow-[0_0_70px_rgba(56,189,248,.45)]" />
+
+          {/* LÍNEAS RADIALES */}
+
+          <div className="absolute left-1/2 top-1/2 w-[1200px] h-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent" />
+
+          <div className="absolute left-1/2 top-1/2 w-px h-[900px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-sky-300/20 to-transparent" />
+
+          <div className="absolute left-1/2 top-1/2 w-[980px] h-px -translate-x-1/2 -translate-y-1/2 rotate-45 bg-gradient-to-r from-transparent via-violet-300/16 to-transparent" />
+
+          <div className="absolute left-1/2 top-1/2 w-[980px] h-px -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gradient-to-r from-transparent via-cyan-300/14 to-transparent" />
+
+          {/* BARRIDO DE LUZ */}
+
+          <div
+            className="
+              macro-tunnel-scan
+              absolute
+              top-[-20%]
+              bottom-[-20%]
+              left-0
+              w-[16%]
+              bg-gradient-to-r
+              from-transparent
+              via-white/[0.10]
+              to-transparent
+              blur-xl
+            "
+          />
+
+          {/* PARTÍCULAS */}
+
+          <span className="macro-tunnel-dot absolute left-[16%] top-[22%] w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,.9)]" />
+          <span className="macro-tunnel-dot absolute left-[28%] top-[68%] w-1.5 h-1.5 rounded-full bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,.8)]" style={{ animationDelay: ".7s" }} />
+          <span className="macro-tunnel-dot absolute right-[18%] top-[24%] w-2.5 h-2.5 rounded-full bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,.8)]" style={{ animationDelay: "1.2s" }} />
+          <span className="macro-tunnel-dot absolute right-[28%] bottom-[20%] w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_16px_rgba(103,232,249,.8)]" style={{ animationDelay: "1.8s" }} />
+
+        </div>
+
+        {/* CAPAS DE INTEGRACIÓN */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            bg-[linear-gradient(90deg,rgba(2,6,23,.92)_0%,rgba(2,6,23,.76)_35%,rgba(15,23,42,.46)_68%,rgba(2,6,23,.68)_100%)]
+            pointer-events-none
+          "
+        />
+
+        <div
+          className="
+            absolute
+            inset-0
+            bg-[radial-gradient(circle_at_18%_28%,rgba(14,165,233,.24),transparent_30%),radial-gradient(circle_at_84%_28%,rgba(168,85,247,.18),transparent_30%)]
+            pointer-events-none
+          "
+        />
+
+          {/* SOMBRA / DEGRADADO */}
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-[linear-gradient(90deg,rgba(2,6,23,.95)_0%,rgba(2,6,23,.84)_42%,rgba(2,6,23,.50)_72%,rgba(2,6,23,.68)_100%)]
+            "
+          />
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-[radial-gradient(circle_at_18%_35%,rgba(14,165,233,.28),transparent_30%),radial-gradient(circle_at_82%_26%,rgba(168,85,247,.18),transparent_28%)]
+            "
+          />
+
+
+          {/* PARTÍCULAS */}
+
+          <span
+            className="
+              macro-float
+              absolute
+              left-[7%]
+              top-[18%]
+              w-2
+              h-2
+              rounded-full
+              bg-cyan-300
+              shadow-[0_0_18px_rgba(103,232,249,.85)]
+            "
+          />
+
+          <span
+            className="
+              macro-float-slow
+              absolute
+              right-[14%]
+              top-[22%]
+              w-2.5
+              h-2.5
+              rounded-full
+              bg-violet-300
+              shadow-[0_0_18px_rgba(196,181,253,.75)]
+            "
+          />
+
+
+          <div
+            className="
+              relative
+              z-10
+              w-full
+              p-8
+              md:p-12
+              lg:p-14
+              grid
+              lg:grid-cols-[1fr_.72fr]
+              gap-10
+              items-center
+              text-white
+            "
+          >
+
+            <div>
+
+              <div
+                className="
+                  inline-flex
+                  items-center
+                  gap-3
+                  rounded-full
+                  border
+                  border-cyan-300/20
+                  bg-cyan-400/10
+                  px-4
+                  py-2
+                  backdrop-blur-xl
+                "
+              >
+                <span
+                  className="
+                    w-2
+                    h-2
+                    rounded-full
+                    bg-cyan-300
+                    shadow-[0_0_14px_rgba(103,232,249,.9)]
+                  "
+                />
+
+                <span
+                  className="
+                    text-[10px]
+                    uppercase
+                    tracking-[.24em]
+                    font-black
+                    text-cyan-200
+                  "
+                >
+                  Tu próximo proyecto
+                </span>
+              </div>
+
+
+              <h2
+                className="
+                  text-4xl
+                  md:text-6xl
+                  font-black
+                  tracking-[-0.05em]
+                  leading-[.96]
+                  mt-6
+                "
+              >
+                ¿Qué quieres
+
+                <span
+                  className="
+                    block
+                    bg-gradient-to-r
+                    from-cyan-300
+                    via-sky-400
+                    to-violet-400
+                    bg-clip-text
+                    text-transparent
+                    macro-animated-gradient
+                  "
+                >
+                  construir ahora?
+                </span>
+              </h2>
+
+
+              <p
+                className="
+                  text-slate-300
+                  mt-5
+                  max-w-2xl
+                  text-base
+                  md:text-lg
+                  leading-relaxed
+                "
+              >
+                Cuéntanos tu idea y Macro puede convertirla
+                en una solución tecnológica real, desde una
+                página web hasta una aplicación, seguridad,
+                publicidad o una solución personalizada.
+              </p>
+
+            </div>
+
+
+            <div
+              className="
+                rounded-[28px]
+                border
+                border-white/10
+                bg-white/[0.07]
+                backdrop-blur-2xl
+                p-6
+                md:p-7
+                shadow-[0_22px_70px_rgba(0,0,0,.25)]
+              "
+            >
+
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-4
+                "
+              >
+
+                <div
+                  className="
+                    w-12
+                    h-12
+                    rounded-2xl
+                    bg-gradient-to-br
+                    from-cyan-300
+                    via-sky-500
+                    to-blue-700
+                    flex
+                    items-center
+                    justify-center
+                    text-xl
+                    shadow-[0_0_28px_rgba(14,165,233,.35)]
+                  "
+                >
+                  <FaRocket />
+                </div>
+
+                <div>
+
+                  <p
+                    className="
+                      text-sm
+                      font-black
+                      text-white
+                    "
+                  >
+                    Macro Project Launch
+                  </p>
+
+                  <p
+                    className="
+                      text-xs
+                      text-slate-400
+                      mt-1
+                    "
+                  >
+                    Convierte una idea en proyecto
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                className="
+                  grid
+                  gap-3
+                  mt-6
+                "
+              >
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    solicitarServicio()
+                  }
+                  className="
+                    group
+                    w-full
+                    bg-gradient-to-r
+                    from-cyan-400
+                    via-sky-500
+                    to-blue-600
+                    hover:from-cyan-300
+                    hover:to-blue-500
+                    text-white
+                    px-6
+                    py-4
+                    rounded-2xl
+                    font-black
+                    flex
+                    items-center
+                    justify-center
+                    gap-3
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                    shadow-[0_16px_45px_rgba(14,165,233,.24)]
+                  "
+                >
+                  Iniciar proyecto
+
+                  <FaArrowRight
+                    className="
+                      transition-transform
+                      group-hover:translate-x-1
+                    "
+                  />
+                </button>
+
+
+                {!user && (
+
+                  <Link
+                    to="/register"
+                    className="
+                      w-full
+                      border
+                      border-white/12
+                      bg-white/[0.06]
+                      hover:bg-white/[0.10]
+                      px-6
+                      py-4
+                      rounded-2xl
+                      font-bold
+                      flex
+                      items-center
+                      justify-center
+                      gap-2
+                      transition
+                    "
+                  >
+                    <FaUserPlus />
+
+                    Crear cuenta
+                  </Link>
+
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+        </div>
+
+      </div>
 
       {/* ================================================= */}
       {/* PUBLICACIONES — BLANCO PRO */}
@@ -3877,703 +4192,6 @@ function Home() {
       </section>
 
 
-      {/* ================================================= */}
-      {/* FONDO2 — VIDEO DETRÁS DE LAS DOS CARDS */}
-      {/* Archivo: public/videos/fondo2.mov */}
-      {/* ================================================= */}
-
-      <div
-        className="
-          relative
-          isolate
-          overflow-hidden
-        "
-      >
-
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="
-            absolute
-            inset-0
-            z-0
-            w-full
-            h-full
-            object-cover
-            object-center
-            pointer-events-none
-            select-none
-            brightness-[1.00]
-            saturate-[1.00]
-            contrast-[1.00]
-          "
-        >
-          <source
-            src={FONDO2_VIDEO_URL}
-            type="video/quicktime"
-          />
-
-          Tu navegador no puede reproducir este video.
-        </video>
-
-        {/*
-          No ponemos capa negra encima para conservar
-          la iluminación y los colores originales del video.
-          Solo un degradado muy leve en los bordes para
-          integrar las dos tarjetas oscuras.
-        */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            z-[1]
-            pointer-events-none
-            bg-[linear-gradient(180deg,rgba(246,249,252,.06)_0%,transparent_14%,transparent_86%,rgba(246,249,252,.05)_100%)]
-          "
-        />
-
-        <div
-          className="
-            relative
-            z-10
-          "
-        >
-
-      {/* ================================================= */}
-      {/* TIENDA COMPLETA CTA */}
-      {/* ================================================= */}
-
-      <section
-        id="tienda"
-        className="
-          max-w-7xl
-          mx-auto
-          px-5
-          md:px-8
-          py-14
-          md:py-16
-        "
-      >
-
-        <div
-          className="
-            relative
-            overflow-hidden
-            rounded-[38px]
-            bg-[#071221]/52
-            text-white
-            backdrop-blur-[10px]
-            p-8
-            md:p-12
-            lg:p-14
-            border
-            border-white/20
-            shadow-[0_24px_70px_rgba(0,0,0,.24)]
-            backdrop-blur-[2px]
-          "
-        >
-
-          <div
-            className="
-              absolute
-              -right-32
-              -top-32
-              w-[420px]
-              h-[420px]
-              rounded-full
-              bg-sky-500/20
-              blur-3xl
-            "
-          />
-
-
-          <div
-            className="
-              relative
-              z-10
-              grid
-              lg:grid-cols-[1fr_.8fr]
-              items-center
-              gap-10
-            "
-          >
-
-            <div>
-
-              <span
-                className="
-                  text-xs
-                  uppercase
-                  tracking-[0.25em]
-                  text-cyan-300
-                  font-bold
-                "
-              >
-
-                Macro Store
-
-              </span>
-
-
-              <h2
-                className="
-                  text-4xl
-                  md:text-6xl
-                  font-black
-                  tracking-[-0.04em]
-                  mt-4
-                "
-              >
-
-                Tecnología que
-
-                <span
-                  className="
-                    block
-                    text-sky-400
-                  "
-                >
-
-                  puedes llevar contigo.
-
-                </span>
-
-              </h2>
-
-
-              <p
-                className="
-                  max-w-xl
-                  text-slate-300
-                  text-lg
-                  leading-relaxed
-                  mt-5
-                "
-              >
-
-                Equipos, accesorios y productos
-                tecnológicos seleccionados dentro
-                del ecosistema Macro.
-
-              </p>
-
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(
-                    "/tienda"
-                  )
-                }
-                className="
-                  mt-8
-                  bg-white
-                  hover:bg-sky-50
-                  text-slate-950
-                  px-6
-                  py-4
-                  rounded-2xl
-                  font-bold
-                  flex
-                  items-center
-                  gap-3
-                "
-              >
-
-                <FaShoppingBag />
-
-                Entrar a la tienda
-
-                <FaArrowRight />
-
-              </button>
-
-            </div>
-
-
-            <div
-              className="
-                grid
-                grid-cols-2
-                gap-3
-              "
-            >
-
-              <StoreBox
-                icon={<FaCamera />}
-                title="Seguridad"
-              />
-
-              <StoreBox
-                icon={<FaLaptopCode />}
-                title="Tecnología"
-              />
-
-              <StoreBox
-                icon={<FaMobileAlt />}
-                title="Accesorios"
-              />
-
-              <StoreBox
-                icon={<FaStore />}
-                title="Más productos"
-              />
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      {/* ================================================= */}
-      {/* CTA FINAL */}
-      {/* ================================================= */}
-
-      <section
-        className="
-          max-w-7xl
-          mx-auto
-          px-5
-          md:px-8
-          pb-16
-          pt-6
-        "
-      >
-
-        <div
-          className="
-            relative
-            overflow-hidden
-            rounded-[38px]
-            min-h-[430px]
-            border
-            border-white/20
-            shadow-[0_26px_80px_rgba(0,0,0,.26)]
-            flex
-            items-center
-            bg-[#020617]
-          "
-        >
-
-
-          {/* ================================================= */}
-        {/* FONDO TECNOLÓGICO GENERADO CON CÓDIGO */}
-        {/* ================================================= */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            overflow-hidden
-            bg-[#040617]
-            pointer-events-none
-          "
-        >
-
-          <div
-            className="
-              absolute
-              inset-0
-              bg-[radial-gradient(circle_at_50%_50%,rgba(14,165,233,.13),transparent_28%),radial-gradient(circle_at_78%_30%,rgba(168,85,247,.14),transparent_30%)]
-            "
-          />
-
-          {/* CÍRCULOS TIPO TÚNEL */}
-
-          <div className="macro-tunnel-zoom absolute left-1/2 top-1/2 w-[1100px] h-[1100px] rounded-full border border-cyan-300/10" />
-
-          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[900px] h-[900px] rounded-full border-[18px] border-cyan-300/[0.08]">
-            <span className="absolute top-[8%] left-[50%] w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,.8)]" />
-            <span className="absolute bottom-[12%] right-[18%] w-2.5 h-2.5 rounded-full bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,.75)]" />
-          </div>
-
-          <div className="macro-tunnel-ring-reverse absolute left-1/2 top-1/2 w-[720px] h-[720px] rounded-full border-[16px] border-violet-400/[0.10]">
-            <span className="absolute top-[20%] right-[8%] w-2.5 h-2.5 rounded-full bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,.8)]" />
-          </div>
-
-          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[560px] h-[560px] rounded-full border-[14px] border-cyan-300/[0.12]" style={{ animationDuration: "11s" }} />
-
-          <div className="macro-tunnel-ring-reverse absolute left-1/2 top-1/2 w-[420px] h-[420px] rounded-full border-[12px] border-fuchsia-400/[0.11]" style={{ animationDuration: "9s" }} />
-
-          <div className="macro-tunnel-ring absolute left-1/2 top-1/2 w-[300px] h-[300px] rounded-full border-[10px] border-cyan-200/[0.14]" style={{ animationDuration: "7s" }} />
-
-          <div className="macro-tunnel-core absolute left-1/2 top-1/2 w-[120px] h-[120px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.95)_0%,rgba(103,232,249,.9)_14%,rgba(14,165,233,.55)_35%,rgba(59,130,246,.12)_62%,transparent_74%)] shadow-[0_0_70px_rgba(56,189,248,.45)]" />
-
-          {/* LÍNEAS RADIALES */}
-
-          <div className="absolute left-1/2 top-1/2 w-[1200px] h-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent" />
-
-          <div className="absolute left-1/2 top-1/2 w-px h-[900px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-sky-300/20 to-transparent" />
-
-          <div className="absolute left-1/2 top-1/2 w-[980px] h-px -translate-x-1/2 -translate-y-1/2 rotate-45 bg-gradient-to-r from-transparent via-violet-300/16 to-transparent" />
-
-          <div className="absolute left-1/2 top-1/2 w-[980px] h-px -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gradient-to-r from-transparent via-cyan-300/14 to-transparent" />
-
-          {/* BARRIDO DE LUZ */}
-
-          <div
-            className="
-              macro-tunnel-scan
-              absolute
-              top-[-20%]
-              bottom-[-20%]
-              left-0
-              w-[16%]
-              bg-gradient-to-r
-              from-transparent
-              via-white/[0.10]
-              to-transparent
-              blur-xl
-            "
-          />
-
-          {/* PARTÍCULAS */}
-
-          <span className="macro-tunnel-dot absolute left-[16%] top-[22%] w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,.9)]" />
-          <span className="macro-tunnel-dot absolute left-[28%] top-[68%] w-1.5 h-1.5 rounded-full bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,.8)]" style={{ animationDelay: ".7s" }} />
-          <span className="macro-tunnel-dot absolute right-[18%] top-[24%] w-2.5 h-2.5 rounded-full bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,.8)]" style={{ animationDelay: "1.2s" }} />
-          <span className="macro-tunnel-dot absolute right-[28%] bottom-[20%] w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_16px_rgba(103,232,249,.8)]" style={{ animationDelay: "1.8s" }} />
-
-        </div>
-
-        {/* CAPAS DE INTEGRACIÓN */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[linear-gradient(90deg,rgba(2,6,23,.92)_0%,rgba(2,6,23,.76)_35%,rgba(15,23,42,.46)_68%,rgba(2,6,23,.68)_100%)]
-            pointer-events-none
-          "
-        />
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[radial-gradient(circle_at_18%_28%,rgba(14,165,233,.24),transparent_30%),radial-gradient(circle_at_84%_28%,rgba(168,85,247,.18),transparent_30%)]
-            pointer-events-none
-          "
-        />
-
-          {/* SOMBRA / DEGRADADO */}
-
-          <div
-            className="
-              absolute
-              inset-0
-              bg-[linear-gradient(90deg,rgba(2,6,23,.95)_0%,rgba(2,6,23,.84)_42%,rgba(2,6,23,.50)_72%,rgba(2,6,23,.68)_100%)]
-            "
-          />
-
-          <div
-            className="
-              absolute
-              inset-0
-              bg-[radial-gradient(circle_at_18%_35%,rgba(14,165,233,.28),transparent_30%),radial-gradient(circle_at_82%_26%,rgba(168,85,247,.18),transparent_28%)]
-            "
-          />
-
-
-          {/* PARTÍCULAS */}
-
-          <span
-            className="
-              macro-float
-              absolute
-              left-[7%]
-              top-[18%]
-              w-2
-              h-2
-              rounded-full
-              bg-cyan-300
-              shadow-[0_0_18px_rgba(103,232,249,.85)]
-            "
-          />
-
-          <span
-            className="
-              macro-float-slow
-              absolute
-              right-[14%]
-              top-[22%]
-              w-2.5
-              h-2.5
-              rounded-full
-              bg-violet-300
-              shadow-[0_0_18px_rgba(196,181,253,.75)]
-            "
-          />
-
-
-          <div
-            className="
-              relative
-              z-10
-              w-full
-              p-8
-              md:p-12
-              lg:p-14
-              grid
-              lg:grid-cols-[1fr_.72fr]
-              gap-10
-              items-center
-              text-white
-            "
-          >
-
-            <div>
-
-              <div
-                className="
-                  inline-flex
-                  items-center
-                  gap-3
-                  rounded-full
-                  border
-                  border-cyan-300/20
-                  bg-cyan-400/10
-                  px-4
-                  py-2
-                  backdrop-blur-xl
-                "
-              >
-                <span
-                  className="
-                    w-2
-                    h-2
-                    rounded-full
-                    bg-cyan-300
-                    shadow-[0_0_14px_rgba(103,232,249,.9)]
-                  "
-                />
-
-                <span
-                  className="
-                    text-[10px]
-                    uppercase
-                    tracking-[.24em]
-                    font-black
-                    text-cyan-200
-                  "
-                >
-                  Tu próximo proyecto
-                </span>
-              </div>
-
-
-              <h2
-                className="
-                  text-4xl
-                  md:text-6xl
-                  font-black
-                  tracking-[-0.05em]
-                  leading-[.96]
-                  mt-6
-                "
-              >
-                ¿Qué quieres
-
-                <span
-                  className="
-                    block
-                    bg-gradient-to-r
-                    from-cyan-300
-                    via-sky-400
-                    to-violet-400
-                    bg-clip-text
-                    text-transparent
-                    macro-animated-gradient
-                  "
-                >
-                  construir ahora?
-                </span>
-              </h2>
-
-
-              <p
-                className="
-                  text-slate-300
-                  mt-5
-                  max-w-2xl
-                  text-base
-                  md:text-lg
-                  leading-relaxed
-                "
-              >
-                Cuéntanos tu idea y Macro puede convertirla
-                en una solución tecnológica real, desde una
-                página web hasta una aplicación, seguridad,
-                publicidad o una solución personalizada.
-              </p>
-
-            </div>
-
-
-            <div
-              className="
-                rounded-[28px]
-                border
-                border-white/10
-                bg-white/[0.07]
-                backdrop-blur-2xl
-                p-6
-                md:p-7
-                shadow-[0_22px_70px_rgba(0,0,0,.25)]
-              "
-            >
-
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-4
-                "
-              >
-
-                <div
-                  className="
-                    w-12
-                    h-12
-                    rounded-2xl
-                    bg-gradient-to-br
-                    from-cyan-300
-                    via-sky-500
-                    to-blue-700
-                    flex
-                    items-center
-                    justify-center
-                    text-xl
-                    shadow-[0_0_28px_rgba(14,165,233,.35)]
-                  "
-                >
-                  <FaRocket />
-                </div>
-
-                <div>
-
-                  <p
-                    className="
-                      text-sm
-                      font-black
-                      text-white
-                    "
-                  >
-                    Macro Project Launch
-                  </p>
-
-                  <p
-                    className="
-                      text-xs
-                      text-slate-400
-                      mt-1
-                    "
-                  >
-                    Convierte una idea en proyecto
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              <div
-                className="
-                  grid
-                  gap-3
-                  mt-6
-                "
-              >
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    solicitarServicio()
-                  }
-                  className="
-                    group
-                    w-full
-                    bg-gradient-to-r
-                    from-cyan-400
-                    via-sky-500
-                    to-blue-600
-                    hover:from-cyan-300
-                    hover:to-blue-500
-                    text-white
-                    px-6
-                    py-4
-                    rounded-2xl
-                    font-black
-                    flex
-                    items-center
-                    justify-center
-                    gap-3
-                    transition-all
-                    duration-300
-                    hover:-translate-y-1
-                    shadow-[0_16px_45px_rgba(14,165,233,.24)]
-                  "
-                >
-                  Iniciar proyecto
-
-                  <FaArrowRight
-                    className="
-                      transition-transform
-                      group-hover:translate-x-1
-                    "
-                  />
-                </button>
-
-
-                {!user && (
-
-                  <Link
-                    to="/register"
-                    className="
-                      w-full
-                      border
-                      border-white/12
-                      bg-white/[0.06]
-                      hover:bg-white/[0.10]
-                      px-6
-                      py-4
-                      rounded-2xl
-                      font-bold
-                      flex
-                      items-center
-                      justify-center
-                      gap-2
-                      transition
-                    "
-                  >
-                    <FaUserPlus />
-
-                    Crear cuenta
-                  </Link>
-
-                )}
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-        </div>
-
-      </div>
 
     </div>
 
