@@ -49,13 +49,13 @@ import {
 } from "react-icons/fa6";
 
 const HERO_VIDEO_URL =
-  "PON_AQUI_LA_URL_DE_CLOUDINARY_DE_HERO_WEB_MP4";
+  "https://res.cloudinary.com/dxj4iczvk/video/upload/v1789864582/hero_10s_web_jg1dm5.mp4";
 
 const FONDO_VIDEO_URL =
-  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto,f_mp4/v1789862534/fondo_kghe1w.mov";
+  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto/v1789862534/fondo_kghe1w.mp4";
 
 const FONDO2_VIDEO_URL =
-  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto,f_mp4/v1789862495/fondo2_acpcpm.mov";
+  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto/v1789862495/fondo2_acpcpm.mp4";
 
 
 
