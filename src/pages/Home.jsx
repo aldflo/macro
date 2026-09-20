@@ -48,6 +48,15 @@ import {
   FaChartBar,
 } from "react-icons/fa6";
 
+const HERO_VIDEO_URL =
+  "PON_AQUI_LA_URL_DE_CLOUDINARY_DE_HERO_WEB_MP4";
+
+const FONDO_VIDEO_URL =
+  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto,f_mp4/v1789862534/fondo_kghe1w.mov";
+
+const FONDO2_VIDEO_URL =
+  "https://res.cloudinary.com/dxj4iczvk/video/upload/q_auto,f_mp4/v1789862495/fondo2_acpcpm.mov";
+
 
 
 function Home() {
@@ -1595,7 +1604,7 @@ function Home() {
           "
         >
           <source
-            src="/videos/hero.mp4"
+            src={HERO_VIDEO_URL}
             type="video/mp4"
           />
           Tu navegador no puede reproducir este video.
@@ -2441,8 +2450,8 @@ function Home() {
             "
           >
             <source
-              src="/videos/fondo.mov"
-              type="video/quicktime"
+              src={FONDO_VIDEO_URL}
+              type="video/mp4"
             />
 
             Tu navegador no puede reproducir este video.
@@ -3903,8 +3912,8 @@ function Home() {
           "
         >
           <source
-            src="/videos/fondo2.mov"
-            type="video/quicktime"
+            src={FONDO2_VIDEO_URL}
+            type="video/mp4"
           />
 
           Tu navegador no puede reproducir este video.
