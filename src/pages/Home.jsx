@@ -2442,8 +2442,8 @@ function Home() {
               w-full
               h-full
               object-cover
-              object-center
-              scale-[1.03]
+              object-[center_72%]
+              scale-[1.30]
               brightness-[1.12]
               saturate-[1.14]
               contrast-[1.04]
