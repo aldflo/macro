@@ -71,7 +71,7 @@ const CLOUDINARY_CLOUD_NAME =
 
 const CLOUDINARY_UPLOAD_PRESET =
   import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET ||
-  "macro";
+  "macroservices";
 
 
 /* ======================================================
